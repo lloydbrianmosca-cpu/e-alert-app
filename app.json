@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "name": "e-alert-app",
+    "slug": "e-alert-app",
+    "version": "1.0.0",
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTabletMode": true
+    },
+    "android": {}
+  }
+}
