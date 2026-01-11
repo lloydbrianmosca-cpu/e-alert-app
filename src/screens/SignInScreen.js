@@ -12,6 +12,12 @@ import {
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { AuthHeader, FormInput, PrimaryButton } from '../components';
 
+// Mock account for testing
+const MOCK_ACCOUNT = {
+  email: 'test',
+  password: '123',
+};
+
 export default function SignInScreen({ navigation }) {
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
@@ -27,7 +33,13 @@ export default function SignInScreen({ navigation }) {
     setIsLoading(true);
     setTimeout(() => {
       setIsLoading(false);
-      alert(`Welcome! Logged in as ${email}`);
+      
+      // Check against mock account
+      if (email === MOCK_ACCOUNT.email && password === MOCK_ACCOUNT.password) {
+        alert('Welcome! Login successful.');
+      } else {
+        alert('Invalid credentials. Please try again.');
+      }
     }, 800);
   };
 
