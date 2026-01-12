@@ -7,3 +7,4 @@ export { default as LocationsScreen } from './LocationsScreen';
 export { default as ProfileScreen } from './ProfileScreen';
 export { default as HotlinesScreen } from './HotlinesScreen';
 export { default as AdminHomeScreen } from './AdminHomeScreen';
+export { default as ResponderSignUpScreen } from './ResponderSignUpScreen';

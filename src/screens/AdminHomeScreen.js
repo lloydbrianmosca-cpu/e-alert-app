@@ -103,8 +103,9 @@ export default function AdminHomeScreen({ navigation }) {
 
   const handleMenuPress = (screen) => {
     toggleDrawer();
-    // navigation.navigate(screen);
-    console.log(`Navigate to ${screen}`);
+    if (screen !== 'AdminHome') {
+      navigation.navigate(screen);
+    }
   };
 
   // Fetch active emergencies
@@ -356,15 +357,15 @@ export default function AdminHomeScreen({ navigation }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsContainer}>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('UserLogs')}>
               <Ionicons name="list" size={28} color="#DC2626" />
               <Text style={styles.actionText}>Manage User</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('ResponderSignUp')}>
               <Ionicons name="person-add" size={28} color="#DC2626" />
               <Text style={styles.actionText}>Register Responder</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
+            <TouchableOpacity style={styles.actionButton} onPress={() => navigation.navigate('ResponderManagement')}>
               <Ionicons name="people-circle" size={28} color="#DC2626" />
               <Text style={styles.actionText}>Manage Responders</Text>
             </TouchableOpacity>
