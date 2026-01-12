@@ -187,6 +187,8 @@ export default function ChatScreen({ navigation }) {
               setActiveTab(item.id);
               if (item.id === 'home') {
                 navigation.navigate('Home');
+              } else if (item.id === 'locations') {
+                navigation.navigate('Locations');
               } else if (item.id === 'chat') {
                 // Already on chat screen
               }
