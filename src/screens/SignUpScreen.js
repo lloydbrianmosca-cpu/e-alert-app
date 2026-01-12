@@ -22,6 +22,7 @@ export default function SignUpScreen({ navigation }) {
   const [firstName, setFirstName] = React.useState('');
   const [lastName, setLastName] = React.useState('');
   const [email, setEmail] = React.useState('');
+  const [contactNumber, setContactNumber] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [secureEntry, setSecureEntry] = React.useState(true);
@@ -84,6 +85,15 @@ export default function SignUpScreen({ navigation }) {
       return;
     }
 
+    if (!contactNumber) {
+      Toast.show({
+        type: 'error',
+        text1: 'Contact Number Required',
+        text2: 'Please enter your contact number',
+      });
+      return;
+    }
+
     if (!password) {
       Toast.show({
         type: 'error',
@@ -132,7 +142,7 @@ export default function SignUpScreen({ navigation }) {
 
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
     setIsLoading(true);
-    const result = await signUp(email.trim(), password, fullName);
+    const result = await signUp(email.trim(), password, fullName, contactNumber.trim());
     setIsLoading(false);
     
     if (result.success) {
@@ -246,6 +256,15 @@ export default function SignUpScreen({ navigation }) {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+            />
+
+            <FormInput
+              icon="phone"
+              iconFamily="Feather"
+              placeholder="Contact Number"
+              value={contactNumber}
+              onChangeText={setContactNumber}
+              keyboardType="phone-pad"
             />
 
             <FormInput

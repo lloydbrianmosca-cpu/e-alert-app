@@ -10,6 +10,8 @@ import {
   reload
 } from 'firebase/auth';
 import { auth } from '../services/firebase';
+import { db } from '../services/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 const AuthContext = createContext({});
 
@@ -28,7 +30,7 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  const signUp = async (email, password, fullName) => {
+  const signUp = async (email, password, fullName, contactNumber = '') => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
@@ -37,6 +39,25 @@ export function AuthProvider({ children }) {
         await updateProfile(userCredential.user, {
           displayName: fullName
         });
+      }
+      
+      // Parse first and last name from fullName
+      const nameParts = fullName ? fullName.trim().split(' ') : ['', ''];
+      const firstName = nameParts.slice(0, -1).join(' ') || nameParts[0] || '';
+      const lastName = nameParts.length > 1 ? nameParts[nameParts.length - 1] : '';
+      
+      // Save user data to Firestore with role = 'user'
+      try {
+        await setDoc(doc(db, 'users', userCredential.user.uid), {
+          firstName: firstName,
+          lastName: lastName,
+          email: email,
+          contactNumber: contactNumber,
+          role: 'user',
+          createdAt: serverTimestamp(),
+        });
+      } catch (firestoreError) {
+        console.log('Firestore save error:', firestoreError);
       }
       
       // Send verification email immediately after signup

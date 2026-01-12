@@ -26,7 +26,6 @@ import {
   REGIONS,
   getProvincesByRegion,
   getCitiesByProvince,
-  getBarangaysByCity,
 } from '../constants/addressData';
 
 // Bottom navigation items
@@ -58,14 +57,12 @@ export default function ProfileScreen({ navigation }) {
     region: '',
     province: '',
     city: '',
-    barangay: '',
 
   });
 
   // Dropdown options based on selections
   const [provinceOptions, setProvinceOptions] = useState([{ label: 'Select Province', value: '' }]);
   const [cityOptions, setCityOptions] = useState([{ label: 'Select City/Municipality', value: '' }]);
-  const [barangayOptions, setBarangayOptions] = useState([{ label: 'Select Barangay', value: '' }]);
 
   // Fetch contact number from Firestore on mount or user change
   useEffect(() => {
@@ -85,7 +82,6 @@ export default function ProfileScreen({ navigation }) {
             region: data.region || '',
             province: data.province || '',
             city: data.city || '',
-            barangay: data.barangay || '',
 
           }));
           // Set dropdown options based on saved data
@@ -94,9 +90,6 @@ export default function ProfileScreen({ navigation }) {
           }
           if (data.province) {
             setCityOptions(getCitiesByProvince(data.province));
-          }
-          if (data.city) {
-            setBarangayOptions(getBarangaysByCity(data.city));
           }
         }
       }
@@ -126,8 +119,6 @@ export default function ProfileScreen({ navigation }) {
       { field: 'region', label: 'Region' },
       { field: 'province', label: 'Province' },
       { field: 'city', label: 'City/Municipality' },
-      { field: 'barangay', label: 'Barangay' },
-
       { field: 'emergencyContactName', label: 'Emergency Contact Name' },
       { field: 'emergencyContactNumber', label: 'Emergency Contact Number' },
     ];
@@ -162,6 +153,9 @@ export default function ProfileScreen({ navigation }) {
     if (user?.uid) {
       try {
         await setDoc(doc(db, 'users', user.uid), {
+          firstName: editData.firstName,
+          lastName: editData.lastName,
+          email: editData.email,
           contactNumber: editData.contactNumber,
           emergencyContactName: editData.emergencyContactName,
           emergencyContactNumber: editData.emergencyContactNumber,
@@ -170,7 +164,6 @@ export default function ProfileScreen({ navigation }) {
           region: editData.region,
           province: editData.province,
           city: editData.city,
-          barangay: editData.barangay,
 
         }, { merge: true });
         Toast.show({
@@ -262,31 +255,20 @@ export default function ProfileScreen({ navigation }) {
         region: value,
         province: '',
         city: '',
-        barangay: '',
       }));
       setProvinceOptions(getProvincesByRegion(value));
       setCityOptions([{ label: 'Select City/Municipality', value: '' }]);
-      setBarangayOptions([{ label: 'Select Barangay', value: '' }]);
     } else if (field === 'province') {
       setEditData(prev => ({
         ...prev,
         province: value,
         city: '',
-        barangay: '',
       }));
       setCityOptions(getCitiesByProvince(value));
-      setBarangayOptions([{ label: 'Select Barangay', value: '' }]);
     } else if (field === 'city') {
       setEditData(prev => ({
         ...prev,
         city: value,
-        barangay: '',
-      }));
-      setBarangayOptions(getBarangaysByCity(value));
-    } else if (field === 'barangay') {
-      setEditData(prev => ({
-        ...prev,
-        barangay: value,
       }));
     }
   };
@@ -347,7 +329,7 @@ export default function ProfileScreen({ navigation }) {
             </Picker>
           </View>
         ) : (
-          <Text style={styles.inputValue}>{displayLabel !== 'Select Region' && displayLabel !== 'Select Province' && displayLabel !== 'Select City/Municipality' && displayLabel !== 'Select Barangay' ? displayLabel : 'Not set'}</Text>
+          <Text style={styles.inputValue}>{displayLabel !== 'Select Region' && displayLabel !== 'Select Province' && displayLabel !== 'Select City/Municipality' ? displayLabel : 'Not set'}</Text>
         )}
       </View>
     );
@@ -452,26 +434,13 @@ export default function ProfileScreen({ navigation }) {
               !editData?.region
             )}
             
-            <View style={styles.rowContainer}>
-              <View style={styles.halfInput}>
-                {/* City Dropdown - disabled until province is selected */}
-                {renderDropdown(
-                  'City/Municipality',
-                  'city',
-                  cityOptions,
-                  !editData?.province
-                )}
-              </View>
-              <View style={styles.halfInput}>
-                {/* Barangay Dropdown - disabled until city is selected */}
-                {renderDropdown(
-                  'Barangay',
-                  'barangay',
-                  barangayOptions,
-                  !editData?.city
-                )}
-              </View>
-            </View>
+            {/* City Dropdown - disabled until province is selected */}
+            {renderDropdown(
+              'City/Municipality',
+              'city',
+              cityOptions,
+              !editData?.province
+            )}
             
 
           </View>
