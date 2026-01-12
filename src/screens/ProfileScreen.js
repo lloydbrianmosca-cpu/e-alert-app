@@ -59,7 +59,7 @@ export default function ProfileScreen({ navigation }) {
     province: '',
     city: '',
     barangay: '',
-    zipCode: '',
+
   });
 
   // Dropdown options based on selections
@@ -86,7 +86,7 @@ export default function ProfileScreen({ navigation }) {
             province: data.province || '',
             city: data.city || '',
             barangay: data.barangay || '',
-            zipCode: data.zipCode || '',
+
           }));
           // Set dropdown options based on saved data
           if (data.region) {
@@ -127,7 +127,7 @@ export default function ProfileScreen({ navigation }) {
       { field: 'province', label: 'Province' },
       { field: 'city', label: 'City/Municipality' },
       { field: 'barangay', label: 'Barangay' },
-      { field: 'zipCode', label: 'ZIP Code' },
+
       { field: 'emergencyContactName', label: 'Emergency Contact Name' },
       { field: 'emergencyContactNumber', label: 'Emergency Contact Number' },
     ];
@@ -171,7 +171,7 @@ export default function ProfileScreen({ navigation }) {
           province: editData.province,
           city: editData.city,
           barangay: editData.barangay,
-          zipCode: editData.zipCode,
+
         }, { merge: true });
         Toast.show({
           type: 'success',
@@ -473,7 +473,7 @@ export default function ProfileScreen({ navigation }) {
               </View>
             </View>
             
-            {renderInputField('Zip Code', 'zipCode', 'Enter zip code')}
+
           </View>
         </View>
 
