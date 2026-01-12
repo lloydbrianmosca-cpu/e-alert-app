@@ -33,7 +33,8 @@ const EMERGENCY_COLORS = {
 export default function LocationsScreen({ navigation, route }) {
   const [activeTab, setActiveTab] = useState('locations');
   
-  // Get emergency type from route params (passed from HomeScreen)
+  // Check if emergency is active (SOS was pressed 3 times)
+  const isEmergencyActive = route?.params?.emergencyType ? true : false;
   const emergencyType = route?.params?.emergencyType || 'police';
   
   // Mock responder data based on emergency type
@@ -117,22 +118,26 @@ export default function LocationsScreen({ navigation, route }) {
 
           {/* Your Location Pin */}
           <View style={styles.userLocation}>
-            <View style={[styles.userLocationPulse, { backgroundColor: emergencyColor + '40' }]} />
-            <View style={[styles.userLocationDot, { backgroundColor: emergencyColor }]}>
+            <View style={[styles.userLocationPulse, { backgroundColor: '#DC2626' + '40' }]} />
+            <View style={[styles.userLocationDot, { backgroundColor: '#DC2626' }]}>
               <Ionicons name="person" size={16} color="#FFFFFF" />
             </View>
           </View>
 
-          {/* Responder Location Pin */}
-          <View style={styles.responderLocation}>
-            <View style={[styles.responderLocationPulse, { backgroundColor: emergencyColor + '30' }]} />
-            <View style={[styles.responderPin, { backgroundColor: emergencyColor }]}>
-              <Ionicons name="car" size={20} color="#FFFFFF" />
-            </View>
-          </View>
+          {isEmergencyActive && (
+            <>
+              {/* Responder Location Pin */}
+              <View style={styles.responderLocation}>
+                <View style={[styles.responderLocationPulse, { backgroundColor: emergencyColor + '30' }]} />
+                <View style={[styles.responderPin, { backgroundColor: emergencyColor }]}>
+                  <Ionicons name="car" size={20} color="#FFFFFF" />
+                </View>
+              </View>
 
-          {/* Route Line */}
-          <View style={[styles.routeLine, { backgroundColor: emergencyColor }]} />
+              {/* Route Line */}
+              <View style={[styles.routeLine, { backgroundColor: emergencyColor }]} />
+            </>
+          )}
 
           {/* Map Labels */}
           <View style={styles.mapLabel}>
@@ -153,20 +158,23 @@ export default function LocationsScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
 
-        {/* Alert Banner */}
-        <View style={[styles.alertBanner, { backgroundColor: emergencyColor }]}>
-          <Ionicons name="warning" size={20} color="#FFFFFF" />
-          <Text style={styles.alertText}>Emergency responder is on the way!</Text>
-        </View>
+        {isEmergencyActive && (
+          /* Alert Banner */
+          <View style={[styles.alertBanner, { backgroundColor: emergencyColor }]}>
+            <Ionicons name="warning" size={20} color="#FFFFFF" />
+            <Text style={styles.alertText}>Emergency responder is on the way!</Text>
+          </View>
+        )}
       </View>
 
-      {/* Responder Info Card */}
-      <View style={styles.responderCard}>
-        <View style={styles.responderHeader}>
-          <View style={styles.responderMain}>
-            <Image
-              source={{ uri: responder.avatar }}
-              style={styles.responderAvatar}
+      {isEmergencyActive ? (
+        /* Responder Info Card - shown when emergency is active */
+        <View style={styles.responderCard}>
+          <View style={styles.responderHeader}>
+            <View style={styles.responderMain}>
+              <Image
+                source={{ uri: responder.avatar }}
+                style={styles.responderAvatar}
             />
             <View style={styles.responderInfo}>
               <Text style={styles.responderName}>{responder.name}</Text>
@@ -206,12 +214,41 @@ export default function LocationsScreen({ navigation, route }) {
             <Ionicons name="call" size={20} color="#FFFFFF" />
             <Text style={styles.actionButtonText}>Call Responder</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.actionButton, styles.chatButton]}>
+          <TouchableOpacity 
+            style={[styles.actionButton, styles.chatButton]}
+            onPress={() => navigation.navigate('Chat')}
+          >
             <Ionicons name="chatbubble" size={20} color="#FFFFFF" />
             <Text style={styles.actionButtonText}>Send Message</Text>
           </TouchableOpacity>
         </View>
       </View>
+      ) : (
+        /* Default View - No active emergency */
+        <View style={styles.defaultCard}>
+          <Text style={styles.defaultTitle}>No Active Emergency</Text>
+          <Text style={styles.defaultSubtitle}>
+            Your location is displayed on the map. Use the buttons below to access emergency services.
+          </Text>
+          
+          <View style={styles.defaultButtons}>
+            <TouchableOpacity 
+              style={[styles.defaultButton, styles.sosButton]}
+              onPress={() => navigation.navigate('Home')}
+            >
+              <Ionicons name="alert-circle" size={24} color="#FFFFFF" />
+              <Text style={styles.defaultButtonText}>SOS Emergency</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.defaultButton, styles.chatButtonDefault]}
+              onPress={() => navigation.navigate('Chat')}
+            >
+              <Ionicons name="chatbubbles" size={24} color="#FFFFFF" />
+              <Text style={styles.defaultButtonText}>Open Chat</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
@@ -580,5 +617,63 @@ const styles = StyleSheet.create({
   navLabelActive: {
     color: '#DC2626',
     fontWeight: '600',
+  },
+  defaultCard: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 10,
+    alignItems: 'center',
+  },
+  defaultTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  defaultSubtitle: {
+    fontSize: 15,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+    paddingHorizontal: 10,
+  },
+  defaultButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  defaultButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 16,
+    borderRadius: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  sosButton: {
+    backgroundColor: '#DC2626',
+  },
+  chatButtonDefault: {
+    backgroundColor: '#3B82F6',
+  },
+  defaultButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });

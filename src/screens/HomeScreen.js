@@ -297,6 +297,8 @@ export default function HomeScreen({ navigation }) {
               setActiveTab(item.id);
               if (item.id === 'chat') {
                 navigation.navigate('Chat');
+              } else if (item.id === 'locations') {
+                navigation.navigate('Locations');
               }
             }}
             activeOpacity={0.7}
