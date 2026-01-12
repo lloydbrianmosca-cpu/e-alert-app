@@ -29,45 +29,39 @@ const menuItems = [
   { id: 'responder-management', title: 'Responder Management', icon: 'people-circle', screen: 'ResponderManagement' },
 ];
 
-// Mock data for active emergencies
-const mockActiveEmergencies = [
-  {
-    id: '1',
-    emergencyType: 'fire',
-    userName: 'Juan Dela Cruz',
-    location: 'Brgy. San Antonio, Quezon City',
-    createdAt: new Date(Date.now() - 5 * 60 * 1000),
-    responder: null,
-    status: 'pending',
-  },
-  {
-    id: '2',
-    emergencyType: 'medical',
-    userName: 'Maria Santos',
-    location: 'Brgy. Commonwealth, Quezon City',
-    createdAt: new Date(Date.now() - 15 * 60 * 1000),
-    responder: { name: 'Dr. Jose Rizal' },
-    status: 'responding',
-  },
-  {
-    id: '3',
-    emergencyType: 'police',
-    userName: 'Pedro Reyes',
-    location: 'Brgy. Fairview, Quezon City',
-    createdAt: new Date(Date.now() - 30 * 60 * 1000),
-    responder: null,
-    status: 'pending',
-  },
-];
-
 export default function RealtimeMonitoringScreen({ navigation }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [activeEmergencies, setActiveEmergencies] = useState(mockActiveEmergencies);
-  const [isLoading, setIsLoading] = useState(false);
+  const [activeEmergencies, setActiveEmergencies] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const drawerAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const { user, logout } = useAuth();
+
+  // Fetch active emergencies from Firestore with real-time updates
+  useEffect(() => {
+    setIsLoading(true);
+    const emergenciesRef = collection(db, 'activeEmergencies');
+    
+    const unsubscribe = onSnapshot(emergenciesRef, (snapshot) => {
+      const emergenciesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+      }));
+      
+      // Sort by createdAt (newest first)
+      emergenciesData.sort((a, b) => b.createdAt - a.createdAt);
+      
+      setActiveEmergencies(emergenciesData);
+      setIsLoading(false);
+    }, (error) => {
+      console.log('Error fetching emergencies:', error);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Pulse animation for active emergencies
   useEffect(() => {

@@ -30,74 +30,49 @@ const menuItems = [
   { id: 'responder-management', title: 'Responder Management', icon: 'people-circle', screen: 'ResponderManagement' },
 ];
 
-// Mock data for emergency history
-const mockEmergencyHistory = [
-  {
-    id: '1',
-    emergencyType: 'fire',
-    userName: 'Juan Dela Cruz',
-    userEmail: 'juan.delacruz@email.com',
-    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    resolvedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 45 * 60 * 1000),
-    responder: { name: 'Fire Station 1' },
-    status: 'resolved',
-  },
-  {
-    id: '2',
-    emergencyType: 'medical',
-    userName: 'Maria Santos',
-    userEmail: 'maria.santos@email.com',
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    resolvedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 30 * 60 * 1000),
-    responder: { name: 'Dr. Jose Rizal' },
-    status: 'resolved',
-  },
-  {
-    id: '3',
-    emergencyType: 'police',
-    userName: 'Pedro Reyes',
-    userEmail: 'pedro.reyes@email.com',
-    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    resolvedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000 + 20 * 60 * 1000),
-    responder: { name: 'Officer Garcia' },
-    status: 'resolved',
-  },
-  {
-    id: '4',
-    emergencyType: 'flood',
-    userName: 'Ana Garcia',
-    userEmail: 'ana.garcia@email.com',
-    createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-    resolvedAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 120 * 60 * 1000),
-    responder: { name: 'Rescue Team Alpha' },
-    status: 'resolved',
-  },
-  {
-    id: '5',
-    emergencyType: 'fire',
-    userName: 'Carlos Mendoza',
-    userEmail: 'carlos.mendoza@email.com',
-    createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
-    resolvedAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000),
-    responder: { name: 'Fire Station 2' },
-    status: 'resolved',
-  },
-];
-
 export default function EmergencyHistoryScreen({ navigation }) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [emergencies, setEmergencies] = useState(mockEmergencyHistory);
-  const [filteredEmergencies, setFilteredEmergencies] = useState(mockEmergencyHistory);
-  const [isLoading, setIsLoading] = useState(false);
+  const [emergencies, setEmergencies] = useState([]);
+  const [filteredEmergencies, setFilteredEmergencies] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState('all');
   const drawerAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const { user, logout } = useAuth();
 
+  // Fetch emergency history from Firestore
+  useEffect(() => {
+    fetchEmergencyHistory();
+  }, []);
+
   useEffect(() => {
     filterEmergencies();
   }, [searchQuery, selectedFilter, emergencies]);
+
+  const fetchEmergencyHistory = async () => {
+    try {
+      setIsLoading(true);
+      const historyRef = collection(db, 'emergencyHistory');
+      const snapshot = await getDocs(historyRef);
+      const historyData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate() || new Date(),
+        resolvedAt: doc.data().resolvedAt?.toDate() || new Date(),
+      }));
+      
+      // Sort by createdAt (newest first)
+      historyData.sort((a, b) => b.createdAt - a.createdAt);
+      
+      setEmergencies(historyData);
+      setFilteredEmergencies(historyData);
+    } catch (error) {
+      console.log('Error fetching emergency history:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filterEmergencies = () => {
     let filtered = emergencies;
@@ -119,8 +94,8 @@ export default function EmergencyHistoryScreen({ navigation }) {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    // In real app, fetch from database
-    setTimeout(() => setRefreshing(false), 1000);
+    await fetchEmergencyHistory();
+    setRefreshing(false);
   };
 
   const toggleDrawer = () => {
