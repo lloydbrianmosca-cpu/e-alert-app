@@ -7,22 +7,24 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    // Users collection - users can read/write their own data, admins can read all
+    // Users collection - users can read/write their own data, admins can read/write all
     match /users/{userId} {
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow create: if request.auth != null && isAdmin();
     }
     
     // Active Emergencies collection - users can read/write their own emergency, admins can read all
     match /activeEmergencies/{odcId} {
       allow read: if request.auth != null && (request.auth.uid == odcId || isAdmin());
-      allow write: if request.auth != null && request.auth.uid == odcId;
+      allow write: if request.auth != null && (request.auth.uid == odcId || isAdmin());
     }
     
-    // Responders collection - responders can read/write their own data
+    // Responders collection - responders can read/write their own data, admins can read/write all
     match /responders/{responderId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == responderId;
+      allow write: if request.auth != null && (request.auth.uid == responderId || isAdmin());
+      allow create: if request.auth != null && isAdmin();
     }
     
     // Conversations collection
