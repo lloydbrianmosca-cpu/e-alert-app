@@ -11,7 +11,7 @@ import {
 } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import { db } from '../services/firestore';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 
 const AuthContext = createContext({});
 
@@ -19,11 +19,35 @@ export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch user role from Firestore
+  const fetchUserRole = async (uid) => {
+    try {
+      const userDoc = await getDoc(doc(db, 'users', uid));
+      if (userDoc.exists()) {
+        const role = userDoc.data().role || 'user';
+        setUserRole(role);
+        return role;
+      }
+      setUserRole('user');
+      return 'user';
+    } catch (error) {
+      console.log('Error fetching user role:', error);
+      setUserRole('user');
+      return 'user';
+    }
+  };
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
+      if (user) {
+        await fetchUserRole(user.uid);
+      } else {
+        setUserRole(null);
+      }
       setLoading(false);
     });
 
@@ -89,7 +113,10 @@ export function AuthProvider({ children }) {
         };
       }
       
-      return { success: true, user: userCredential.user };
+      // Fetch user role
+      const role = await fetchUserRole(userCredential.user.uid);
+      
+      return { success: true, user: userCredential.user, role: role };
     } catch (error) {
       return { success: false, error: getErrorMessage(error.code) };
     }
@@ -164,6 +191,7 @@ export function AuthProvider({ children }) {
 
   const value = {
     user,
+    userRole,
     loading,
     signUp,
     signIn,
@@ -171,6 +199,7 @@ export function AuthProvider({ children }) {
     resetPassword,
     sendVerificationEmail,
     checkEmailVerified,
+    fetchUserRole,
   };
 
   return (

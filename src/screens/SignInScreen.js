@@ -57,7 +57,12 @@ export default function SignInScreen({ navigation }) {
         text1: 'Welcome Back!',
         text2: 'Signed in successfully',
       });
-      navigation.replace('Home');
+      // Navigate based on user role
+      if (result.role === 'admin') {
+        navigation.replace('AdminHome');
+      } else {
+        navigation.replace('Home');
+      }
     } else {
       Toast.show({
         type: 'error',

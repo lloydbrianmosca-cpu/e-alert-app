@@ -1,7 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { SignInScreen, SignUpScreen, ForgotPasswordScreen, HomeScreen, ChatScreen, LocationsScreen, ProfileScreen, HotlinesScreen } from '../screens';
+import { SignInScreen, SignUpScreen, ForgotPasswordScreen, HomeScreen, ChatScreen, LocationsScreen, ProfileScreen, HotlinesScreen, AdminHomeScreen } from '../screens';
 
 const Stack = createNativeStackNavigator();
 
@@ -19,6 +19,7 @@ export default function AppNavigator() {
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
         <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="AdminHome" component={AdminHomeScreen} />
         <Stack.Screen name="Chat" component={ChatScreen} />
         <Stack.Screen name="Locations" component={LocationsScreen} />
         <Stack.Screen name="Profile" component={ProfileScreen} />

@@ -1,14 +1,22 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Users collection - users can read/write their own data
-    match /users/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
-    // Active Emergencies collection - users can read/write their own emergency
-    match /activeEmergencies/{userId} {
-      allow read, write: if request.auth != null && request.auth.uid == userId;
+    // Users collection - users can read/write their own data, admins can read all
+    match /users/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Active Emergencies collection - users can read/write their own emergency, admins can read all
+    match /activeEmergencies/{odcId} {
+      allow read: if request.auth != null && (request.auth.uid == odcId || isAdmin());
+      allow write: if request.auth != null && request.auth.uid == odcId;
     }
     
     // Responders collection - responders can read/write their own data
