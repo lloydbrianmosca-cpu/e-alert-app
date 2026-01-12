@@ -761,6 +761,7 @@ export default function UserLogsScreen({ navigation }) {
         visible={modalVisible}
         animationType="slide"
         transparent={true}
+        statusBarTranslucent={true}
         onRequestClose={closeModal}
       >
         <View style={styles.modalOverlay}>
@@ -1224,6 +1225,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+    paddingTop: StatusBar.currentHeight || 0,
   },
   modalContent: {
     backgroundColor: '#FFFFFF',
