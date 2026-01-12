@@ -23,9 +23,53 @@ const { width } = Dimensions.get('window');
 const DRAWER_WIDTH = width * 0.55;
 
 export default function AdminHomeScreen({ navigation }) {
-  const [activeEmergencies, setActiveEmergencies] = useState([]);
+  // Mock data for active emergencies
+  const mockEmergencies = [
+    {
+      id: '1',
+      emergencyType: 'fire',
+      userName: 'Juan Dela Cruz',
+      userEmail: 'juan.delacruz@email.com',
+      createdAt: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
+      responder: null,
+    },
+    {
+      id: '2',
+      emergencyType: 'medical',
+      userName: 'Maria Santos',
+      userEmail: 'maria.santos@email.com',
+      createdAt: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
+      responder: { name: 'Dr. Jose Rizal' },
+    },
+    {
+      id: '3',
+      emergencyType: 'police',
+      userName: 'Pedro Reyes',
+      userEmail: 'pedro.reyes@email.com',
+      createdAt: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
+      responder: null,
+    },
+    {
+      id: '4',
+      emergencyType: 'flood',
+      userName: 'Ana Garcia',
+      userEmail: 'ana.garcia@email.com',
+      createdAt: new Date(Date.now() - 45 * 60 * 1000), // 45 minutes ago
+      responder: { name: 'Rescue Team Alpha' },
+    },
+    {
+      id: '5',
+      emergencyType: 'fire',
+      userName: 'Carlos Mendoza',
+      userEmail: 'carlos.mendoza@email.com',
+      createdAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
+      responder: null,
+    },
+  ];
+
+  const [activeEmergencies, setActiveEmergencies] = useState(mockEmergencies);
   const [totalUsers, setTotalUsers] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [drawerAnimation] = useState(new Animated.Value(-DRAWER_WIDTH));
@@ -233,7 +277,7 @@ export default function AdminHomeScreen({ navigation }) {
           
           {isLoading ? (
             <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#1E3A8A" />
+              <ActivityIndicator size="large" color="#DC2626" />
             </View>
           ) : activeEmergencies.length === 0 ? (
             <View style={styles.emptyContainer}>
@@ -242,60 +286,69 @@ export default function AdminHomeScreen({ navigation }) {
               <Text style={styles.emptySubtext}>All clear! No emergencies at this time.</Text>
             </View>
           ) : (
-            activeEmergencies.map((emergency) => (
-              <View 
-                key={emergency.id} 
-                style={[
-                  styles.emergencyCard,
-                  { borderLeftColor: getEmergencyColor(emergency.emergencyType) }
-                ]}
-              >
-                <View style={styles.emergencyHeader}>
-                  <View style={[
-                    styles.emergencyIconContainer,
-                    { backgroundColor: getEmergencyColor(emergency.emergencyType) }
-                  ]}>
-                    <MaterialIcons 
-                      name={getEmergencyIcon(emergency.emergencyType)} 
-                      size={24} 
-                      color="#FFFFFF" 
-                    />
-                  </View>
-                  <View style={styles.emergencyInfo}>
-                    <Text style={styles.emergencyType}>
-                      {emergency.emergencyType?.toUpperCase()} EMERGENCY
-                    </Text>
-                    <Text style={styles.emergencyTime}>
-                      {formatTime(emergency.createdAt)}
-                    </Text>
-                  </View>
-                  <View style={styles.statusBadge}>
-                    <View style={styles.statusDot} />
-                    <Text style={styles.statusText}>ACTIVE</Text>
-                  </View>
-                </View>
-                
-                <View style={styles.emergencyDetails}>
-                  <View style={styles.detailRow}>
-                    <Ionicons name="person" size={16} color="#6B7280" />
-                    <Text style={styles.detailLabel}>User:</Text>
-                    <Text style={styles.detailValue}>{emergency.userName || 'Unknown'}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Ionicons name="mail" size={16} color="#6B7280" />
-                    <Text style={styles.detailLabel}>Email:</Text>
-                    <Text style={styles.detailValue}>{emergency.userEmail || 'N/A'}</Text>
-                  </View>
-                  {emergency.responder && (
-                    <View style={styles.detailRow}>
-                      <Ionicons name="medkit" size={16} color="#6B7280" />
-                      <Text style={styles.detailLabel}>Responder:</Text>
-                      <Text style={styles.detailValue}>{emergency.responder.name}</Text>
+            <View style={styles.emergenciesContainer}>
+              {activeEmergencies.slice(0, 3).map((emergency) => (
+                <View 
+                  key={emergency.id} 
+                  style={[
+                    styles.emergencyCard,
+                    { borderLeftColor: getEmergencyColor(emergency.emergencyType) }
+                  ]}
+                >
+                  <View style={styles.emergencyHeader}>
+                    <View style={[
+                      styles.emergencyIconContainer,
+                      { backgroundColor: getEmergencyColor(emergency.emergencyType) }
+                    ]}>
+                      <MaterialIcons 
+                        name={getEmergencyIcon(emergency.emergencyType)} 
+                        size={24} 
+                        color="#FFFFFF" 
+                      />
                     </View>
-                  )}
+                    <View style={styles.emergencyInfo}>
+                      <Text style={styles.emergencyType}>
+                        {emergency.emergencyType?.toUpperCase()} EMERGENCY
+                      </Text>
+                      <Text style={styles.emergencyTime}>
+                        {formatTime(emergency.createdAt)}
+                      </Text>
+                    </View>
+                    <View style={styles.statusBadge}>
+                      <View style={styles.statusDot} />
+                      <Text style={styles.statusText}>ACTIVE</Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.emergencyDetails}>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="person" size={16} color="#6B7280" />
+                      <Text style={styles.detailLabel}>User:</Text>
+                      <Text style={styles.detailValue}>{emergency.userName || 'Unknown'}</Text>
+                    </View>
+                    <View style={styles.detailRow}>
+                      <Ionicons name="mail" size={16} color="#6B7280" />
+                      <Text style={styles.detailLabel}>Email:</Text>
+                      <Text style={styles.detailValue}>{emergency.userEmail || 'N/A'}</Text>
+                    </View>
+                    {emergency.responder && (
+                      <View style={styles.detailRow}>
+                        <Ionicons name="medkit" size={16} color="#6B7280" />
+                        <Text style={styles.detailLabel}>Responder:</Text>
+                        <Text style={styles.detailValue}>{emergency.responder.name}</Text>
+                      </View>
+                    )}
+                  </View>
                 </View>
-              </View>
-            ))
+              ))}
+              
+              {activeEmergencies.length > 3 && (
+                <TouchableOpacity style={styles.seeAllButton}>
+                  <Text style={styles.seeAllText}>See All ({activeEmergencies.length})</Text>
+                  <Ionicons name="chevron-forward" size={18} color="#DC2626" />
+                </TouchableOpacity>
+              )}
+            </View>
           )}
         </View>
 
@@ -304,16 +357,12 @@ export default function AdminHomeScreen({ navigation }) {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsContainer}>
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="people" size={28} color="#1E3A8A" />
+              <Ionicons name="people" size={28} color="#DC2626" />
               <Text style={styles.actionText}>Manage Users</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="stats-chart" size={28} color="#1E3A8A" />
+              <Ionicons name="stats-chart" size={28} color="#DC2626" />
               <Text style={styles.actionText}>View Reports</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="settings" size={28} color="#1E3A8A" />
-              <Text style={styles.actionText}>Settings</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -518,9 +567,34 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 8,
   },
-  emergencyCard: {
+  emergenciesContainer: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    marginTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#DC2626',
+    marginRight: 4,
+  },
+  emergencyCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4,
