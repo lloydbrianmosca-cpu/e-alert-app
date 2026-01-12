@@ -27,6 +27,7 @@ export function AuthProvider({ children }) {
   const [userProfile, setUserProfile] = useState(null);
   const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [pendingProfile, setPendingProfile] = useState(null);
 
   // Fetch user profile when auth state changes
   const fetchUserProfile = async (firebaseUser) => {
@@ -72,27 +73,17 @@ export function AuthProvider({ children }) {
         });
       }
       
-      // Create user profile in Firestore with role
-      const profileData = {
+      // Store signup data in user's custom claims or local storage for later
+      // Profile will be created in Firestore only after email verification and first sign-in
+      const pendingProfileData = {
         email,
         fullName,
         role,
         ...additionalData,
       };
       
-      await createUserProfile(userCredential.user.uid, profileData);
-      
-      // If responder, create additional responder profile
-      if (role === USER_ROLES.RESPONDER && additionalData.emergencyType) {
-        await createResponderProfile(userCredential.user.uid, {
-          fullName,
-          email,
-          emergencyType: additionalData.emergencyType,
-          badge: additionalData.badge || '',
-          building: additionalData.building || '',
-          hotline: additionalData.hotline || '',
-        });
-      }
+      // Store pending profile data temporarily (will be used on first verified sign-in)
+      setPendingProfile(pendingProfileData);
       
       // Send verification email immediately after signup
       try {
@@ -101,13 +92,13 @@ export function AuthProvider({ children }) {
         console.log('Email verification error:', emailError);
       }
       
-      return { success: true, user: userCredential.user };
+      return { success: true, user: userCredential.user, pendingProfile: pendingProfileData };
     } catch (error) {
       return { success: false, error: getErrorMessage(error.code) };
     }
   };
 
-  const signIn = async (email, password) => {
+  const signIn = async (email, password, signupData = null) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
@@ -123,8 +114,37 @@ export function AuthProvider({ children }) {
         };
       }
       
-      // Fetch user profile to get role
-      const profile = await fetchUserProfile(userCredential.user);
+      // Check if user profile exists in Firestore
+      let profile = await fetchUserProfile(userCredential.user);
+      
+      // If no profile exists, create one (first login after verification)
+      if (!profile) {
+        const profileData = signupData || pendingProfile || {
+          email: userCredential.user.email,
+          fullName: userCredential.user.displayName || 'User',
+          role: USER_ROLES.USER,
+        };
+        
+        await createUserProfile(userCredential.user.uid, profileData);
+        
+        // If responder, create additional responder profile
+        if (profileData.role === USER_ROLES.RESPONDER && profileData.emergencyType) {
+          await createResponderProfile(userCredential.user.uid, {
+            fullName: profileData.fullName,
+            email: profileData.email,
+            emergencyType: profileData.emergencyType,
+            badge: profileData.badge || '',
+            building: profileData.building || '',
+            hotline: profileData.hotline || '',
+          });
+        }
+        
+        // Clear pending profile
+        setPendingProfile(null);
+        
+        // Fetch the newly created profile
+        profile = await fetchUserProfile(userCredential.user);
+      }
       
       return { 
         success: true, 
@@ -210,6 +230,8 @@ export function AuthProvider({ children }) {
     userProfile,
     userRole,
     loading,
+    pendingProfile,
+    setPendingProfile,
     signUp,
     signIn,
     logout,

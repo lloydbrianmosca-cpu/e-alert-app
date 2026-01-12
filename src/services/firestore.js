@@ -213,12 +213,20 @@ export const getUserEmergencies = async (userId) => {
 export const getResponderEmergencies = async (responderId) => {
   try {
     const emergenciesRef = collection(db, 'emergencies');
-    const q = query(emergenciesRef, where('responderId', '==', responderId), orderBy('createdAt', 'desc'));
+    // Simple query without orderBy to avoid needing composite index
+    const q = query(emergenciesRef, where('responderId', '==', responderId));
     const querySnapshot = await getDocs(q);
     
     const emergencies = [];
     querySnapshot.forEach((doc) => {
       emergencies.push({ id: doc.id, ...doc.data() });
+    });
+    
+    // Sort client-side by createdAt descending
+    emergencies.sort((a, b) => {
+      const dateA = a.createdAt?.toDate?.() || new Date(0);
+      const dateB = b.createdAt?.toDate?.() || new Date(0);
+      return dateB - dateA;
     });
     
     return { success: true, data: emergencies };
@@ -264,13 +272,53 @@ export const assignResponder = async (emergencyId, responderId, responderData) =
 
 // ==================== RESPONDER MANAGEMENT ====================
 
-// Create responder profile (additional info)
+// Agency/Department mapping
+export const RESPONDER_AGENCIES = {
+  police: 'PNP',
+  fire: 'BFP',
+  medical: 'Medical',
+  flood: 'MDRRMO',
+};
+
+// Get agency name from emergency type
+const getAgencyFromType = (emergencyType) => {
+  return RESPONDER_AGENCIES[emergencyType] || emergencyType?.toUpperCase();
+};
+
+// Initialize agency document if it doesn't exist
+const initializeAgency = async (agencyName) => {
+  try {
+    const agencyRef = doc(db, 'responders', agencyName);
+    const agencySnap = await getDoc(agencyRef);
+    
+    if (!agencySnap.exists()) {
+      await setDoc(agencyRef, {
+        name: agencyName,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Error initializing agency:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Create responder profile under agency
 export const createResponderProfile = async (userId, responderData) => {
   try {
-    const responderRef = doc(db, 'responders', userId);
+    const agencyName = getAgencyFromType(responderData.emergencyType);
+    
+    // Initialize agency if needed
+    await initializeAgency(agencyName);
+    
+    // Create responder under agency/members subcollection
+    const responderRef = doc(db, 'responders', agencyName, 'members', userId);
     await setDoc(responderRef, {
       ...responderData,
       userId,
+      agency: agencyName,
       isAvailable: true,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -283,14 +331,30 @@ export const createResponderProfile = async (userId, responderData) => {
 };
 
 // Get responder profile
-export const getResponderProfile = async (userId) => {
+export const getResponderProfile = async (userId, emergencyType = null) => {
   try {
-    const responderRef = doc(db, 'responders', userId);
-    const responderSnap = await getDoc(responderRef);
-    
-    if (responderSnap.exists()) {
-      return { success: true, data: { id: responderSnap.id, ...responderSnap.data() } };
+    // If emergency type is provided, look in specific agency
+    if (emergencyType) {
+      const agencyName = getAgencyFromType(emergencyType);
+      const responderRef = doc(db, 'responders', agencyName, 'members', userId);
+      const responderSnap = await getDoc(responderRef);
+      
+      if (responderSnap.exists()) {
+        return { success: true, data: { id: responderSnap.id, ...responderSnap.data() } };
+      }
     }
+    
+    // Search all agencies for the responder
+    const agencies = Object.values(RESPONDER_AGENCIES);
+    for (const agency of agencies) {
+      const responderRef = doc(db, 'responders', agency, 'members', userId);
+      const responderSnap = await getDoc(responderRef);
+      
+      if (responderSnap.exists()) {
+        return { success: true, data: { id: responderSnap.id, ...responderSnap.data() } };
+      }
+    }
+    
     return { success: false, error: 'Responder profile not found' };
   } catch (error) {
     console.error('Error getting responder profile:', error);
@@ -299,9 +363,16 @@ export const getResponderProfile = async (userId) => {
 };
 
 // Update responder availability
-export const updateResponderAvailability = async (userId, isAvailable) => {
+export const updateResponderAvailability = async (userId, isAvailable, emergencyType = null) => {
   try {
-    const responderRef = doc(db, 'responders', userId);
+    // Find the responder first
+    const profileResult = await getResponderProfile(userId, emergencyType);
+    if (!profileResult.success) {
+      return { success: false, error: 'Responder not found' };
+    }
+    
+    const agencyName = profileResult.data.agency;
+    const responderRef = doc(db, 'responders', agencyName, 'members', userId);
     await updateDoc(responderRef, {
       isAvailable,
       updatedAt: serverTimestamp(),
@@ -313,15 +384,12 @@ export const updateResponderAvailability = async (userId, isAvailable) => {
   }
 };
 
-// Get available responders by type
+// Get available responders by type/agency
 export const getAvailableResponders = async (emergencyType) => {
   try {
-    const respondersRef = collection(db, 'responders');
-    const q = query(
-      respondersRef, 
-      where('emergencyType', '==', emergencyType),
-      where('isAvailable', '==', true)
-    );
+    const agencyName = getAgencyFromType(emergencyType);
+    const membersRef = collection(db, 'responders', agencyName, 'members');
+    const q = query(membersRef, where('isAvailable', '==', true));
     const querySnapshot = await getDocs(q);
     
     const responders = [];
@@ -332,6 +400,65 @@ export const getAvailableResponders = async (emergencyType) => {
     return { success: true, data: responders };
   } catch (error) {
     console.error('Error getting available responders:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Get all members of an agency
+export const getAgencyMembers = async (agencyName) => {
+  try {
+    const membersRef = collection(db, 'responders', agencyName, 'members');
+    const querySnapshot = await getDocs(membersRef);
+    
+    const members = [];
+    querySnapshot.forEach((doc) => {
+      members.push({ id: doc.id, ...doc.data() });
+    });
+    
+    // Sort by createdAt descending
+    members.sort((a, b) => {
+      const dateA = a.createdAt?.toDate?.() || new Date(0);
+      const dateB = b.createdAt?.toDate?.() || new Date(0);
+      return dateB - dateA;
+    });
+    
+    return { success: true, data: members };
+  } catch (error) {
+    console.error('Error getting agency members:', error);
+    return { success: false, error: error.message };
+  }
+};
+
+// Get all agencies with their member counts
+export const getAllAgencies = async () => {
+  try {
+    const agencies = [];
+    
+    for (const [type, agencyName] of Object.entries(RESPONDER_AGENCIES)) {
+      const membersRef = collection(db, 'responders', agencyName, 'members');
+      const querySnapshot = await getDocs(membersRef);
+      
+      const members = [];
+      let availableCount = 0;
+      querySnapshot.forEach((doc) => {
+        const data = doc.data();
+        members.push({ id: doc.id, ...data });
+        if (data.isAvailable) availableCount++;
+      });
+      
+      agencies.push({
+        id: agencyName,
+        name: agencyName,
+        type,
+        totalMembers: members.length,
+        availableMembers: availableCount,
+        members,
+      });
+    }
+    
+    return { success: true, data: agencies };
+  } catch (error) {
+    console.error('Error getting all agencies:', error);
     return { success: false, error: error.message };
   }
 };
@@ -355,19 +482,31 @@ export const subscribeToEmergencies = (callback) => {
 // Listen to pending emergencies (for responders)
 export const subscribeToPendingEmergencies = (emergencyType, callback) => {
   const emergenciesRef = collection(db, 'emergencies');
+  // Simplified query - filter by type only, then filter status client-side
   const q = query(
     emergenciesRef, 
-    where('type', '==', emergencyType),
-    where('status', 'in', ['pending', 'assigned']),
-    orderBy('createdAt', 'desc')
+    where('type', '==', emergencyType)
   );
   
   return onSnapshot(q, (snapshot) => {
     const emergencies = [];
     snapshot.forEach((doc) => {
-      emergencies.push({ id: doc.id, ...doc.data() });
+      const data = doc.data();
+      // Filter for pending or assigned status client-side
+      if (data.status === 'pending' || data.status === 'assigned') {
+        emergencies.push({ id: doc.id, ...data });
+      }
+    });
+    // Sort client-side by createdAt descending
+    emergencies.sort((a, b) => {
+      const dateA = a.createdAt?.toDate?.() || new Date(0);
+      const dateB = b.createdAt?.toDate?.() || new Date(0);
+      return dateB - dateA;
     });
     callback(emergencies);
+  }, (error) => {
+    console.error('Error in pending emergencies listener:', error);
+    callback([]);
   });
 };
 

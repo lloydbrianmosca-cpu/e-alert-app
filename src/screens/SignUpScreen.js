@@ -64,7 +64,10 @@ export default function SignUpScreen({ navigation }) {
   const [badge, setBadge] = React.useState('');
   const [building, setBuilding] = React.useState('');
   
-  const { signUp, sendVerificationEmail, checkEmailVerified, logout } = useAuth();
+  const { signUp, sendVerificationEmail, checkEmailVerified, logout, setPendingProfile } = useAuth();
+  
+  // Store signup data for later use on first login
+  const [signupData, setSignupData] = React.useState(null);
   
   const otpInputRefs = React.useRef([]);
 
@@ -192,10 +195,22 @@ export default function SignUpScreen({ navigation }) {
       building: building.trim(),
     } : {};
     
+    // Store signup data for later (will be used on first verified sign-in)
+    const profileData = {
+      email: email.trim(),
+      fullName,
+      role: selectedRole,
+      ...additionalData,
+    };
+    setSignupData(profileData);
+    
     const result = await signUp(email.trim(), password, fullName, selectedRole, additionalData);
     setIsLoading(false);
     
     if (result.success) {
+      // Store pending profile for use during sign-in
+      setPendingProfile(profileData);
+      
       // Show verification modal - email is sent during signUp
       setShowOtpModal(true);
       Toast.show({
@@ -222,10 +237,11 @@ export default function SignUpScreen({ navigation }) {
       Toast.show({
         type: 'success',
         text1: 'Email Verified!',
-        text2: 'Your account is now active',
+        text2: 'Please sign in to continue',
       });
-      // Just logout - navigation will happen automatically via AuthContext
+      // Logout and navigate to SignIn page
       await logout();
+      navigation.navigate('SignIn');
     } else {
       Toast.show({
         type: 'error',
@@ -259,6 +275,7 @@ export default function SignUpScreen({ navigation }) {
     await logout();
     setShowOtpModal(false);
     setOtp(['', '', '', '', '', '']);
+    navigation.navigate('SignIn');
   };
 
   return (
