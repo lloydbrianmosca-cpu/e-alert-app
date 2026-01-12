@@ -188,6 +188,21 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.profileRole}>User • Emergency Responder Ready</Text>
         </View>
 
+        {/* Account Setup Alert */}
+        <View style={styles.accountSetupSection}>
+          <View style={styles.accountSetupHeader}>
+            <Ionicons name="alert-circle" size={24} color="#F59E0B" />
+            <View style={styles.accountSetupTextContainer}>
+              <Text style={styles.accountSetupTitle}>Set up your account first</Text>
+              <Text style={styles.accountSetupSubtitle}>Add a valid ID to use the app</Text>
+            </View>
+          </View>
+          <TouchableOpacity style={styles.uploadIdButton} onPress={handleUploadID}>
+            <Ionicons name="cloud-upload" size={20} color="#FFFFFF" />
+            <Text style={styles.uploadIdButtonText}>Upload Valid ID</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* Personal Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
@@ -230,17 +245,6 @@ export default function ProfileScreen({ navigation }) {
 
         {/* Action Buttons */}
         <View style={styles.actionSection}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleUploadID}>
-            <Ionicons name="document" size={20} color="#3B82F6" />
-            <View style={styles.actionButtonText}>
-              <Text style={styles.actionButtonTitle}>Upload ID for Verification</Text>
-              <Text style={styles.actionButtonSubtitle}>
-                Upload government-issued ID
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
-          </TouchableOpacity>
-
           <TouchableOpacity style={styles.actionButton} onPress={handleChangePassword}>
             <Ionicons name="lock-closed" size={20} color="#10B981" />
             <View style={styles.actionButtonText}>
@@ -470,6 +474,48 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#6B7280',
     fontWeight: '500',
+  },
+  accountSetupSection: {
+    marginTop: 20,
+    marginHorizontal: 20,
+    padding: 16,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F59E0B',
+  },
+  accountSetupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  accountSetupTextContainer: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  accountSetupTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+  accountSetupSubtitle: {
+    fontSize: 13,
+    color: '#B45309',
+    marginTop: 2,
+  },
+  uploadIdButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F59E0B',
+    paddingVertical: 12,
+    borderRadius: 8,
+    gap: 8,
+  },
+  uploadIdButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
   section: {
     marginTop: 20,
