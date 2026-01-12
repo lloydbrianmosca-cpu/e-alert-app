@@ -29,8 +29,11 @@ const getExpirationDate = () => {
 
 /**
  * Create or get a conversation between user and responder
+ * @param {string} userId - The user's UID
+ * @param {object} responder - Responder object with name, tag, avatar, building, emergencyType
+ * @param {string} responderId - Optional: The responder's UID for real responder accounts
  */
-export const getOrCreateConversation = async (userId, responder) => {
+export const getOrCreateConversation = async (userId, responder, responderId = null) => {
   const conversationId = `${userId}_${responder.name.replace(/\s+/g, '_')}`;
   const conversationRef = doc(db, 'conversations', conversationId);
   
@@ -40,6 +43,7 @@ export const getOrCreateConversation = async (userId, responder) => {
     await setDoc(conversationRef, {
       id: conversationId,
       participantId: userId,
+      responderId: responderId, // Real responder's UID (null for mock responders)
       responderName: responder.name,
       responderType: responder.tag,
       responderAvatar: responder.avatar,
@@ -123,6 +127,44 @@ export const subscribeToConversations = (userId, callback) => {
       createdAt: doc.data().createdAt?.toDate() || new Date(),
     }));
     callback(conversations);
+  }, (error) => {
+    console.error('Error subscribing to conversations:', error);
+    callback([]);
+  });
+};
+
+/**
+ * Subscribe to responder's assigned conversations (for responder accounts)
+ */
+export const subscribeToResponderConversations = (responderId, callback) => {
+  const conversationsRef = collection(db, 'conversations');
+  const q = query(
+    conversationsRef, 
+    where('responderId', '==', responderId),
+    orderBy('lastMessageAt', 'desc')
+  );
+  
+  return onSnapshot(q, (snapshot) => {
+    const conversations = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      lastMessageAt: doc.data().lastMessageAt?.toDate() || new Date(),
+      createdAt: doc.data().createdAt?.toDate() || new Date(),
+    }));
+    callback(conversations);
+  }, (error) => {
+    console.error('Error subscribing to responder conversations:', error);
+    callback([]);
+  });
+};
+
+/**
+ * Assign a responder to an existing conversation
+ */
+export const assignResponderToConversation = async (conversationId, responderId) => {
+  const conversationRef = doc(db, 'conversations', conversationId);
+  await updateDoc(conversationRef, {
+    responderId: responderId,
   });
 };
 

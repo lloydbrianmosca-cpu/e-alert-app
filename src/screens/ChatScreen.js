@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -18,6 +18,44 @@ import { useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
 import { doc, getDoc } from 'firebase/firestore';
+
+// Helper function for relative time (used globally)
+const getRelativeTime = (date) => {
+  if (!date) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  const now = new Date();
+  const diffMs = now - d;
+  const diffSecs = Math.floor(diffMs / 1000);
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffSecs < 30) return 'Just now';
+  if (diffSecs < 60) return `${diffSecs}s ago`;
+  if (diffMins < 60) return `${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+  if (diffHours < 24) return `${diffHours} hr${diffHours > 1 ? 's' : ''} ago`;
+  if (diffDays < 7) return `${diffDays} day${diffDays > 1 ? 's' : ''} ago`;
+  return d.toLocaleDateString();
+};
+
+// Component for real-time updating timestamp
+const RelativeTime = ({ date, style }) => {
+  const [timeString, setTimeString] = useState(getRelativeTime(date));
+  
+  useEffect(() => {
+    // Update immediately
+    setTimeString(getRelativeTime(date));
+    
+    // Update every 10 seconds for real-time feel
+    const interval = setInterval(() => {
+      setTimeString(getRelativeTime(date));
+    }, 10000);
+    
+    return () => clearInterval(interval);
+  }, [date]);
+  
+  return <Text style={style}>{timeString}</Text>;
+};
 
 // Sample chat data - uncomment to test with data
 /*
@@ -220,19 +258,6 @@ export default function ChatScreen({ navigation, route }) {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
-  const formatTimestamp = (date) => {
-    if (!date) return '';
-    const d = date instanceof Date ? date : new Date(date);
-    const now = new Date();
-    const diffMs = now - d;
-    const diffMins = Math.floor(diffMs / 60000);
-    
-    if (diffMins < 1) return 'Just now';
-    if (diffMins < 60) return `${diffMins} min ago`;
-    if (diffMins < 1440) return `${Math.floor(diffMins / 60)} hr ago`;
-    return d.toLocaleDateString();
-  };
-
   // Render conversation view when responder is passed
   if (responder) {
     return (
@@ -305,12 +330,13 @@ export default function ChatScreen({ navigation, route }) {
                   ]}>
                     {msg.text}
                   </Text>
-                  <Text style={[
-                    styles.messageTime,
-                    msg.senderType === 'user' ? styles.userMessageTime : styles.responderMessageTime,
-                  ]}>
-                    {formatTime(msg.timestamp)}
-                  </Text>
+                  <RelativeTime 
+                    date={msg.timestamp} 
+                    style={[
+                      styles.messageTime,
+                      msg.senderType === 'user' ? styles.userMessageTime : styles.responderMessageTime,
+                    ]} 
+                  />
                 </View>
               ))
             )}
@@ -418,7 +444,7 @@ export default function ChatScreen({ navigation, route }) {
       <View style={styles.conversationContent}>
         <View style={styles.conversationHeader}>
           <Text style={styles.responderName}>{conversation.responderName}</Text>
-          <Text style={styles.timestamp}>{formatTimestamp(conversation.lastMessageAt)}</Text>
+          <RelativeTime date={conversation.lastMessageAt} style={styles.timestamp} />
         </View>
         <Text style={styles.responderType}>{conversation.responderType}</Text>
         <Text style={styles.lastMessage} numberOfLines={1}>

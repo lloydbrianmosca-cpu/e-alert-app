@@ -6,28 +6,38 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
+    // Responders collection - responders can read/write their own data
+    match /responders/{responderId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == responderId;
+    }
+    
     // Conversations collection
     match /conversations/{conversationId} {
-      // Users can read/write conversations where:
-      // 1. The conversationId starts with their UID (for direct access)
-      // 2. Or the participantId field matches their UID (for queries)
+      // Users can read conversations they're part of, responders can read assigned conversations
       allow read: if request.auth != null && (
         conversationId.matches(request.auth.uid + '_.*') ||
-        resource.data.participantId == request.auth.uid
+        resource.data.participantId == request.auth.uid ||
+        resource.data.responderId == request.auth.uid
       );
       
-      // For writes, we check the conversationId pattern
+      // Users can create conversations
       allow create: if request.auth != null && 
         conversationId.matches(request.auth.uid + '_.*') &&
         request.resource.data.participantId == request.auth.uid;
       
-      allow update: if request.auth != null && 
-        conversationId.matches(request.auth.uid + '_.*');
+      // Both participants and responders can update
+      allow update: if request.auth != null && (
+        conversationId.matches(request.auth.uid + '_.*') ||
+        resource.data.responderId == request.auth.uid
+      );
       
-      // Messages subcollection - only conversation participants can read/write
+      // Messages subcollection - participants and responders can read/write
       match /messages/{messageId} {
-        allow read, write: if request.auth != null && 
-          conversationId.matches(request.auth.uid + '_.*');
+        allow read, write: if request.auth != null && (
+          conversationId.matches(request.auth.uid + '_.*') ||
+          get(/databases/$(database)/documents/conversations/$(conversationId)).data.responderId == request.auth.uid
+        );
       }
     }
   }
