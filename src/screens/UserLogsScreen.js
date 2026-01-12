@@ -71,6 +71,7 @@ export default function UserLogsScreen({ navigation }) {
     responderType: '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [modalMessage, setModalMessage] = useState({ type: '', text: '' });
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
   const drawerAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
@@ -266,6 +267,7 @@ export default function UserLogsScreen({ navigation }) {
   // CRUD Operations
   const openAddModal = () => {
     setEditingUser(null);
+    setModalMessage({ type: '', text: '' });
     setFormData({
       firstName: '',
       lastName: '',
@@ -278,6 +280,7 @@ export default function UserLogsScreen({ navigation }) {
 
   const openEditModal = (userData) => {
     setEditingUser(userData);
+    setModalMessage({ type: '', text: '' });
     setFormData({
       firstName: userData.firstName || '',
       lastName: userData.lastName || '',
@@ -291,6 +294,7 @@ export default function UserLogsScreen({ navigation }) {
   const closeModal = () => {
     setModalVisible(false);
     setEditingUser(null);
+    setModalMessage({ type: '', text: '' });
     setFormData({
       firstName: '',
       lastName: '',
@@ -338,11 +342,14 @@ export default function UserLogsScreen({ navigation }) {
     }
 
     setIsSaving(true);
+    setModalMessage({ type: '', text: '' });
 
     try {
       if (editingUser) {
-        // Update existing user
-        const collectionName = editingUser.source === 'responders' ? 'responders' : 'users';
+        // Update existing user - determine collection based on source or role
+        const collectionName = editingUser.source === 'responders' || editingUser.role === 'responder' 
+          ? 'responders' 
+          : 'users';
         const userRef = doc(db, collectionName, editingUser.id);
         
         const updateData = {
@@ -358,11 +365,14 @@ export default function UserLogsScreen({ navigation }) {
 
         await updateDoc(userRef, updateData);
 
-        Toast.show({
-          type: 'success',
-          text1: 'Success',
-          text2: 'User updated successfully',
-        });
+        // Show success message in modal
+        setModalMessage({ type: 'success', text: 'User updated successfully!' });
+        
+        // Close modal and refresh after a short delay
+        setTimeout(async () => {
+          closeModal();
+          await fetchUsers();
+        }, 1500);
       } else {
         // Add new user
         const collectionName = formData.role === 'responder' ? 'responders' : 'users';
@@ -381,21 +391,22 @@ export default function UserLogsScreen({ navigation }) {
 
         await addDoc(collection(db, collectionName), newUserData);
 
-        Toast.show({
-          type: 'success',
-          text1: 'Success',
-          text2: 'User added successfully',
-        });
+        // Show success message in modal
+        setModalMessage({ type: 'success', text: 'User added successfully!' });
+        
+        // Close modal and refresh after a short delay
+        setTimeout(async () => {
+          closeModal();
+          await fetchUsers();
+        }, 1500);
       }
-
-      closeModal();
-      await fetchUsers();
     } catch (error) {
-      console.log('Error saving user:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to save user',
+      console.log('Error saving user:', error.message || error);
+      
+      // Show error message in modal
+      setModalMessage({ 
+        type: 'error', 
+        text: error.message || 'Failed to save user. Please try again.' 
       });
     } finally {
       setIsSaving(false);
@@ -876,6 +887,26 @@ export default function UserLogsScreen({ navigation }) {
               )}
             </ScrollView>
 
+            {/* Message Display */}
+            {modalMessage.text !== '' && (
+              <View style={[
+                styles.modalMessageContainer,
+                modalMessage.type === 'success' ? styles.modalMessageSuccess : styles.modalMessageError
+              ]}>
+                <Ionicons 
+                  name={modalMessage.type === 'success' ? 'checkmark-circle' : 'alert-circle'} 
+                  size={20} 
+                  color={modalMessage.type === 'success' ? '#059669' : '#DC2626'} 
+                />
+                <Text style={[
+                  styles.modalMessageText,
+                  modalMessage.type === 'success' ? styles.modalMessageTextSuccess : styles.modalMessageTextError
+                ]}>
+                  {modalMessage.text}
+                </Text>
+              </View>
+            )}
+
             <View style={styles.modalFooter}>
               <TouchableOpacity style={styles.cancelButton} onPress={closeModal}>
                 <Text style={styles.cancelButtonText}>Cancel</Text>
@@ -1248,6 +1279,36 @@ const styles = StyleSheet.create({
   },
   modalBody: {
     padding: 20,
+  },
+  modalMessageContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 20,
+    marginBottom: 10,
+    padding: 12,
+    borderRadius: 10,
+    gap: 10,
+  },
+  modalMessageSuccess: {
+    backgroundColor: '#D1FAE5',
+    borderWidth: 1,
+    borderColor: '#059669',
+  },
+  modalMessageError: {
+    backgroundColor: '#FEE2E2',
+    borderWidth: 1,
+    borderColor: '#DC2626',
+  },
+  modalMessageText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  modalMessageTextSuccess: {
+    color: '#059669',
+  },
+  modalMessageTextError: {
+    color: '#DC2626',
   },
   inputGroup: {
     marginBottom: 20,
