@@ -23,7 +23,7 @@ const EMERGENCY_TYPES = [
     id: 'police',
     name: 'Police',
     subtitle: 'PNP Emergency',
-    icon: 'shield',
+    icon: 'user-shield',
     iconFamily: 'FontAwesome5',
     color: '#1E3A8A',
     lightColor: '#DBEAFE',
@@ -52,7 +52,7 @@ const EMERGENCY_TYPES = [
     subtitle: 'Disaster Alert',
     icon: 'water',
     iconFamily: 'Ionicons',
-    color: '#0EA5E9',
+    color: '#0369A1',
     lightColor: '#E0F2FE',
   },
 ];
@@ -70,6 +70,7 @@ export default function HomeScreen({ navigation }) {
   const [selectedType, setSelectedType] = useState(null);
   const [showSOS, setShowSOS] = useState(false);
   const [sosPressed, setSosPressed] = useState(false);
+  const [sosCount, setSosCount] = useState(0);
   const [activeTab, setActiveTab] = useState('home');
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
 
@@ -103,16 +104,25 @@ export default function HomeScreen({ navigation }) {
   const handleBackToSelection = () => {
     setShowSOS(false);
     setSelectedType(null);
+    setSosCount(0);
   };
 
   const handleSOSPress = () => {
+    const newCount = sosCount + 1;
+    setSosCount(newCount);
+    
+    if (newCount < 3) {
+      return;
+    }
+    
     const selected = EMERGENCY_TYPES.find(t => t.id === selectedType);
     setSosPressed(true);
     
     // Simulate SOS activation
     setTimeout(() => {
       setSosPressed(false);
-      alert(`🚨 SOS Alert Sent!\n\nEmergency Type: ${selected.name}\n\nHelp is on the way. Stay calm and stay safe.`);
+      setSosCount(0);
+      alert(`🚨 SOS ALERT ACTIVATED!\n\nEmergency Type: ${selected.name}\n\nHelp is on the way. Stay safe!`);
     }, 1500);
   };
 
@@ -159,7 +169,7 @@ export default function HomeScreen({ navigation }) {
       >
         {/* Title Section */}
         <View style={styles.titleSection}>
-          <Ionicons name="alert-circle" size={28} color="#DC2626" />
+          <Ionicons name="alert-circle" size={36} color="#DC2626" />
           <Text style={styles.titleText}>E-Alert</Text>
         </View>
         
@@ -201,35 +211,34 @@ export default function HomeScreen({ navigation }) {
           </>
         ) : (
           <>
-            {/* Back Button */}
+            {/* Selected Emergency Type - Clickable to go back */}
             <TouchableOpacity 
-              style={styles.backButton}
+              style={[
+                styles.selectedTypeCard,
+                { backgroundColor: selectedEmergency?.color }
+              ]}
               onPress={handleBackToSelection}
+              activeOpacity={0.8}
             >
-              <Ionicons name="arrow-back" size={20} color="#6B7280" />
-              <Text style={styles.backButtonText}>Back to selection</Text>
-            </TouchableOpacity>
-
-            {/* Selected Emergency Type */}
-            <View style={[
-              styles.selectedTypeCard,
-              { backgroundColor: selectedEmergency?.color }
-            ]}>
               <View style={styles.selectedTypeIcon}>
                 {selectedEmergency?.iconFamily === 'Ionicons' ? (
-                  <Ionicons name={selectedEmergency?.icon} size={32} color="#FFFFFF" />
+                  <Ionicons name={selectedEmergency?.icon} size={48} color="#FFFFFF" />
                 ) : (
-                  <FontAwesome5 name={selectedEmergency?.icon} size={32} color="#FFFFFF" />
+                  <FontAwesome5 name={selectedEmergency?.icon} size={48} color="#FFFFFF" />
                 )}
               </View>
-              <View>
+              <View style={styles.selectedTypeInfo}>
                 <Text style={styles.selectedTypeName}>{selectedEmergency?.name}</Text>
                 <Text style={styles.selectedTypeSubtitle}>{selectedEmergency?.subtitle}</Text>
+                <Text style={styles.selectedTypeHint}>Click here to change emergency type</Text>
               </View>
-            </View>
+            </TouchableOpacity>
 
             {/* SOS Button */}
             <View style={styles.sosContainer}>
+              <Text style={styles.sosPressCount}>
+                {sosCount}/3 Presses
+              </Text>
               <Animated.View style={[
                 styles.sosOuterRing,
                 { transform: [{ scale: pulseAnim }] }
@@ -249,7 +258,7 @@ export default function HomeScreen({ navigation }) {
                     >
                       <Text style={styles.sosText}>SOS</Text>
                       <Text style={styles.sosSubtext}>
-                        {sosPressed ? 'SENDING...' : 'PRESS FOR HELP'}
+                        {sosPressed ? 'SENDING...' : `TAP ${3 - sosCount}x`}
                       </Text>
                     </LinearGradient>
                   </TouchableOpacity>
@@ -257,7 +266,23 @@ export default function HomeScreen({ navigation }) {
               </Animated.View>
             </View>
 
-            <Text style={styles.sosHint}>Press the button to send an emergency alert</Text>
+            <Text style={styles.sosHint}>Press the button 3 times to send emergency alert</Text>
+
+            {/* Emergency Info Card */}
+            <View style={styles.infoCard}>
+              <View style={styles.infoRow}>
+                <Ionicons name="location" size={20} color="#DC2626" />
+                <Text style={styles.infoText}>After pressing the button 3 times, your location will be shared.</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Ionicons name="notifications" size={20} color="#DC2626" />
+                <Text style={styles.infoText}>Nearest emergency service will automatically be notified.</Text>
+              </View>
+              <View style={styles.infoRow}>
+                <Ionicons name="time" size={20} color="#DC2626" />
+                <Text style={styles.infoText}>ETA and distance will be shown once button is active.</Text>
+              </View>
+            </View>
           </>
         )}
       </ScrollView>
@@ -400,75 +425,86 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600',
   },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  backButtonText: {
-    fontSize: 14,
-    color: '#6B7280',
-    fontWeight: '500',
-  },
   selectedTypeCard: {
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 20,
-    padding: 16,
-    borderRadius: 16,
-    gap: 16,
+    marginTop: 16,
+    marginBottom: 24,
+    padding: 20,
+    borderRadius: 20,
+    gap: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 10,
+    elevation: 6,
   },
   selectedTypeIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255,255,255,0.25)',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  selectedTypeInfo: {
+    flex: 1,
+  },
   selectedTypeName: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: '800',
     color: '#FFFFFF',
   },
   selectedTypeSubtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 2,
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  selectedTypeHint: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.75)',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
   sosContainer: {
     alignItems: 'center',
-    marginTop: 40,
-    marginBottom: 16,
+    marginTop: 24,
+    marginBottom: 20,
+  },
+  sosPressCount: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#DC2626',
+    marginBottom: 20,
   },
   sosOuterRing: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
+    width: 380,
+    height: 380,
+    borderRadius: 170,
     backgroundColor: 'rgba(220, 38, 38, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   sosMiddleRing: {
-    width: 175,
-    height: 175,
-    borderRadius: 87.5,
+    width: 300,
+    height: 300,
+    borderRadius: 150,
     backgroundColor: 'rgba(220, 38, 38, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   sosButton: {
-    width: 150,
-    height: 150,
-    borderRadius: 75,
+    width: 300,
+    height: 300,
+    borderRadius: 230,
     overflow: 'hidden',
     shadowColor: '#DC2626',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.4,
-    shadowRadius: 16,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.5,
+    shadowRadius: 20,
+    elevation: 15,
   },
   sosButtonPressed: {
     transform: [{ scale: 0.95 }],
@@ -479,23 +515,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sosText: {
-    fontSize: 40,
+    fontSize: 56,
     fontWeight: '900',
     color: '#FFFFFF',
-    letterSpacing: 4,
+    letterSpacing: 6,
   },
   sosSubtext: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: 'rgba(255,255,255,0.8)',
-    marginTop: 4,
-    letterSpacing: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.9)',
+    marginTop: 8,
+    letterSpacing: 2,
   },
   sosHint: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#6B7280',
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: 16,
+    marginBottom: 20,
+    fontWeight: '600',
+  },
+  infoCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 18,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 10,
+  },
+  infoText: {
+    fontSize: 14,
+    color: '#4B5563',
+    fontWeight: '500',
+    flex: 1,
   },
   bottomNav: {
     flexDirection: 'row',
