@@ -17,6 +17,8 @@ import {
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import Toast from 'react-native-toast-message';
+import { toastConfig } from '../components';
 
 // Bottom navigation items
 const NAV_ITEMS = [
@@ -84,9 +86,17 @@ export default function ProfileScreen({ navigation }) {
           emergencyContactName: editData.emergencyContactName,
           emergencyContactNumber: editData.emergencyContactNumber,
         }, { merge: true });
-        Alert.alert('Success', 'Profile updated successfully');
+        Toast.show({
+          type: 'success',
+          text1: 'Success',
+          text2: 'Profile updated successfully',
+        });
       } catch (err) {
-        Alert.alert('Error', 'Failed to update profile info');
+        Toast.show({
+          type: 'error',
+          text1: 'Error',
+          text2: 'Failed to update profile info',
+        });
       }
     }
   };
@@ -415,6 +425,8 @@ export default function ProfileScreen({ navigation }) {
           </View>
         </View>
       </Modal>
+
+      <Toast config={toastConfig} topOffset={60} />
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
