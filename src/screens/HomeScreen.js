@@ -293,7 +293,12 @@ export default function HomeScreen({ navigation }) {
           <TouchableOpacity
             key={item.id}
             style={styles.navItem}
-            onPress={() => setActiveTab(item.id)}
+            onPress={() => {
+              setActiveTab(item.id);
+              if (item.id === 'chat') {
+                navigation.navigate('Chat');
+              }
+            }}
             activeOpacity={0.7}
           >
             <Ionicons 
