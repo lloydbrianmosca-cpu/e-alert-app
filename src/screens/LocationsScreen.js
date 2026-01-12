@@ -274,10 +274,12 @@ export default function LocationsScreen({ navigation, route }) {
                 coordinate={userLocation}
                 title="Your Location"
                 description="You are here"
+                anchor={{ x: 0.5, y: 0.5 }}
+                tracksViewChanges={true}
               >
                 <View style={styles.userMarker}>
-                  <View style={[styles.userMarkerOuter, { backgroundColor: '#DC2626' + '40' }]} />
-                  <View style={[styles.userMarkerInner, { backgroundColor: '#DC2626' }]}>
+                  <View style={[styles.userMarkerOuter, { backgroundColor: '#DC262640' }]} />
+                  <View style={styles.userMarkerInner}>
                     <Ionicons name="person" size={16} color="#FFFFFF" />
                   </View>
                 </View>
@@ -291,6 +293,8 @@ export default function LocationsScreen({ navigation, route }) {
                   coordinate={responderLocation}
                   title={responder.name}
                   description={responder.vehicle}
+                  anchor={{ x: 0.5, y: 0.5 }}
+                  tracksViewChanges={true}
                 >
                   <View style={styles.responderMarker}>
                     <View style={[styles.responderMarkerOuter, { backgroundColor: emergencyColor + '30' }]} />
@@ -577,6 +581,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   userMarker: {
+    width: 60,
+    height: 60,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -585,6 +591,8 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
+    top: 5,
+    left: 5,
   },
   userMarkerInner: {
     width: 36,
@@ -594,13 +602,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 3,
     borderColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    backgroundColor: '#DC2626',
   },
   responderMarker: {
+    width: 70,
+    height: 70,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -609,6 +615,8 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
+    top: 5,
+    left: 5,
   },
   responderMarkerInner: {
     width: 44,
@@ -618,11 +626,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 3,
     borderColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
-    elevation: 8,
   },
   mapControls: {
     position: 'absolute',
