@@ -118,11 +118,11 @@ export default function HomeScreen({ navigation }) {
     const selected = EMERGENCY_TYPES.find(t => t.id === selectedType);
     setSosPressed(true);
     
-    // Simulate SOS activation
+    // Simulate SOS activation and redirect to Locations
     setTimeout(() => {
       setSosPressed(false);
       setSosCount(0);
-      alert(`🚨 SOS ALERT ACTIVATED!\n\nEmergency Type: ${selected.name}\n\nHelp is on the way. Stay safe!`);
+      navigation.navigate('Locations', { emergencyType: selectedType });
     }, 1500);
   };
 
