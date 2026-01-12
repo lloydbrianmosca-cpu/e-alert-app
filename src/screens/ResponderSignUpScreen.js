@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,11 +22,23 @@ import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '../components';
 
+const { width } = Dimensions.get('window');
+const DRAWER_WIDTH = width * 0.55;
+
 const RESPONDER_TYPES = [
   { id: 'police', label: 'Police', icon: 'shield-checkmark' },
   { id: 'fireman', label: 'Fireman', icon: 'flame' },
   { id: 'flood', label: 'Flood Response', icon: 'water' },
   { id: 'medical', label: 'Medical', icon: 'medkit' },
+];
+
+const menuItems = [
+  { id: 'dashboard', title: 'Dashboard', icon: 'grid-outline', screen: 'AdminHome' },
+  { id: 'responder-signup', title: 'Responder Sign up', icon: 'person-add-outline', screen: 'ResponderSignUp' },
+  { id: 'user-logs', title: 'User Logs', icon: 'document-text-outline', screen: null },
+  { id: 'emergency-history', title: 'Emergency History', icon: 'time-outline', screen: null },
+  { id: 'realtime-monitoring', title: 'Real-time Monitoring', icon: 'pulse-outline', screen: null },
+  { id: 'responder-management', title: 'Responder Management', icon: 'people-outline', screen: null },
 ];
 
 export default function ResponderSignUpScreen({ navigation }) {
@@ -37,7 +51,26 @@ export default function ResponderSignUpScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const drawerAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const { user } = useAuth();
+
+  const toggleDrawer = () => {
+    const toValue = drawerOpen ? -DRAWER_WIDTH : 0;
+    Animated.timing(drawerAnim, {
+      toValue,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+    setDrawerOpen(!drawerOpen);
+  };
+
+  const handleMenuPress = (screen) => {
+    toggleDrawer();
+    if (screen && screen !== 'ResponderSignUp') {
+      navigation.navigate(screen);
+    }
+  };
 
   const validateForm = () => {
     if (!firstName.trim()) {
@@ -199,10 +232,62 @@ export default function ResponderSignUpScreen({ navigation }) {
       <ExpoStatusBar style="light" />
       <StatusBar barStyle="light-content" backgroundColor="#DC2626" />
 
+      {/* Drawer Overlay */}
+      {drawerOpen && (
+        <TouchableOpacity 
+          style={styles.overlay} 
+          activeOpacity={1} 
+          onPress={toggleDrawer}
+        />
+      )}
+
+      {/* Navigation Drawer */}
+      <Animated.View 
+        style={[
+          styles.drawer,
+          { transform: [{ translateX: drawerAnim }] }
+        ]}
+      >
+        <View style={styles.drawerHeader}>
+          <View style={styles.drawerLogoContainer}>
+            <Ionicons name="shield-checkmark" size={40} color="#FFFFFF" />
+          </View>
+          <Text style={styles.drawerTitle}>E-Alert Admin</Text>
+        </View>
+        
+        <ScrollView style={styles.drawerContent}>
+          {menuItems.map((item) => (
+            <TouchableOpacity
+              key={item.id}
+              style={[
+                styles.drawerItem,
+                item.id === 'responder-signup' && styles.drawerItemActive
+              ]}
+              onPress={() => handleMenuPress(item.screen)}
+            >
+              <Ionicons 
+                name={item.icon} 
+                size={24} 
+                color="#DC2626" 
+              />
+              <Text style={[
+                styles.drawerItemText,
+                item.id === 'responder-signup' && styles.drawerItemTextActive
+              ]}>
+                {item.title}
+              </Text>
+              {item.id !== 'responder-signup' && (
+                <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+              )}
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </Animated.View>
+
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+        <TouchableOpacity style={styles.menuButton} onPress={toggleDrawer}>
+          <Ionicons name="menu" size={28} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Register Responder</Text>
         <View style={styles.headerRight} />
@@ -393,6 +478,77 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F3F4F6',
   },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 10,
+  },
+  drawer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: DRAWER_WIDTH,
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    zIndex: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  drawerHeader: {
+    paddingTop: 60,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    backgroundColor: '#DC2626',
+    alignItems: 'center',
+  },
+  drawerLogoContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  drawerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  drawerContent: {
+    flex: 1,
+    paddingTop: 10,
+  },
+  drawerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  drawerItemActive: {
+    backgroundColor: '#FEE2E2',
+    borderBottomColor: '#FEE2E2',
+  },
+  drawerItemText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1F2937',
+    marginLeft: 15,
+  },
+  drawerItemTextActive: {
+    color: '#DC2626',
+    fontWeight: '700',
+  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -402,7 +558,7 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     backgroundColor: '#DC2626',
   },
-  backButton: {
+  menuButton: {
     padding: 8,
   },
   headerTitle: {
