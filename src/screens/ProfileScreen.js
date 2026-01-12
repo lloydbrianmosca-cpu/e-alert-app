@@ -156,7 +156,7 @@ export default function ProfileScreen({ navigation }) {
   const renderInputField = (label, field, placeholder = '') => (
     <View style={styles.inputFieldContainer}>
       <Text style={styles.inputLabel}>{label}</Text>
-      {isEditing && field === 'contactNumber' ? (
+      {isEditing ? (
         <TextInput
           style={styles.input}
           placeholder={placeholder}
@@ -274,8 +274,23 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.sectionTitle}>Emergency Contact</Text>
 
           <View style={styles.sectionContent}>
-            {renderInputField('Contact Person Name', 'emergencyContactName', 'Enter name')}
-            {renderInputField('Contact Number', 'emergencyContactNumber', 'Enter phone number')}
+            {isEditing ? (
+              <>
+                {renderInputField('Emergency Contact Person Name', 'emergencyContactName', 'Enter name')}
+                {renderInputField('Emergency Contact Number', 'emergencyContactNumber', 'Enter phone number')}
+              </>
+            ) : (
+              <>
+                <View style={styles.inputFieldContainer}>
+                  <Text style={styles.inputLabel}>Emergency Contact Person Name</Text>
+                  <Text style={styles.inputValue}>{profileData.emergencyContactName || 'Not set'}</Text>
+                </View>
+                <View style={styles.inputFieldContainer}>
+                  <Text style={styles.inputLabel}>Emergency Contact Number</Text>
+                  <Text style={styles.inputValue}>{profileData.emergencyContactNumber || 'Not set'}</Text>
+                </View>
+              </>
+            )}
           </View>
         </View>
 
@@ -289,11 +304,12 @@ export default function ProfileScreen({ navigation }) {
             </View>
             <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
           </TouchableOpacity>
-
-          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-            <Ionicons name="log-out" size={20} color="#FFFFFF" />
-            <Text style={styles.logoutButtonText}>Log Out</Text>
-          </TouchableOpacity>
+          {!isEditing && (
+            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+              <Ionicons name="log-out" size={20} color="#FFFFFF" />
+              <Text style={styles.logoutButtonText}>Log Out</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Save/Cancel Buttons */}
