@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,6 +7,9 @@ import {
   StatusBar,
   ScrollView,
   Image,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -66,14 +69,167 @@ const NAV_ITEMS = [
   { id: 'profile', name: 'Profile', icon: 'person', iconFamily: 'Ionicons' },
 ];
 
-export default function ChatScreen({ navigation }) {
+export default function ChatScreen({ navigation, route }) {
+  const responder = route?.params?.responder;
   // Set to empty array for empty state, or use SAMPLE_CONVERSATIONS for testing
   const [conversations, setConversations] = useState([]);
   const [activeTab, setActiveTab] = useState('chat');
+  const [message, setMessage] = useState('');
+  const [messages, setMessages] = useState([
+    {
+      id: 1,
+      text: 'We have received your emergency alert. Help is on the way.',
+      sender: 'responder',
+      timestamp: new Date(Date.now() - 300000),
+    },
+    {
+      id: 2,
+      text: 'Please stay calm and remain in a safe location.',
+      sender: 'responder',
+      timestamp: new Date(Date.now() - 240000),
+    },
+  ]);
+  const scrollViewRef = useRef(null);
 
   const getEmergencyColor = (type) => {
     return EMERGENCY_COLORS[type] || '#6B7280';
   };
+
+  const handleSendMessage = () => {
+    if (!message.trim()) return;
+    
+    const newMessage = {
+      id: messages.length + 1,
+      text: message.trim(),
+      sender: 'user',
+      timestamp: new Date(),
+    };
+    
+    setMessages([...messages, newMessage]);
+    setMessage('');
+    
+    // Simulate responder reply after 2 seconds
+    setTimeout(() => {
+      const replyMessage = {
+        id: messages.length + 2,
+        text: 'Thank you for the update. We are almost there.',
+        sender: 'responder',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, replyMessage]);
+    }, 2000);
+  };
+
+  const formatTime = (date) => {
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  // Render conversation view when responder is passed
+  if (responder) {
+    return (
+      <View style={styles.container}>
+        <ExpoStatusBar style="light" />
+        <StatusBar barStyle="light-content" backgroundColor="#DC2626" />
+
+        {/* Conversation Header */}
+        <View style={[styles.header, { backgroundColor: '#DC2626' }]}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+          </TouchableOpacity>
+          <Image
+            source={{ uri: responder.avatar }}
+            style={styles.headerAvatar}
+          />
+          <View style={styles.headerInfo}>
+            <View style={styles.headerNameRow}>
+              <Text style={styles.headerName}>{responder.name}</Text>
+              <View style={[styles.responderTag, { backgroundColor: getEmergencyColor(responder.emergencyType) }]}>
+                <Text style={styles.responderTagText}>{responder.tag}</Text>
+              </View>
+            </View>
+            <Text style={styles.headerBuilding}>{responder.building}</Text>
+          </View>
+          <TouchableOpacity style={styles.callHeaderButton}>
+            <Ionicons name="call" size={22} color="#FFFFFF" />
+          </TouchableOpacity>
+        </View>
+
+        {/* Messages */}
+        <KeyboardAvoidingView
+          style={styles.chatContainer}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={0}
+        >
+          <ScrollView
+            ref={scrollViewRef}
+            style={styles.messagesContainer}
+            contentContainerStyle={styles.messagesContent}
+            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
+          >
+            {messages.map((msg) => (
+              <View
+                key={msg.id}
+                style={[
+                  styles.messageBubble,
+                  msg.sender === 'user' ? styles.userMessage : styles.responderMessage,
+                ]}
+              >
+                <Text style={[
+                  styles.messageText,
+                  msg.sender === 'user' ? styles.userMessageText : styles.responderMessageText,
+                ]}>
+                  {msg.text}
+                </Text>
+                <Text style={[
+                  styles.messageTime,
+                  msg.sender === 'user' ? styles.userMessageTime : styles.responderMessageTime,
+                ]}>
+                  {formatTime(msg.timestamp)}
+                </Text>
+              </View>
+            ))}
+          </ScrollView>
+
+          {/* Quick Chats */}
+          <View style={styles.quickChatsContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickChatsScroll}>
+              {['Please help ASAP!', 'I\'m safe now', 'Need more time', 'Where are you?', 'Thank you!'].map((quickMsg, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.quickChatButton}
+                  onPress={() => setMessage(quickMsg)}
+                >
+                  <Text style={styles.quickChatText}>{quickMsg}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Message Input */}
+          <View style={styles.inputContainer}>
+            <TextInput
+              style={styles.messageInput}
+              placeholder="Type a message..."
+              placeholderTextColor="#9CA3AF"
+              value={message}
+              onChangeText={setMessage}
+              multiline
+            />
+            <TouchableOpacity
+              style={styles.sendButton}
+              onPress={handleSendMessage}
+            >
+              <Ionicons name="send" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </View>
+    );
+  }
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
@@ -433,5 +589,161 @@ const styles = StyleSheet.create({
   navLabelActive: {
     color: '#DC2626',
     fontWeight: '600',
+  },
+  // Conversation View Styles
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  headerAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.4)',
+    marginRight: 12,
+  },
+  headerInfo: {
+    flex: 1,
+  },
+  headerNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
+  headerName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  responderTag: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  responderTagText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  headerBuilding: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+    fontWeight: '500',
+  },
+  callHeaderButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  chatContainer: {
+    flex: 1,
+  },
+  messagesContainer: {
+    flex: 1,
+  },
+  messagesContent: {
+    padding: 16,
+    paddingBottom: 8,
+  },
+  messageBubble: {
+    maxWidth: '80%',
+    marginBottom: 12,
+    padding: 12,
+    borderRadius: 16,
+  },
+  userMessage: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#DC2626',
+    borderBottomRightRadius: 4,
+  },
+  responderMessage: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    borderBottomLeftRadius: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  messageText: {
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  userMessageText: {
+    color: '#FFFFFF',
+  },
+  responderMessageText: {
+    color: '#1F2937',
+  },
+  messageTime: {
+    fontSize: 11,
+    marginTop: 4,
+  },
+  userMessageTime: {
+    color: 'rgba(255,255,255,0.7)',
+    textAlign: 'right',
+  },
+  responderMessageTime: {
+    color: '#9CA3AF',
+  },
+  quickChatsContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingVertical: 10,
+  },
+  quickChatsScroll: {
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  quickChatButton: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+  },
+  quickChatText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#DC2626',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    padding: 12,
+    paddingBottom: 24,
+    backgroundColor: '#FFFFFF',
+  },
+  messageInput: {
+    flex: 1,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 20,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    fontSize: 15,
+    maxHeight: 100,
+    marginRight: 10,
+    color: '#1F2937',
+  },
+  sendButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#DC2626',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

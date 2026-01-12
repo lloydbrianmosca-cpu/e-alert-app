@@ -43,39 +43,51 @@ export default function LocationsScreen({ navigation, route }) {
   const responderData = {
     police: {
       name: 'Officer Juan Cruz',
+      building: 'Pasay City Police Station',
+      hotline: '(02) 8551-2507',
       badge: 'PNP-2451',
       avatar: 'https://i.pravatar.cc/150?img=12',
       vehicle: 'Patrol Car 7',
       eta: '3 mins',
       distance: '1.2 km',
       icon: 'local-police',
+      tag: 'Police',
     },
     medical: {
       name: 'Dr. Maria Santos',
+      building: 'Pasay General Hospital',
+      hotline: '(02) 8831-5241',
       badge: 'DOH-8892',
       avatar: 'https://i.pravatar.cc/150?img=45',
       vehicle: 'Ambulance Unit 3',
       eta: '5 mins',
       distance: '2.4 km',
       icon: 'medical-services',
+      tag: 'Medical',
     },
     fire: {
       name: 'Firefighter Mike Reyes',
+      building: 'Pasay City Fire Station',
+      hotline: '(02) 8831-0099',
       badge: 'BFP-3341',
       avatar: 'https://i.pravatar.cc/150?img=33',
       vehicle: 'Fire Truck 5',
       eta: '4 mins',
       distance: '1.8 km',
       icon: 'fire-truck',
+      tag: 'Fire',
     },
     flood: {
       name: 'Rescue Officer Anna Lee',
+      building: 'NDRRMC Rescue Center',
+      hotline: '(02) 8911-5061',
       badge: 'NDRRMC-5512',
       avatar: 'https://i.pravatar.cc/150?img=28',
       vehicle: 'Rescue Boat 2',
       eta: '6 mins',
       distance: '3.1 km',
       icon: 'flood',
+      tag: 'Rescue',
     },
   };
 
@@ -180,10 +192,10 @@ export default function LocationsScreen({ navigation, route }) {
             />
             <View style={styles.responderInfo}>
               <Text style={styles.responderName}>{responder.name}</Text>
-              <Text style={styles.responderBadge}>{responder.badge}</Text>
-              <View style={styles.vehicleContainer}>
-                <Ionicons name="car-sport" size={14} color="#6B7280" />
-                <Text style={styles.vehicleText}>{responder.vehicle}</Text>
+              <Text style={styles.responderBuilding}>{responder.building}</Text>
+              <View style={styles.hotlineContainer}>
+                <Ionicons name="call" size={14} color="#6B7280" />
+                <Text style={styles.hotlineText}>{responder.hotline}</Text>
               </View>
             </View>
             <View style={[styles.responderTypeBadge, { backgroundColor: emergencyColor }]}>
@@ -214,7 +226,15 @@ export default function LocationsScreen({ navigation, route }) {
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.actionButton, styles.chatButton]}
-            onPress={() => navigation.navigate('Chat')}
+            onPress={() => navigation.navigate('Chat', {
+              responder: {
+                name: responder.name,
+                avatar: responder.avatar,
+                building: responder.building,
+                tag: responder.tag,
+                emergencyType: emergencyType,
+              }
+            })}
           >
             <Ionicons name="chatbubble" size={20} color="#FFFFFF" />
             <Text style={styles.actionButtonText}>Send Message</Text>
@@ -539,18 +559,18 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     marginBottom: 2,
   },
-  responderBadge: {
+  responderBuilding: {
     fontSize: 13,
     fontWeight: '600',
     color: '#6B7280',
     marginBottom: 6,
   },
-  vehicleContainer: {
+  hotlineContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
   },
-  vehicleText: {
+  hotlineText: {
     fontSize: 13,
     fontWeight: '600',
     color: '#6B7280',
