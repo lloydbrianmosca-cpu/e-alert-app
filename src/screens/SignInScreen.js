@@ -8,9 +8,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
-import { AuthHeader, FormInput, PrimaryButton } from '../components';
+import { Feather } from '@expo/vector-icons';
+import { AuthHeader, FormInput, PrimaryButton, toastConfig } from '../components';
 import { useAuth } from '../context/AuthContext';
 import Toast from 'react-native-toast-message';
 
@@ -19,7 +22,11 @@ export default function SignInScreen({ navigation }) {
   const [password, setPassword] = React.useState('');
   const [secureEntry, setSecureEntry] = React.useState(true);
   const [isLoading, setIsLoading] = React.useState(false);
-  const { signIn } = useAuth();
+  const [showForgotModal, setShowForgotModal] = React.useState(false);
+  const [resetEmail, setResetEmail] = React.useState('');
+  const [isResetting, setIsResetting] = React.useState(false);
+  const [emailSent, setEmailSent] = React.useState(false);
+  const { signIn, resetPassword } = useAuth();
 
   const handleSignIn = async () => {
     if (!email) {
@@ -61,7 +68,45 @@ export default function SignInScreen({ navigation }) {
   };
 
   const handleForgotPassword = () => {
-    navigation.navigate('ForgotPassword');
+    setResetEmail(email);
+    setShowForgotModal(true);
+    setEmailSent(false);
+  };
+
+  const handleSendResetEmail = async () => {
+    if (!resetEmail) {
+      Toast.show({
+        type: 'error',
+        text1: 'Email Required',
+        text2: 'Please enter your email address',
+      });
+      return;
+    }
+
+    setIsResetting(true);
+    const result = await resetPassword(resetEmail.trim());
+    setIsResetting(false);
+
+    if (result.success) {
+      setEmailSent(true);
+      Toast.show({
+        type: 'success',
+        text1: 'Reset Email Sent',
+        text2: 'Check your inbox for the reset link',
+      });
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: result.error,
+      });
+    }
+  };
+
+  const handleCloseModal = () => {
+    setShowForgotModal(false);
+    setResetEmail('');
+    setEmailSent(false);
   };
 
   return (
@@ -105,7 +150,7 @@ export default function SignInScreen({ navigation }) {
               onTogglePassword={() => setSecureEntry(!secureEntry)}
             />
 
-            <TouchableOpacity style={styles.forgotButton}>
+            <TouchableOpacity style={styles.forgotButton} onPress={handleForgotPassword}>
               <Text style={styles.forgotPassword}>Forgot Password?</Text>
             </TouchableOpacity>
 
@@ -128,6 +173,96 @@ export default function SignInScreen({ navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Forgot Password Modal */}
+      <Modal
+        visible={showForgotModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseModal}
+        statusBarTranslucent={true}
+      >
+        <View style={{ flex: 1 }}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <TouchableOpacity style={styles.closeButton} onPress={handleCloseModal}>
+                <Feather name="x" size={24} color="#6B7280" />
+              </TouchableOpacity>
+
+              <View style={styles.modalIconContainer}>
+                <Feather name={emailSent ? "check-circle" : "lock"} size={48} color="#DC2626" />
+              </View>
+
+              {!emailSent ? (
+                <>
+                  <Text style={styles.modalTitle}>Forgot Password?</Text>
+                  <Text style={styles.modalSubtitle}>
+                    Enter your email address and we'll send you a link to reset your password.
+                  </Text>
+
+                  <View style={styles.modalInputContainer}>
+                    <FormInput
+                      icon="email"
+                      placeholder="Email address"
+                      value={resetEmail}
+                      onChangeText={setResetEmail}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                    />
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.resetButton}
+                    onPress={handleSendResetEmail}
+                    disabled={isResetting}
+                  >
+                    {isResetting ? (
+                      <ActivityIndicator color="#FFFFFF" />
+                    ) : (
+                      <>
+                        <Feather name="send" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                        <Text style={styles.resetButtonText}>Send Reset Link</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.modalTitle}>Check Your Email</Text>
+                  <Text style={styles.modalSubtitle}>
+                    We've sent a password reset link to{'\n'}
+                    <Text style={styles.emailText}>{resetEmail}</Text>
+                  </Text>
+
+                  <Text style={styles.instructionText}>
+                    Click the link in your email to reset your password.{'\n'}
+                    <Text style={styles.spamNote}>Check your spam folder if you don't see it.</Text>
+                  </Text>
+
+                  <TouchableOpacity
+                    style={styles.resetButton}
+                    onPress={handleCloseModal}
+                  >
+                    <Feather name="arrow-left" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                    <Text style={styles.resetButtonText}>Back to Sign In</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={styles.resendContainer}
+                    onPress={handleSendResetEmail}
+                    disabled={isResetting}
+                  >
+                    <Text style={styles.resendLink}>
+                      {isResetting ? 'Sending...' : 'Resend Email'}
+                    </Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </View>
+          <Toast config={toastConfig} topOffset={60} />
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -191,5 +326,99 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontWeight: '700',
     fontSize: 15,
+  },
+  // Modal Styles
+  modalOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 32,
+    width: '85%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    padding: 4,
+  },
+  modalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#FEE2E2',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 8,
+  },
+  modalSubtitle: {
+    fontSize: 15,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 20,
+  },
+  emailText: {
+    color: '#DC2626',
+    fontWeight: '600',
+  },
+  modalInputContainer: {
+    width: '100%',
+    marginBottom: 8,
+  },
+  instructionText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 24,
+    paddingHorizontal: 10,
+    lineHeight: 20,
+  },
+  spamNote: {
+    color: '#9CA3AF',
+    fontStyle: 'italic',
+  },
+  resetButton: {
+    backgroundColor: '#DC2626',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    width: '100%',
+    marginBottom: 16,
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  resetButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  resendContainer: {
+    padding: 8,
+  },
+  resendLink: {
+    fontSize: 14,
+    color: '#DC2626',
+    fontWeight: '600',
   },
 });
