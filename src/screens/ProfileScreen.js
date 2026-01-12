@@ -42,7 +42,7 @@ export default function ProfileScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [profileData, setProfileData] = useState({
     firstName: user?.displayName
       ? user.displayName.split(' ').slice(0, -1).join(' ')
@@ -241,7 +241,10 @@ export default function ProfileScreen({ navigation }) {
         { 
           text: 'Log Out', 
           style: 'destructive',
-          onPress: () => navigation.replace('SignIn')
+          onPress: async () => {
+            await logout();
+            // Navigation happens automatically via AuthContext
+          }
         },
       ]
     );

@@ -6,3 +6,5 @@ export { default as ChatScreen } from './ChatScreen';
 export { default as LocationsScreen } from './LocationsScreen';
 export { default as ProfileScreen } from './ProfileScreen';
 export { default as HotlinesScreen } from './HotlinesScreen';
+export { default as AdminDashboardScreen } from './AdminDashboardScreen';
+export { default as ResponderDashboardScreen } from './ResponderDashboardScreen';

@@ -5,8 +5,25 @@
     "version": "1.0.0",
     "assetBundlePatterns": ["**/*"],
     "ios": {
-      "supportsTabletMode": true
+      "supportsTabletMode": true,
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "This app needs access to your location to show emergency responders near you.",
+        "NSLocationAlwaysUsageDescription": "This app needs access to your location to alert emergency services."
+      },
+      "config": {
+        "googleMapsApiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+      }
     },
-    "android": {}
+    "android": {
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ],
+      "config": {
+        "googleMaps": {
+          "apiKey": "YOUR_GOOGLE_MAPS_API_KEY"
+        }
+      }
+    }
   }
 }

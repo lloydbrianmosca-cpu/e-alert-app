@@ -10,6 +10,13 @@ import {
   reload
 } from 'firebase/auth';
 import { auth } from '../services/firebase';
+import { 
+  createUserProfile, 
+  getUserProfile, 
+  updateUserProfile,
+  USER_ROLES,
+  createResponderProfile
+} from '../services/firestore';
 
 const AuthContext = createContext({});
 
@@ -17,18 +24,44 @@ export const useAuth = () => useContext(AuthContext);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Fetch user profile when auth state changes
+  const fetchUserProfile = async (firebaseUser) => {
+    if (firebaseUser) {
+      const result = await getUserProfile(firebaseUser.uid);
+      if (result.success) {
+        setUserProfile(result.data);
+        setUserRole(result.data.role || USER_ROLES.USER);
+        return result.data;
+      }
+    }
+    setUserProfile(null);
+    setUserRole(null);
+    return null;
+  };
+
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      // Only set user if they exist AND email is verified
+      if (firebaseUser && firebaseUser.emailVerified) {
+        setUser(firebaseUser);
+        await fetchUserProfile(firebaseUser);
+      } else {
+        // User not logged in or email not verified
+        setUser(null);
+        setUserProfile(null);
+        setUserRole(null);
+      }
       setLoading(false);
     });
 
     return unsubscribe;
   }, []);
 
-  const signUp = async (email, password, fullName) => {
+  const signUp = async (email, password, fullName, role = USER_ROLES.USER, additionalData = {}) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
@@ -36,6 +69,28 @@ export function AuthProvider({ children }) {
       if (fullName) {
         await updateProfile(userCredential.user, {
           displayName: fullName
+        });
+      }
+      
+      // Create user profile in Firestore with role
+      const profileData = {
+        email,
+        fullName,
+        role,
+        ...additionalData,
+      };
+      
+      await createUserProfile(userCredential.user.uid, profileData);
+      
+      // If responder, create additional responder profile
+      if (role === USER_ROLES.RESPONDER && additionalData.emergencyType) {
+        await createResponderProfile(userCredential.user.uid, {
+          fullName,
+          email,
+          emergencyType: additionalData.emergencyType,
+          badge: additionalData.badge || '',
+          building: additionalData.building || '',
+          hotline: additionalData.hotline || '',
         });
       }
       
@@ -68,7 +123,14 @@ export function AuthProvider({ children }) {
         };
       }
       
-      return { success: true, user: userCredential.user };
+      // Fetch user profile to get role
+      const profile = await fetchUserProfile(userCredential.user);
+      
+      return { 
+        success: true, 
+        user: userCredential.user,
+        role: profile?.role || USER_ROLES.USER 
+      };
     } catch (error) {
       return { success: false, error: getErrorMessage(error.code) };
     }
@@ -77,6 +139,8 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     try {
       await signOut(auth);
+      setUserProfile(null);
+      setUserRole(null);
       return { success: true };
     } catch (error) {
       return { success: false, error: error.message };
@@ -143,6 +207,8 @@ export function AuthProvider({ children }) {
 
   const value = {
     user,
+    userProfile,
+    userRole,
     loading,
     signUp,
     signIn,
@@ -150,6 +216,10 @@ export function AuthProvider({ children }) {
     resetPassword,
     sendVerificationEmail,
     checkEmailVerified,
+    refreshUserProfile: () => fetchUserProfile(user),
+    isAdmin: userRole === USER_ROLES.ADMIN,
+    isResponder: userRole === USER_ROLES.RESPONDER,
+    isUser: userRole === USER_ROLES.USER,
   };
 
   return (
@@ -158,3 +228,5 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
+
+export { USER_ROLES };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,11 +7,15 @@ import {
   StatusBar,
   Image,
   Dimensions,
+  Platform,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useEmergency } from '../context/EmergencyContext';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import * as Location from 'expo-location';
 
 const { width } = Dimensions.get('window');
 
@@ -34,6 +38,18 @@ const EMERGENCY_COLORS = {
 export default function LocationsScreen({ navigation, route }) {
   const [activeTab, setActiveTab] = useState('locations');
   const { activeEmergencyType, clearEmergency } = useEmergency();
+  const mapRef = useRef(null);
+  
+  // Location state
+  const [location, setLocation] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [region, setRegion] = useState({
+    latitude: 14.5547, // Default: Pasay City
+    longitude: 121.0010,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  });
   
   // Check if emergency is active (SOS was pressed 3 times)
   const isEmergencyActive = !!activeEmergencyType || !!route?.params?.emergencyType;
@@ -52,6 +68,9 @@ export default function LocationsScreen({ navigation, route }) {
       distance: '1.2 km',
       icon: 'local-police',
       tag: 'Police',
+      // Responder location (slightly offset from user)
+      latOffset: 0.008,
+      lngOffset: 0.006,
     },
     medical: {
       name: 'Dr. Maria Santos',
@@ -64,6 +83,8 @@ export default function LocationsScreen({ navigation, route }) {
       distance: '2.4 km',
       icon: 'medical-services',
       tag: 'Medical',
+      latOffset: 0.012,
+      lngOffset: -0.008,
     },
     fire: {
       name: 'Firefighter Mike Reyes',
@@ -76,6 +97,8 @@ export default function LocationsScreen({ navigation, route }) {
       distance: '1.8 km',
       icon: 'fire-truck',
       tag: 'Fire',
+      latOffset: -0.006,
+      lngOffset: 0.010,
     },
     flood: {
       name: 'Rescue Officer Anna Lee',
@@ -88,11 +111,84 @@ export default function LocationsScreen({ navigation, route }) {
       distance: '3.1 km',
       icon: 'flood',
       tag: 'Rescue',
+      latOffset: 0.015,
+      lngOffset: 0.012,
     },
   };
 
   const responder = responderData[emergencyType];
   const emergencyColor = EMERGENCY_COLORS[emergencyType];
+
+  // Responder location based on user location
+  const responderLocation = location ? {
+    latitude: location.coords.latitude + responder.latOffset,
+    longitude: location.coords.longitude + responder.lngOffset,
+  } : null;
+
+  // Get user location on mount
+  useEffect(() => {
+    (async () => {
+      try {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setErrorMsg('Location permission denied');
+          setLoading(false);
+          return;
+        }
+
+        let currentLocation = await Location.getCurrentPositionAsync({
+          accuracy: Location.Accuracy.High,
+        });
+        
+        setLocation(currentLocation);
+        setRegion({
+          latitude: currentLocation.coords.latitude,
+          longitude: currentLocation.coords.longitude,
+          latitudeDelta: 0.015,
+          longitudeDelta: 0.015,
+        });
+        setLoading(false);
+      } catch (error) {
+        setErrorMsg('Error getting location');
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // Center map on user location
+  const centerOnUser = () => {
+    if (location && mapRef.current) {
+      mapRef.current.animateToRegion({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        latitudeDelta: 0.015,
+        longitudeDelta: 0.015,
+      }, 500);
+    }
+  };
+
+  // Fit map to show both user and responder
+  const fitToMarkers = () => {
+    if (location && responderLocation && mapRef.current) {
+      mapRef.current.fitToCoordinates(
+        [
+          { latitude: location.coords.latitude, longitude: location.coords.longitude },
+          responderLocation,
+        ],
+        {
+          edgePadding: { top: 100, right: 50, bottom: 200, left: 50 },
+          animated: true,
+        }
+      );
+    }
+  };
+
+  // Auto-fit when emergency is active and location is available
+  useEffect(() => {
+    if (isEmergencyActive && location && !loading) {
+      setTimeout(fitToMarkers, 500);
+    }
+  }, [isEmergencyActive, location, loading]);
 
   return (
     <View style={styles.container}>
@@ -107,63 +203,134 @@ export default function LocationsScreen({ navigation, route }) {
         </View>
       </View>
 
-      {/* Mock Map */}
+      {/* Map Container */}
       <View style={styles.mapContainer}>
-        <LinearGradient
-          colors={['#E0E7FF', '#F3F4F6']}
-          style={styles.mockMap}
-        >
-          {/* Grid lines to simulate map */}
-          <View style={styles.gridOverlay}>
-            {[...Array(8)].map((_, i) => (
-              <View key={`h-${i}`} style={styles.gridLineHorizontal} />
-            ))}
-            {[...Array(8)].map((_, i) => (
-              <View key={`v-${i}`} style={styles.gridLineVertical} />
-            ))}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#DC2626" />
+            <Text style={styles.loadingText}>Getting your location...</Text>
           </View>
-
-          {/* Your Location Pin */}
-          <View style={styles.userLocation}>
-            <View style={[styles.userLocationPulse, { backgroundColor: '#DC2626' + '40' }]} />
-            <View style={[styles.userLocationDot, { backgroundColor: '#DC2626' }]}>
-              <Ionicons name="person" size={16} color="#FFFFFF" />
-            </View>
+        ) : errorMsg ? (
+          <View style={styles.errorContainer}>
+            <Ionicons name="location-outline" size={48} color="#DC2626" />
+            <Text style={styles.errorText}>{errorMsg}</Text>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={() => {
+                setLoading(true);
+                setErrorMsg(null);
+              }}
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
           </View>
-
-          {isEmergencyActive && (
-            <>
-              {/* Responder Location Pin */}
-              <View style={styles.responderLocation}>
-                <View style={[styles.responderLocationPulse, { backgroundColor: emergencyColor + '30' }]} />
-                <View style={[styles.responderPin, { backgroundColor: emergencyColor }]}>
-                  <Ionicons name="car" size={20} color="#FFFFFF" />
+        ) : (
+          <MapView
+            ref={mapRef}
+            style={styles.map}
+            provider={PROVIDER_GOOGLE}
+            initialRegion={region}
+            showsUserLocation={true}
+            showsMyLocationButton={false}
+            showsCompass={true}
+            rotateEnabled={true}
+            zoomEnabled={true}
+            scrollEnabled={true}
+          >
+            {/* User Location Marker */}
+            {location && (
+              <Marker
+                coordinate={{
+                  latitude: location.coords.latitude,
+                  longitude: location.coords.longitude,
+                }}
+                title="Your Location"
+                description="You are here"
+              >
+                <View style={styles.userMarker}>
+                  <View style={styles.userMarkerPulse} />
+                  <View style={styles.userMarkerDot}>
+                    <Ionicons name="person" size={14} color="#FFFFFF" />
+                  </View>
                 </View>
-              </View>
+              </Marker>
+            )}
 
-              {/* Route Line */}
-              <View style={[styles.routeLine, { backgroundColor: emergencyColor }]} />
-            </>
-          )}
+            {/* Responder Marker */}
+            {isEmergencyActive && responderLocation && (
+              <>
+                <Marker
+                  coordinate={responderLocation}
+                  title={responder.name}
+                  description={responder.building}
+                >
+                  <View style={[styles.responderMarker, { backgroundColor: emergencyColor }]}>
+                    <MaterialIcons name={responder.icon} size={24} color="#FFFFFF" />
+                  </View>
+                </Marker>
 
-          {/* Map Labels */}
-          <View style={styles.mapLabel}>
-            <Text style={styles.mapLabelText}>Your Location</Text>
-          </View>
-        </LinearGradient>
+                {/* Route Line */}
+                <Polyline
+                  coordinates={[
+                    { latitude: location.coords.latitude, longitude: location.coords.longitude },
+                    responderLocation,
+                  ]}
+                  strokeColor={emergencyColor}
+                  strokeWidth={4}
+                  lineDashPattern={[10, 5]}
+                />
+              </>
+            )}
+          </MapView>
+        )}
 
         {/* Map Controls */}
-        <View style={styles.mapControls}>
-          <TouchableOpacity style={styles.controlButton}>
-            <Ionicons name="add" size={20} color="#1F2937" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.controlButton}>
-            <Ionicons name="remove" size={20} color="#1F2937" />
-          </TouchableOpacity>
-          <TouchableOpacity style={[styles.controlButton, styles.locateButton]}>
-            <Ionicons name="locate" size={20} color="#FFFFFF" />
-          </TouchableOpacity>
-        </View>
+        {!loading && !errorMsg && (
+          <View style={styles.mapControls}>
+            <TouchableOpacity 
+              style={styles.controlButton}
+              onPress={() => {
+                if (mapRef.current) {
+                  mapRef.current.animateToRegion({
+                    ...region,
+                    latitudeDelta: region.latitudeDelta * 0.5,
+                    longitudeDelta: region.longitudeDelta * 0.5,
+                  }, 300);
+                }
+              }}
+            >
+              <Ionicons name="add" size={20} color="#1F2937" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.controlButton}
+              onPress={() => {
+                if (mapRef.current) {
+                  mapRef.current.animateToRegion({
+                    ...region,
+                    latitudeDelta: region.latitudeDelta * 2,
+                    longitudeDelta: region.longitudeDelta * 2,
+                  }, 300);
+                }
+              }}
+            >
+              <Ionicons name="remove" size={20} color="#1F2937" />
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.controlButton, styles.locateButton]}
+              onPress={centerOnUser}
+            >
+              <Ionicons name="locate" size={20} color="#FFFFFF" />
+            </TouchableOpacity>
+            {isEmergencyActive && (
+              <TouchableOpacity 
+                style={[styles.controlButton, { backgroundColor: emergencyColor }]}
+                onPress={fitToMarkers}
+              >
+                <Ionicons name="expand" size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {isEmergencyActive && (
           /* Alert Banner */
@@ -326,14 +493,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingBottom: 16,
   },
-  backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -344,51 +503,68 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: '#FFFFFF',
   },
-  headerRight: {
-    width: 40,
-  },
   mapContainer: {
     flex: 1,
     position: 'relative',
   },
-  mockMap: {
+  map: {
     flex: 1,
-    position: 'relative',
-  },
-  gridOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    flexDirection: 'row',
-  },
-  gridLineHorizontal: {
-    position: 'absolute',
     width: '100%',
-    height: 1,
-    backgroundColor: '#CBD5E1',
-    opacity: 0.3,
   },
-  gridLineVertical: {
-    width: 1,
-    height: '100%',
-    backgroundColor: '#CBD5E1',
-    opacity: 0.3,
-  },
-  userLocation: {
-    position: 'absolute',
-    bottom: '30%',
-    left: '40%',
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#F3F4F6',
   },
-  userLocationPulse: {
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    padding: 20,
+  },
+  errorText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  retryButton: {
+    marginTop: 20,
+    backgroundColor: '#DC2626',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  userMarker: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userMarkerPulse: {
     position: 'absolute',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    opacity: 0.4,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'rgba(220, 38, 38, 0.3)',
   },
-  userLocationDot: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  userMarkerDot: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#DC2626',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 3,
@@ -399,20 +575,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 5,
   },
-  responderLocation: {
-    position: 'absolute',
-    top: '25%',
-    right: '25%',
-    alignItems: 'center',
-  },
-  responderLocationPulse: {
-    position: 'absolute',
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    opacity: 0.3,
-  },
-  responderPin: {
+  responderMarker: {
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -426,38 +589,10 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     elevation: 8,
   },
-  routeLine: {
-    position: 'absolute',
-    top: '28%',
-    right: '28%',
-    width: 180,
-    height: 3,
-    transform: [{ rotate: '45deg' }],
-    opacity: 0.5,
-  },
-  mapLabel: {
-    position: 'absolute',
-    bottom: '26%',
-    left: '35%',
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  mapLabelText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#1F2937',
-  },
   mapControls: {
     position: 'absolute',
     right: 16,
-    top: 16,
+    top: 80,
     gap: 12,
   },
   controlButton: {
@@ -480,7 +615,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 16,
     left: 16,
-    right: 16,
+    right: 70,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -635,31 +770,32 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
+    paddingBottom: 12,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
     shadowRadius: 8,
-    elevation: 10,
+    elevation: 8,
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: 6,
   },
   navLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#6B7280',
-    marginTop: 4,
+    marginTop: 2,
     fontWeight: '500',
   },
   navLabelActive: {
     color: '#DC2626',
-    fontWeight: '600',
+    fontWeight: '700',
   },
   defaultCard: {
     backgroundColor: '#FFFFFF',

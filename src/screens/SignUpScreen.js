@@ -13,10 +13,36 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { AuthHeader, FormInput, PrimaryButton, toastConfig } from '../components';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, USER_ROLES } from '../context/AuthContext';
 import Toast from 'react-native-toast-message';
+
+// Role options for signup
+const ROLE_OPTIONS = [
+  {
+    id: USER_ROLES.USER,
+    title: 'User',
+    description: 'Report emergencies & get help',
+    icon: 'person',
+    color: '#3B82F6',
+  },
+  {
+    id: USER_ROLES.RESPONDER,
+    title: 'Responder',
+    description: 'Respond to emergency requests',
+    icon: 'shield-checkmark',
+    color: '#059669',
+  },
+];
+
+// Emergency types for responders
+const EMERGENCY_TYPES = [
+  { id: 'police', name: 'Police', icon: 'local-police', color: '#1E3A8A' },
+  { id: 'medical', name: 'Medical', icon: 'medical-services', color: '#059669' },
+  { id: 'fire', name: 'Fire', icon: 'local-fire-department', color: '#DC2626' },
+  { id: 'flood', name: 'Flood/Rescue', icon: 'flood', color: '#0369A1' },
+];
 
 export default function SignUpScreen({ navigation }) {
   const [firstName, setFirstName] = React.useState('');
@@ -31,6 +57,13 @@ export default function SignUpScreen({ navigation }) {
   const [otp, setOtp] = React.useState(['', '', '', '', '', '']);
   const [isVerifying, setIsVerifying] = React.useState(false);
   const [isResending, setIsResending] = React.useState(false);
+  
+  // Role selection states
+  const [selectedRole, setSelectedRole] = React.useState(USER_ROLES.USER);
+  const [selectedEmergencyType, setSelectedEmergencyType] = React.useState(null);
+  const [badge, setBadge] = React.useState('');
+  const [building, setBuilding] = React.useState('');
+  
   const { signUp, sendVerificationEmail, checkEmailVerified, logout } = useAuth();
   
   const otpInputRefs = React.useRef([]);
@@ -130,9 +163,36 @@ export default function SignUpScreen({ navigation }) {
       return;
     }
 
+    // Responder validation
+    if (selectedRole === USER_ROLES.RESPONDER) {
+      if (!selectedEmergencyType) {
+        Toast.show({
+          type: 'error',
+          text1: 'Emergency Type Required',
+          text2: 'Please select your emergency response type',
+        });
+        return;
+      }
+      if (!badge.trim()) {
+        Toast.show({
+          type: 'error',
+          text1: 'Badge Number Required',
+          text2: 'Please enter your badge/ID number',
+        });
+        return;
+      }
+    }
+
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
     setIsLoading(true);
-    const result = await signUp(email.trim(), password, fullName);
+    
+    const additionalData = selectedRole === USER_ROLES.RESPONDER ? {
+      emergencyType: selectedEmergencyType,
+      badge: badge.trim(),
+      building: building.trim(),
+    } : {};
+    
+    const result = await signUp(email.trim(), password, fullName, selectedRole, additionalData);
     setIsLoading(false);
     
     if (result.success) {
@@ -164,8 +224,8 @@ export default function SignUpScreen({ navigation }) {
         text1: 'Email Verified!',
         text2: 'Your account is now active',
       });
+      // Just logout - navigation will happen automatically via AuthContext
       await logout();
-      navigation.navigate('SignIn');
     } else {
       Toast.show({
         type: 'error',
@@ -220,6 +280,83 @@ export default function SignUpScreen({ navigation }) {
           <View style={styles.formCard}>
             <Text style={styles.welcomeText}>Create Account</Text>
             <Text style={styles.welcomeSubtext}>Sign up to get started</Text>
+
+            {/* Role Selection */}
+            <Text style={styles.sectionTitle}>I am a:</Text>
+            <View style={styles.roleContainer}>
+              {ROLE_OPTIONS.map((role) => (
+                <TouchableOpacity
+                  key={role.id}
+                  style={[
+                    styles.roleOption,
+                    selectedRole === role.id && { borderColor: role.color, backgroundColor: role.color + '10' },
+                  ]}
+                  onPress={() => {
+                    setSelectedRole(role.id);
+                    if (role.id !== USER_ROLES.RESPONDER) {
+                      setSelectedEmergencyType(null);
+                      setBadge('');
+                      setBuilding('');
+                    }
+                  }}
+                >
+                  <View style={[styles.roleIconContainer, { backgroundColor: role.color + '20' }]}>
+                    <Ionicons name={role.icon} size={24} color={role.color} />
+                  </View>
+                  <View style={styles.roleTextContainer}>
+                    <Text style={[styles.roleTitle, selectedRole === role.id && { color: role.color }]}>
+                      {role.title}
+                    </Text>
+                    <Text style={styles.roleDescription}>{role.description}</Text>
+                  </View>
+                  {selectedRole === role.id && (
+                    <Ionicons name="checkmark-circle" size={24} color={role.color} />
+                  )}
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            {/* Responder-specific fields */}
+            {selectedRole === USER_ROLES.RESPONDER && (
+              <View style={styles.responderFields}>
+                <Text style={styles.sectionTitle}>Emergency Response Type:</Text>
+                <View style={styles.emergencyTypeContainer}>
+                  {EMERGENCY_TYPES.map((type) => (
+                    <TouchableOpacity
+                      key={type.id}
+                      style={[
+                        styles.emergencyTypeOption,
+                        selectedEmergencyType === type.id && { borderColor: type.color, backgroundColor: type.color + '15' },
+                      ]}
+                      onPress={() => setSelectedEmergencyType(type.id)}
+                    >
+                      <MaterialIcons name={type.icon} size={28} color={type.color} />
+                      <Text style={[styles.emergencyTypeName, { color: selectedEmergencyType === type.id ? type.color : '#6B7280' }]}>
+                        {type.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                <FormInput
+                  icon="badge"
+                  iconFamily="MaterialIcons"
+                  placeholder="Badge/ID Number"
+                  value={badge}
+                  onChangeText={setBadge}
+                />
+
+                <FormInput
+                  icon="business"
+                  iconFamily="MaterialIcons"
+                  placeholder="Station/Building (Optional)"
+                  value={building}
+                  onChangeText={setBuilding}
+                />
+              </View>
+            )}
+
+            <View style={styles.divider} />
 
             <FormInput
               icon="user"
@@ -521,5 +658,79 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#DC2626',
     fontWeight: '600',
+  },
+  // Role Selection Styles
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 12,
+    marginTop: 8,
+  },
+  roleContainer: {
+    marginBottom: 16,
+  },
+  roleOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    marginBottom: 12,
+    backgroundColor: '#FFFFFF',
+  },
+  roleIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  roleTextContainer: {
+    flex: 1,
+  },
+  roleTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginBottom: 2,
+  },
+  roleDescription: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  responderFields: {
+    backgroundColor: '#F9FAFB',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  emergencyTypeContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  emergencyTypeOption: {
+    width: '48%',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: '#E5E7EB',
+    marginBottom: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  emergencyTypeName: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 8,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+    marginVertical: 16,
   },
 });
