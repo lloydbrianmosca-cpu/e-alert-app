@@ -5,7 +5,9 @@ import {
   signOut, 
   onAuthStateChanged,
   updateProfile,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendEmailVerification,
+  reload
 } from 'firebase/auth';
 import { auth } from '../services/firebase';
 
@@ -70,6 +72,30 @@ export function AuthProvider({ children }) {
     }
   };
 
+  const sendVerificationEmail = async () => {
+    try {
+      if (auth.currentUser) {
+        await sendEmailVerification(auth.currentUser);
+        return { success: true };
+      }
+      return { success: false, error: 'No user logged in' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error.code) };
+    }
+  };
+
+  const checkEmailVerified = async () => {
+    try {
+      if (auth.currentUser) {
+        await reload(auth.currentUser);
+        return { success: true, verified: auth.currentUser.emailVerified };
+      }
+      return { success: false, error: 'No user logged in' };
+    } catch (error) {
+      return { success: false, error: getErrorMessage(error.code) };
+    }
+  };
+
   const getErrorMessage = (errorCode) => {
     switch (errorCode) {
       case 'auth/email-already-in-use':
@@ -102,6 +128,8 @@ export function AuthProvider({ children }) {
     signIn,
     logout,
     resetPassword,
+    sendVerificationEmail,
+    checkEmailVerified,
   };
 
   return (
