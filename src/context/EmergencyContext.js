@@ -1,4 +1,8 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { db } from '../services/firestore';
+import { auth } from '../services/firebase';
+import { doc, setDoc, getDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
 
 // Responder data based on emergency type
 const RESPONDER_DATA = {
@@ -55,6 +59,7 @@ const RESPONDER_DATA = {
 const EmergencyContext = createContext({
   activeEmergencyType: null,
   activeResponder: null,
+  isLoadingEmergency: true,
   activateEmergency: () => {},
   clearEmergency: () => {},
   getResponderData: () => null,
@@ -63,15 +68,99 @@ const EmergencyContext = createContext({
 export function EmergencyProvider({ children }) {
   const [activeEmergencyType, setActiveEmergencyType] = useState(null);
   const [activeResponder, setActiveResponder] = useState(null);
+  const [isLoadingEmergency, setIsLoadingEmergency] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
 
-  const activateEmergency = (type) => {
+  // Listen to auth state changes
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+    return unsubscribe;
+  }, []);
+
+  // Load active emergency from Firestore on user login
+  useEffect(() => {
+    const loadActiveEmergency = async () => {
+      if (!currentUser?.uid) {
+        setActiveEmergencyType(null);
+        setActiveResponder(null);
+        setIsLoadingEmergency(false);
+        return;
+      }
+
+      try {
+        const emergencyRef = doc(db, 'activeEmergencies', currentUser.uid);
+        const emergencySnap = await getDoc(emergencyRef);
+
+        if (emergencySnap.exists()) {
+          const data = emergencySnap.data();
+          setActiveEmergencyType(data.emergencyType);
+          setActiveResponder(RESPONDER_DATA[data.emergencyType] || null);
+        } else {
+          setActiveEmergencyType(null);
+          setActiveResponder(null);
+        }
+      } catch (error) {
+        console.log('Error loading active emergency:', error);
+      } finally {
+        setIsLoadingEmergency(false);
+      }
+    };
+
+    loadActiveEmergency();
+  }, [currentUser]);
+
+  const activateEmergency = async (type) => {
     setActiveEmergencyType(type);
     setActiveResponder(RESPONDER_DATA[type] || null);
+
+    // Save to Firestore - use auth.currentUser directly to avoid stale closure
+    const user = auth.currentUser;
+    console.log('Activating emergency - User UID:', user?.uid);
+    console.log('Emergency type:', type);
+    
+    if (user?.uid) {
+      try {
+        const emergencyRef = doc(db, 'activeEmergencies', user.uid);
+        console.log('Document path:', 'activeEmergencies/' + user.uid);
+        
+        const dataToSave = {
+          emergencyType: type,
+          userId: user.uid,
+          userEmail: user.email || '',
+          userName: user.displayName || '',
+          status: 'active',
+          createdAt: serverTimestamp(),
+          responder: RESPONDER_DATA[type] || null,
+        };
+        console.log('Data to save:', JSON.stringify(dataToSave, null, 2));
+        
+        await setDoc(emergencyRef, dataToSave);
+        console.log('Emergency saved to database successfully');
+      } catch (error) {
+        console.log('Error saving emergency to database:', error);
+      }
+    } else {
+      console.log('No user logged in - cannot save emergency');
+    }
   };
 
-  const clearEmergency = () => {
+  const clearEmergency = async () => {
     setActiveEmergencyType(null);
     setActiveResponder(null);
+
+    // Delete from Firestore - use auth.currentUser directly to avoid stale closure
+    const user = auth.currentUser;
+    if (user?.uid) {
+      try {
+        const emergencyRef = doc(db, 'activeEmergencies', user.uid);
+        await deleteDoc(emergencyRef);
+        console.log('Emergency cleared from database successfully');
+      } catch (error) {
+        console.log('Error clearing emergency from database:', error);
+      }
+    }
   };
 
   const getResponderData = (type) => {
@@ -82,6 +171,7 @@ export function EmergencyProvider({ children }) {
     <EmergencyContext.Provider value={{ 
       activeEmergencyType, 
       activeResponder,
+      isLoadingEmergency,
       activateEmergency, 
       clearEmergency,
       getResponderData,

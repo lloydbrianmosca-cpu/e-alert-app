@@ -6,6 +6,11 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
     
+    // Active Emergencies collection - users can read/write their own emergency
+    match /activeEmergencies/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
     // Responders collection - responders can read/write their own data
     match /responders/{responderId} {
       allow read: if request.auth != null;
