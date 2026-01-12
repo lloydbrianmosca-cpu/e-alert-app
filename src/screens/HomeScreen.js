@@ -74,7 +74,7 @@ export default function HomeScreen({ navigation }) {
   const [sosCount, setSosCount] = useState(0);
   const [activeTab, setActiveTab] = useState('home');
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
-  const { activeEmergencyType, activateEmergency } = useEmergency();
+  const { activeEmergencyType, activateEmergency, clearEmergency } = useEmergency();
 
   // Pulse animation for SOS button
   React.useEffect(() => {
@@ -276,12 +276,25 @@ export default function HomeScreen({ navigation }) {
             {activeEmergencyType && (
               <View style={styles.activeEmergencyContainer}>
                 <TouchableOpacity
-                  style={styles.activeEmergencyButton}
+                  style={styles.viewEmergencyButton}
                   onPress={() => navigation.navigate('Locations')}
                   activeOpacity={0.85}
                 >
-                  <Ionicons name="navigate" size={20} color="#FFFFFF" />
-                  <Text style={styles.activeEmergencyButtonText}>View Active Emergency</Text>
+                  <Ionicons name="navigate" size={18} color="#DC2626" />
+                  <Text style={styles.viewEmergencyButtonText}>View Active</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.cancelEmergencyButton}
+                  onPress={() => {
+                    clearEmergency();
+                    setShowSOS(false);
+                    setSelectedType(null);
+                    setSosCount(0);
+                  }}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="close-circle" size={18} color="#FFFFFF" />
+                  <Text style={styles.cancelEmergencyButtonText}>Cancel Emergency</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -590,25 +603,50 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   activeEmergencyContainer: {
+    flexDirection: 'row',
     paddingHorizontal: 20,
     marginBottom: 15,
+    gap: 12,
   },
-  activeEmergencyButton: {
+  viewEmergencyButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 10,
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#DC2626',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  viewEmergencyButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#DC2626',
+  },
+  cancelEmergencyButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     paddingVertical: 14,
     borderRadius: 12,
     backgroundColor: '#DC2626',
-    shadowColor: '#000',
+    shadowColor: '#DC2626',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 5,
   },
-  activeEmergencyButtonText: {
-    fontSize: 15,
+  cancelEmergencyButtonText: {
+    fontSize: 14,
     fontWeight: '700',
     color: '#FFFFFF',
   },

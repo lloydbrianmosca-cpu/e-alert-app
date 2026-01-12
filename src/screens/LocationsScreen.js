@@ -33,7 +33,7 @@ const EMERGENCY_COLORS = {
 
 export default function LocationsScreen({ navigation, route }) {
   const [activeTab, setActiveTab] = useState('locations');
-  const { activeEmergencyType } = useEmergency();
+  const { activeEmergencyType, clearEmergency } = useEmergency();
   
   // Check if emergency is active (SOS was pressed 3 times)
   const isEmergencyActive = !!activeEmergencyType || !!route?.params?.emergencyType;
@@ -220,6 +220,18 @@ export default function LocationsScreen({ navigation, route }) {
             <Text style={styles.actionButtonText}>Send Message</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Cancel Emergency Button */}
+        <TouchableOpacity
+          style={styles.cancelEmergencyButton}
+          onPress={() => {
+            clearEmergency();
+            navigation.navigate('Home');
+          }}
+        >
+          <Ionicons name="close-circle" size={20} color="#FFFFFF" />
+          <Text style={styles.cancelEmergencyText}>Cancel Emergency</Text>
+        </TouchableOpacity>
       </View>
       ) : (
         /* Default View - No active emergency */
@@ -455,12 +467,12 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 16,
     left: 16,
-    right: 80,
+    right: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     borderRadius: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -469,10 +481,26 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   alertText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '700',
     color: '#FFFFFF',
     flex: 1,
+  },
+  cancelEmergencyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DC2626',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 12,
+    gap: 8,
+    marginTop: 12,
+  },
+  cancelEmergencyText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   responderCard: {
     backgroundColor: '#FFFFFF',
