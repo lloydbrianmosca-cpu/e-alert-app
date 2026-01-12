@@ -12,38 +12,103 @@ import {
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Feather } from '@expo/vector-icons';
 import { AuthHeader, FormInput, PrimaryButton } from '../components';
+import { useAuth } from '../context/AuthContext';
+import Toast from 'react-native-toast-message';
 
 export default function SignUpScreen({ navigation }) {
-  const [fullName, setFullName] = React.useState('');
+  const [firstName, setFirstName] = React.useState('');
+  const [lastName, setLastName] = React.useState('');
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [confirmPassword, setConfirmPassword] = React.useState('');
   const [secureEntry, setSecureEntry] = React.useState(true);
   const [secureConfirmEntry, setSecureConfirmEntry] = React.useState(true);
   const [isLoading, setIsLoading] = React.useState(false);
+  const { signUp } = useAuth();
 
-  const handleSignUp = () => {
-    if (!fullName || !email || !password || !confirmPassword) {
-      alert('Please fill in all fields');
+  const handleSignUp = async () => {
+    if (!firstName) {
+      Toast.show({
+        type: 'error',
+        text1: 'First Name Required',
+        text2: 'Please enter your first name',
+      });
+      return;
+    }
+
+    if (!lastName) {
+      Toast.show({
+        type: 'error',
+        text1: 'Last Name Required',
+        text2: 'Please enter your last name',
+      });
+      return;
+    }
+
+    if (!email) {
+      Toast.show({
+        type: 'error',
+        text1: 'Email Required',
+        text2: 'Please enter your email address',
+      });
+      return;
+    }
+
+    if (!password) {
+      Toast.show({
+        type: 'error',
+        text1: 'Password Required',
+        text2: 'Please enter a password',
+      });
+      return;
+    }
+
+    if (!confirmPassword) {
+      Toast.show({
+        type: 'error',
+        text1: 'Confirm Password',
+        text2: 'Please confirm your password',
+      });
       return;
     }
 
     if (password !== confirmPassword) {
-      alert('Passwords do not match');
+      Toast.show({
+        type: 'error',
+        text1: 'Passwords Mismatch',
+        text2: 'Passwords do not match',
+      });
       return;
     }
 
     if (password.length < 6) {
-      alert('Password must be at least 6 characters');
+      Toast.show({
+        type: 'error',
+        text1: 'Weak Password',
+        text2: 'Password must be at least 6 characters',
+      });
       return;
     }
 
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
     setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      alert('Account created successfully!');
+    const result = await signUp(email.trim(), password, fullName);
+    setIsLoading(false);
+    
+    if (result.success) {
+      Toast.show({
+        type: 'success',
+        text1: 'Account Created!',
+        text2: 'You can now sign in',
+      });
       navigation.navigate('SignIn');
-    }, 1000);
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Sign Up Failed',
+        text2: result.error,
+      });
+    }
   };
 
   return (
@@ -69,9 +134,18 @@ export default function SignUpScreen({ navigation }) {
             <FormInput
               icon="user"
               iconFamily="Feather"
-              placeholder="Full Name"
-              value={fullName}
-              onChangeText={setFullName}
+              placeholder="First Name"
+              value={firstName}
+              onChangeText={setFirstName}
+              autoCapitalize="words"
+            />
+
+            <FormInput
+              icon="user"
+              iconFamily="Feather"
+              placeholder="Last Name"
+              value={lastName}
+              onChangeText={setLastName}
               autoCapitalize="words"
             />
 

@@ -10,18 +10,17 @@ import {
   ScrollView,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
-import { AuthHeader, FormInput, PrimaryButton } from '../components';
+import { Feather } from '@expo/vector-icons';
+import { FormInput, PrimaryButton } from '../components';
 import { useAuth } from '../context/AuthContext';
 import Toast from 'react-native-toast-message';
 
-export default function SignInScreen({ navigation }) {
+export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = React.useState('');
-  const [password, setPassword] = React.useState('');
-  const [secureEntry, setSecureEntry] = React.useState(true);
   const [isLoading, setIsLoading] = React.useState(false);
-  const { signIn } = useAuth();
+  const { resetPassword } = useAuth();
 
-  const handleSignIn = async () => {
+  const handleResetPassword = async () => {
     if (!email) {
       Toast.show({
         type: 'error',
@@ -31,37 +30,24 @@ export default function SignInScreen({ navigation }) {
       return;
     }
 
-    if (!password) {
-      Toast.show({
-        type: 'error',
-        text1: 'Password Required',
-        text2: 'Please enter your password',
-      });
-      return;
-    }
-    
     setIsLoading(true);
-    const result = await signIn(email.trim(), password);
+    const result = await resetPassword(email.trim());
     setIsLoading(false);
-    
+
     if (result.success) {
       Toast.show({
         type: 'success',
-        text1: 'Welcome Back!',
-        text2: 'Signed in successfully',
+        text1: 'Email Sent',
+        text2: 'Check your email for reset instructions',
       });
-      navigation.replace('Home');
+      navigation.goBack();
     } else {
       Toast.show({
         type: 'error',
-        text1: 'Sign In Failed',
+        text1: 'Error',
         text2: result.error,
       });
     }
-  };
-
-  const handleForgotPassword = () => {
-    navigation.navigate('ForgotPassword');
   };
 
   return (
@@ -77,12 +63,27 @@ export default function SignInScreen({ navigation }) {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          <AuthHeader />
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={() => navigation.goBack()}
+            >
+              <Feather name="arrow-left" size={24} color="#FFFFFF" />
+            </TouchableOpacity>
+            <Text style={styles.headerTitle}>Reset Password</Text>
+          </View>
 
           {/* Form Card */}
           <View style={styles.formCard}>
-            <Text style={styles.welcomeText}>Welcome Back</Text>
-            <Text style={styles.welcomeSubtext}>Sign in to continue</Text>
+            <View style={styles.iconContainer}>
+              <Feather name="lock" size={48} color="#DC2626" />
+            </View>
+            
+            <Text style={styles.title}>Forgot Password?</Text>
+            <Text style={styles.subtitle}>
+              Enter your email address and we'll send you instructions to reset your password.
+            </Text>
 
             <FormInput
               icon="email"
@@ -93,26 +94,10 @@ export default function SignInScreen({ navigation }) {
               autoCapitalize="none"
             />
 
-            <FormInput
-              icon="lock"
-              iconFamily="Feather"
-              placeholder="Password"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={secureEntry}
-              showPasswordToggle
-              isPasswordVisible={!secureEntry}
-              onTogglePassword={() => setSecureEntry(!secureEntry)}
-            />
-
-            <TouchableOpacity style={styles.forgotButton}>
-              <Text style={styles.forgotPassword}>Forgot Password?</Text>
-            </TouchableOpacity>
-
             <PrimaryButton
-              title="Sign In"
-              loadingText="Signing In..."
-              onPress={handleSignIn}
+              title="Send Reset Link"
+              loadingText="Sending..."
+              onPress={handleResetPassword}
               isLoading={isLoading}
             />
           </View>
@@ -120,10 +105,10 @@ export default function SignInScreen({ navigation }) {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              New to E-Alert?{' '}
+              Remember your password?{' '}
             </Text>
-            <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-              <Text style={styles.signUpLink}>Create Account</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('SignIn')}>
+              <Text style={styles.signInLink}>Sign In</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -135,13 +120,30 @@ export default function SignInScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#B91C1C',
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
+    backgroundColor: '#F3F4F6',
+  },
+  header: {
+    backgroundColor: '#B91C1C',
+    paddingTop: 60,
+    paddingBottom: 80,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  backButton: {
+    marginRight: 16,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   formCard: {
     backgroundColor: '#FFFFFF',
@@ -156,26 +158,23 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 8,
   },
-  welcomeText: {
+  iconContainer: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  title: {
     fontSize: 26,
     fontWeight: '700',
     color: '#1F2937',
-    marginBottom: 4,
+    marginBottom: 8,
+    textAlign: 'center',
   },
-  welcomeSubtext: {
+  subtitle: {
     fontSize: 15,
     color: '#6B7280',
     marginBottom: 28,
-  },
-  forgotButton: {
-    alignSelf: 'flex-end',
-    marginBottom: 24,
-    marginTop: 4,
-  },
-  forgotPassword: {
-    fontSize: 14,
-    color: '#DC2626',
-    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 22,
   },
   footer: {
     flexDirection: 'row',
@@ -187,7 +186,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#6B7280',
   },
-  signUpLink: {
+  signInLink: {
     color: '#DC2626',
     fontWeight: '700',
     fontSize: 15,
