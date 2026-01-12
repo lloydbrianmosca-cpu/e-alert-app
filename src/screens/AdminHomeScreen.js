@@ -182,17 +182,20 @@ export default function AdminHomeScreen({ navigation }) {
         </View>
         
         <ScrollView style={styles.drawerMenu}>
-          {menuItems.map((item) => (
-            <TouchableOpacity 
-              key={item.id}
-              style={styles.drawerMenuItem}
-              onPress={() => handleMenuPress(item.screen)}
-            >
-              <Ionicons name={item.icon} size={24} color="#DC2626" />
-              <Text style={styles.drawerMenuText}>{item.title}</Text>
-              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-          ))}
+          {menuItems.map((item) => {
+            const isActive = item.id === 'dashboard';
+            return (
+              <TouchableOpacity 
+                key={item.id}
+                style={[styles.drawerMenuItem, isActive && styles.drawerMenuItemActive]}
+                onPress={() => handleMenuPress(item.screen)}
+              >
+                <Ionicons name={item.icon} size={24} color="#DC2626" />
+                <Text style={[styles.drawerMenuText, isActive && styles.drawerMenuTextActive]}>{item.title}</Text>
+                {!isActive && <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />}
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
 
         <View style={styles.drawerFooter}>
@@ -414,12 +417,20 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F3F4F6',
   },
+  drawerMenuItemActive: {
+    backgroundColor: '#FEE2E2',
+    borderBottomColor: '#FEE2E2',
+  },
   drawerMenuText: {
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
     color: '#1F2937',
     marginLeft: 15,
+  },
+  drawerMenuTextActive: {
+    color: '#DC2626',
+    fontWeight: '700',
   },
   drawerFooter: {
     padding: 20,
