@@ -8,3 +8,7 @@ export { default as ProfileScreen } from './ProfileScreen';
 export { default as HotlinesScreen } from './HotlinesScreen';
 export { default as AdminHomeScreen } from './AdminHomeScreen';
 export { default as ResponderSignUpScreen } from './ResponderSignUpScreen';
+export { default as UserLogsScreen } from './UserLogsScreen';
+export { default as EmergencyHistoryScreen } from './EmergencyHistoryScreen';
+export { default as RealtimeMonitoringScreen } from './RealtimeMonitoringScreen';
+export { default as ResponderManagementScreen } from './ResponderManagementScreen';
