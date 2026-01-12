@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -11,6 +11,9 @@ import {
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useAuth } from '../context/AuthContext';
+import { db } from '../services/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 
 // Bottom navigation items
 const NAV_ITEMS = [
@@ -170,6 +173,66 @@ export default function HotlinesScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('hotline');
   const [searchText, setSearchText] = useState('');
   const [selectedAgency, setSelectedAgency] = useState('all');
+  const [showProfileOverlay, setShowProfileOverlay] = useState(false);
+  const [isCheckingProfile, setIsCheckingProfile] = useState(true);
+  const { user } = useAuth();
+
+  // Required profile fields
+  const requiredFields = [
+    'firstName', 'lastName', 'email', 'contactNumber',
+    'address', 'region', 'province', 'city', 'barangay',
+    'emergencyContactName', 'emergencyContactNumber'
+  ];
+
+  // Check if profile is complete
+  const checkProfileComplete = async () => {
+    if (!user?.uid) {
+      setIsCheckingProfile(false);
+      return;
+    }
+
+    try {
+      const docRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        
+        const isComplete = requiredFields.every(field => {
+          if (field === 'firstName') {
+            return user?.displayName?.split(' ').slice(0, -1).join(' ')?.trim();
+          }
+          if (field === 'lastName') {
+            return user?.displayName?.split(' ').slice(-1)[0]?.trim();
+          }
+          if (field === 'email') {
+            return user?.email?.trim();
+          }
+          return data[field] && data[field].trim() !== '';
+        });
+
+        setShowProfileOverlay(!isComplete);
+      } else {
+        setShowProfileOverlay(true);
+      }
+    } catch (error) {
+      console.log('Error checking profile:', error);
+      setShowProfileOverlay(true);
+    } finally {
+      setIsCheckingProfile(false);
+    }
+  };
+
+  useEffect(() => {
+    checkProfileComplete();
+  }, [user]);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      checkProfileComplete();
+    });
+    return unsubscribe;
+  }, [navigation, user]);
 
   const filteredHotlines = useMemo(() => {
     return HOTLINES_DATA.filter((hotline) => {
@@ -381,6 +444,29 @@ export default function HotlinesScreen({ navigation }) {
           </TouchableOpacity>
         ))}
       </View>
+
+      {/* Profile Incomplete Overlay */}
+      {showProfileOverlay && !isCheckingProfile && (
+        <View style={styles.overlayContainer}>
+          <View style={styles.overlayContent}>
+            <View style={styles.overlayIconContainer}>
+              <Ionicons name="person-circle" size={80} color="#DC2626" />
+            </View>
+            <Text style={styles.overlayTitle}>Complete Your Profile</Text>
+            <Text style={styles.overlaySubtitle}>
+              Please fill up your profile information first before using emergency services. This helps responders locate and assist you better.
+            </Text>
+            <TouchableOpacity
+              style={styles.overlayButton}
+              onPress={() => navigation.navigate('Profile')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="person" size={20} color="#FFFFFF" />
+              <Text style={styles.overlayButtonText}>Go to Profile</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -605,5 +691,68 @@ const styles = StyleSheet.create({
   navLabelActive: {
     color: '#DC2626',
     fontWeight: '600',
+  },
+  overlayContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+    zIndex: 1000,
+  },
+  overlayContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 30,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 340,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  overlayIconContainer: {
+    marginBottom: 20,
+  },
+  overlayTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  overlaySubtitle: {
+    fontSize: 15,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  overlayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DC2626',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 14,
+    gap: 10,
+    width: '100%',
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  overlayButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });
