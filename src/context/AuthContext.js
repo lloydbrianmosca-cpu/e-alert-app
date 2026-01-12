@@ -39,6 +39,13 @@ export function AuthProvider({ children }) {
         });
       }
       
+      // Send verification email immediately after signup
+      try {
+        await sendEmailVerification(userCredential.user);
+      } catch (emailError) {
+        console.log('Email verification error:', emailError);
+      }
+      
       return { success: true, user: userCredential.user };
     } catch (error) {
       return { success: false, error: getErrorMessage(error.code) };
@@ -48,6 +55,19 @@ export function AuthProvider({ children }) {
   const signIn = async (email, password) => {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      
+      // Check if email is verified
+      if (!userCredential.user.emailVerified) {
+        // Sign out the unverified user
+        await signOut(auth);
+        return { 
+          success: false, 
+          error: 'Please verify your email before signing in. Check your inbox or spam folder.',
+          needsVerification: true,
+          email: email
+        };
+      }
+      
       return { success: true, user: userCredential.user };
     } catch (error) {
       return { success: false, error: getErrorMessage(error.code) };

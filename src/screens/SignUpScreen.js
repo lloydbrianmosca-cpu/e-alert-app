@@ -133,24 +133,17 @@ export default function SignUpScreen({ navigation }) {
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
     setIsLoading(true);
     const result = await signUp(email.trim(), password, fullName);
+    setIsLoading(false);
     
     if (result.success) {
-      // Send verification email
-      const verifyResult = await sendVerificationEmail();
-      setIsLoading(false);
-      
-      if (verifyResult.success) {
-        setShowOtpModal(true);
-        Toast.show({
-          type: 'success',
-          text1: 'Verification Email Sent',
-          text2: 'Check your inbox for the verification code',
-        });
-      } else {
-        setShowOtpModal(true);
-      }
+      // Show verification modal - email is sent during signUp
+      setShowOtpModal(true);
+      Toast.show({
+        type: 'success',
+        text1: 'Verification Email Sent',
+        text2: 'Check your inbox for the verification link',
+      });
     } else {
-      setIsLoading(false);
       Toast.show({
         type: 'error',
         text1: 'Sign Up Failed',
@@ -334,7 +327,8 @@ export default function SignUpScreen({ navigation }) {
               </Text>
 
               <Text style={styles.instructionText}>
-                Click the link in your email, then tap the button below to continue
+                Click the link in your email, then tap the button below to continue.{'\n'}
+                <Text style={styles.spamNote}>Check your spam folder if you don't see it.</Text>
               </Text>
 
               <TouchableOpacity
@@ -490,6 +484,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
     paddingHorizontal: 10,
+    lineHeight: 20,
+  },
+  spamNote: {
+    color: '#9CA3AF',
+    fontStyle: 'italic',
   },
   verifyButton: {
     backgroundColor: '#DC2626',
