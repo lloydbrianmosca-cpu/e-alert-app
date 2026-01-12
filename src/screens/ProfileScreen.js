@@ -54,6 +54,8 @@ export default function ProfileScreen({ navigation }) {
           setProfileData(prev => ({
             ...prev,
             contactNumber: data.contactNumber || '',
+            emergencyContactName: data.emergencyContactName || '',
+            emergencyContactNumber: data.emergencyContactNumber || '',
           }));
         }
       }
@@ -74,15 +76,17 @@ export default function ProfileScreen({ navigation }) {
   const handleSave = async () => {
     setProfileData(editData);
     setIsEditing(false);
-    // Save contact number to Firestore
+    // Save contact number and emergency contact info to Firestore
     if (user?.uid) {
       try {
         await setDoc(doc(db, 'users', user.uid), {
           contactNumber: editData.contactNumber,
+          emergencyContactName: editData.emergencyContactName,
+          emergencyContactNumber: editData.emergencyContactNumber,
         }, { merge: true });
         Alert.alert('Success', 'Profile updated successfully');
       } catch (err) {
-        Alert.alert('Error', 'Failed to update contact number');
+        Alert.alert('Error', 'Failed to update profile info');
       }
     }
   };
