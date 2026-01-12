@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
 const { width } = Dimensions.get('window');
 
@@ -46,7 +46,7 @@ export default function LocationsScreen({ navigation, route }) {
       vehicle: 'Patrol Car 7',
       eta: '3 mins',
       distance: '1.2 km',
-      icon: 'user-shield',
+      icon: 'local-police',
     },
     medical: {
       name: 'Dr. Maria Santos',
@@ -55,7 +55,7 @@ export default function LocationsScreen({ navigation, route }) {
       vehicle: 'Ambulance Unit 3',
       eta: '5 mins',
       distance: '2.4 km',
-      icon: 'hospital',
+      icon: 'medical-services',
     },
     fire: {
       name: 'Firefighter Mike Reyes',
@@ -64,7 +64,7 @@ export default function LocationsScreen({ navigation, route }) {
       vehicle: 'Fire Truck 5',
       eta: '4 mins',
       distance: '1.8 km',
-      icon: 'fire-extinguisher',
+      icon: 'fire-truck',
     },
     flood: {
       name: 'Rescue Officer Anna Lee',
@@ -73,7 +73,7 @@ export default function LocationsScreen({ navigation, route }) {
       vehicle: 'Rescue Boat 2',
       eta: '6 mins',
       distance: '3.1 km',
-      icon: 'water',
+      icon: 'flood',
     },
   };
 
@@ -185,11 +185,7 @@ export default function LocationsScreen({ navigation, route }) {
               </View>
             </View>
             <View style={[styles.responderTypeBadge, { backgroundColor: emergencyColor }]}>
-              {emergencyType === 'flood' ? (
-                <Ionicons name={responder.icon} size={24} color="#FFFFFF" />
-              ) : (
-                <FontAwesome5 name={responder.icon} size={24} color="#FFFFFF" />
-              )}
+              <MaterialIcons name={responder.icon} size={24} color="#FFFFFF" />
             </View>
           </View>
         </View>

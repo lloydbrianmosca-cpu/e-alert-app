@@ -23,8 +23,8 @@ const EMERGENCY_TYPES = [
     id: 'police',
     name: 'Police',
     subtitle: 'PNP Emergency',
-    icon: 'user-shield',
-    iconFamily: 'FontAwesome5',
+    icon: 'local-police',
+    iconFamily: 'MaterialIcons',
     color: '#1E3A8A',
     lightColor: '#DBEAFE',
   },
@@ -32,8 +32,8 @@ const EMERGENCY_TYPES = [
     id: 'fire',
     name: 'Fireman',
     subtitle: 'BFP Emergency',
-    icon: 'fire-extinguisher',
-    iconFamily: 'FontAwesome5',
+    icon: 'fire-truck',
+    iconFamily: 'MaterialIcons',
     color: '#DC2626',
     lightColor: '#FEE2E2',
   },
@@ -41,8 +41,8 @@ const EMERGENCY_TYPES = [
     id: 'medical',
     name: 'Medical',
     subtitle: 'Health Emergency',
-    icon: 'hospital',
-    iconFamily: 'FontAwesome5',
+    icon: 'medical-services',
+    iconFamily: 'MaterialIcons',
     color: '#059669',
     lightColor: '#D1FAE5',
   },
@@ -50,8 +50,8 @@ const EMERGENCY_TYPES = [
     id: 'flood',
     name: 'Flood',
     subtitle: 'Disaster Alert',
-    icon: 'water',
-    iconFamily: 'Ionicons',
+    icon: 'flood',
+    iconFamily: 'MaterialIcons',
     color: '#0369A1',
     lightColor: '#E0F2FE',
   },
@@ -193,11 +193,7 @@ export default function HomeScreen({ navigation }) {
                     styles.iconContainer,
                     { backgroundColor: 'rgba(0,0,0,0.05)' }
                   ]}>
-                    {item.iconFamily === 'Ionicons' ? (
-                      <Ionicons name={item.icon} size={48} color={item.color} />
-                    ) : (
-                      <FontAwesome5 name={item.icon} size={48} color={item.color} />
-                    )}
+                    {renderIcon(item, 48)}
                   </View>
                   <Text style={[styles.boxTitle, { color: item.color }]}>
                     {item.name}
@@ -221,11 +217,7 @@ export default function HomeScreen({ navigation }) {
               activeOpacity={0.8}
             >
               <View style={styles.selectedTypeIcon}>
-                {selectedEmergency?.iconFamily === 'Ionicons' ? (
-                  <Ionicons name={selectedEmergency?.icon} size={48} color="#FFFFFF" />
-                ) : (
-                  <FontAwesome5 name={selectedEmergency?.icon} size={48} color="#FFFFFF" />
-                )}
+                {renderIcon(selectedEmergency, 48)}
               </View>
               <View style={styles.selectedTypeInfo}>
                 <Text style={styles.selectedTypeName}>{selectedEmergency?.name}</Text>
