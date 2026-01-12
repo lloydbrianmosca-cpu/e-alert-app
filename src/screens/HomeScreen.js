@@ -15,9 +15,6 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useEmergency } from '../context/EmergencyContext';
 
-// Logo
-const logoWithoutName = require('../assets/logo/without-name.png');
-
 const { width } = Dimensions.get('window');
 const BOX_SIZE = (width - 60) / 2;
 
@@ -182,15 +179,10 @@ export default function HomeScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* Title Section */}
-        <View style={styles.titleSection}>
-          <Image source={logoWithoutName} style={styles.logoImage} />
-          <Text style={styles.titleText}>E-Alert</Text>
-        </View>
-        
         {!showSOS ? (
           <>
-            <Text style={styles.subtitleText}>Select an emergency type</Text>
+            {/* Title */}
+            <Text style={styles.selectTitle}>Select an Emergency Type</Text>
 
             {/* Emergency Type Grid */}
             <View style={styles.gridContainer}>
@@ -413,22 +405,13 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingBottom: 30,
   },
-  titleSection: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 24,
-    gap: 8,
-  },
-  logoImage: {
-    width: 40,
-    height: 40,
-    resizeMode: 'contain',
-  },
-  titleText: {
-    fontSize: 32,
+  selectTitle: {
+    fontSize: 24,
     fontWeight: '800',
     color: '#1F2937',
+    textAlign: 'center',
+    marginTop: 30,
+    marginBottom: 30,
   },
   subtitleText: {
     fontSize: 16,
