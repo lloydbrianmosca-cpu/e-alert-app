@@ -429,8 +429,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginHorizontal: 20,
-    marginTop: 16,
-    marginBottom: 24,
+    marginTop: 26,
+    marginBottom: 20,
     padding: 20,
     borderRadius: 20,
     gap: 20,
@@ -465,7 +465,7 @@ const styles = StyleSheet.create({
   selectedTypeHint: {
     fontSize: 13,
     color: 'rgba(255,255,255,0.75)',
-    marginTop: 8,
+    marginTop: 10,
     fontStyle: 'italic',
   },
   sosContainer: {
@@ -474,15 +474,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   sosPressCount: {
-    fontSize: 22,
+    fontSize: 25,
     fontWeight: '800',
     color: '#DC2626',
-    marginBottom: 20,
+    marginBottom: 25,
   },
   sosOuterRing: {
     width: 380,
     height: 380,
-    borderRadius: 170,
+    borderRadius: 300,
     backgroundColor: 'rgba(220, 38, 38, 0.1)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -490,7 +490,7 @@ const styles = StyleSheet.create({
   sosMiddleRing: {
     width: 300,
     height: 300,
-    borderRadius: 150,
+    borderRadius: 300,
     backgroundColor: 'rgba(220, 38, 38, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -498,7 +498,7 @@ const styles = StyleSheet.create({
   sosButton: {
     width: 300,
     height: 300,
-    borderRadius: 230,
+    borderRadius: 330,
     overflow: 'hidden',
     shadowColor: '#DC2626',
     shadowOffset: { width: 0, height: 12 },
