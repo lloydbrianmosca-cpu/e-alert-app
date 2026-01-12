@@ -180,7 +180,7 @@ export default function HotlinesScreen({ navigation }) {
   // Required profile fields
   const requiredFields = [
     'firstName', 'lastName', 'email', 'contactNumber',
-    'address', 'region', 'province', 'city', 'barangay',
+    'address', 'region', 'province', 'city',
     'emergencyContactName', 'emergencyContactNumber'
   ];
 
