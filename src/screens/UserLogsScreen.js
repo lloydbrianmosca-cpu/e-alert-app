@@ -18,7 +18,7 @@ import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
-import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '../components';
 
@@ -64,12 +64,15 @@ export default function UserLogsScreen({ navigation }) {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({
-    displayName: '',
+    firstName: '',
+    lastName: '',
     email: '',
     role: 'user',
     responderType: '',
   });
   const [isSaving, setIsSaving] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
   const drawerAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const { user, logout } = useAuth();
 
@@ -79,6 +82,7 @@ export default function UserLogsScreen({ navigation }) {
 
   useEffect(() => {
     applyFilters();
+    setCurrentPage(1); // Reset to page 1 when filters change
   }, [searchQuery, selectedRoleFilter, selectedResponderTypeFilter, users]);
 
   const applyFilters = () => {
@@ -96,10 +100,11 @@ export default function UserLogsScreen({ navigation }) {
     
     // Apply search filter
     if (searchQuery.trim() !== '') {
-      filtered = filtered.filter(u => 
-        u.displayName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        u.email?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+      filtered = filtered.filter(u => {
+        const fullName = `${u.firstName || ''} ${u.lastName || ''}`.toLowerCase();
+        return fullName.includes(searchQuery.toLowerCase()) ||
+          u.email?.toLowerCase().includes(searchQuery.toLowerCase());
+      });
     }
     
     setFilteredUsers(filtered);
@@ -109,10 +114,9 @@ export default function UserLogsScreen({ navigation }) {
     try {
       setIsLoading(true);
       
-      // Fetch from users collection
+      // Fetch from users collection (without orderBy to avoid index requirement)
       const usersRef = collection(db, 'users');
-      const usersQuery = query(usersRef, orderBy('createdAt', 'desc'));
-      const usersSnapshot = await getDocs(usersQuery);
+      const usersSnapshot = await getDocs(usersRef);
       const usersData = usersSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -122,8 +126,7 @@ export default function UserLogsScreen({ navigation }) {
 
       // Fetch from responders collection
       const respondersRef = collection(db, 'responders');
-      const respondersQuery = query(respondersRef, orderBy('createdAt', 'desc'));
-      const respondersSnapshot = await getDocs(respondersQuery);
+      const respondersSnapshot = await getDocs(respondersRef);
       const respondersData = respondersSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
@@ -152,11 +155,11 @@ export default function UserLogsScreen({ navigation }) {
       setUsers(uniqueUsers);
       setFilteredUsers(uniqueUsers);
     } catch (error) {
-      console.log('Error fetching users:', error);
+      console.log('Error fetching users:', error.message || error);
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to fetch users',
+        text2: error.message || 'Failed to fetch users',
       });
     } finally {
       setIsLoading(false);
@@ -201,7 +204,7 @@ export default function UserLogsScreen({ navigation }) {
 
   const getRoleBadgeColor = (role) => {
     switch (role) {
-      case 'admin': return '#DC2626';
+      case 'admin': return '#1F2937';
       case 'responder': return '#059669';
       default: return '#6B7280';
     }
@@ -222,11 +225,50 @@ export default function UserLogsScreen({ navigation }) {
     }
   };
 
+  // Helper function to get full name
+  const getFullName = (userData) => {
+    const firstName = userData.firstName || '';
+    const lastName = userData.lastName || '';
+    return `${firstName} ${lastName}`.trim() || 'Unknown User';
+  };
+
+  // Pagination helpers
+  const totalPages = Math.ceil(filteredUsers.length / ITEMS_PER_PAGE);
+  const paginatedUsers = filteredUsers.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 3) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 2) {
+        pages.push(1, 2, 3);
+      } else if (currentPage >= totalPages - 1) {
+        pages.push(totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(currentPage - 1, currentPage, currentPage + 1);
+      }
+    }
+    return pages;
+  };
+
+  const goToPage = (page) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
   // CRUD Operations
   const openAddModal = () => {
     setEditingUser(null);
     setFormData({
-      displayName: '',
+      firstName: '',
+      lastName: '',
       email: '',
       role: 'user',
       responderType: '',
@@ -237,7 +279,8 @@ export default function UserLogsScreen({ navigation }) {
   const openEditModal = (userData) => {
     setEditingUser(userData);
     setFormData({
-      displayName: userData.displayName || '',
+      firstName: userData.firstName || '',
+      lastName: userData.lastName || '',
       email: userData.email || '',
       role: userData.role || 'user',
       responderType: userData.responderType || '',
@@ -249,7 +292,8 @@ export default function UserLogsScreen({ navigation }) {
     setModalVisible(false);
     setEditingUser(null);
     setFormData({
-      displayName: '',
+      firstName: '',
+      lastName: '',
       email: '',
       role: 'user',
       responderType: '',
@@ -257,11 +301,20 @@ export default function UserLogsScreen({ navigation }) {
   };
 
   const handleSave = async () => {
-    if (!formData.displayName.trim()) {
+    if (!formData.firstName.trim()) {
       Toast.show({
         type: 'error',
         text1: 'Validation Error',
-        text2: 'Display name is required',
+        text2: 'First name is required',
+      });
+      return;
+    }
+
+    if (!formData.lastName.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Validation Error',
+        text2: 'Last name is required',
       });
       return;
     }
@@ -293,7 +346,8 @@ export default function UserLogsScreen({ navigation }) {
         const userRef = doc(db, collectionName, editingUser.id);
         
         const updateData = {
-          displayName: formData.displayName.trim(),
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
           email: formData.email.trim(),
           role: formData.role,
         };
@@ -313,7 +367,8 @@ export default function UserLogsScreen({ navigation }) {
         // Add new user
         const collectionName = formData.role === 'responder' ? 'responders' : 'users';
         const newUserData = {
-          displayName: formData.displayName.trim(),
+          firstName: formData.firstName.trim(),
+          lastName: formData.lastName.trim(),
           email: formData.email.trim(),
           role: formData.role,
           createdAt: serverTimestamp(),
@@ -350,7 +405,7 @@ export default function UserLogsScreen({ navigation }) {
   const handleDelete = (userData) => {
     Alert.alert(
       'Delete User',
-      `Are you sure you want to delete ${userData.displayName || userData.email}?`,
+      `Are you sure you want to delete ${getFullName(userData)}?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -535,7 +590,7 @@ export default function UserLogsScreen({ navigation }) {
           <Text style={styles.statLabel}>Responders</Text>
         </View>
         <View style={styles.statItem}>
-          <Text style={[styles.statNumber, { color: '#DC2626' }]}>
+          <Text style={[styles.statNumber, { color: '#1F2937' }]}>
             {users.filter(u => u.role === 'admin').length}
           </Text>
           <Text style={styles.statLabel}>Admins</Text>
@@ -545,7 +600,7 @@ export default function UserLogsScreen({ navigation }) {
       {/* Results Count */}
       <View style={styles.resultsCount}>
         <Text style={styles.resultsText}>
-          Showing {filteredUsers.length} of {users.length} users
+          Showing {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, filteredUsers.length)}-{Math.min(currentPage * ITEMS_PER_PAGE, filteredUsers.length)} of {filteredUsers.length} users
         </Text>
       </View>
 
@@ -574,47 +629,45 @@ export default function UserLogsScreen({ navigation }) {
           </View>
         ) : (
           <View style={styles.usersContainer}>
-            {filteredUsers.map((userData) => (
+            {paginatedUsers.map((userData) => (
               <View key={`${userData.source}-${userData.id}`} style={styles.userCard}>
                 <View style={styles.userCardHeader}>
                   <View style={[
                     styles.userAvatar,
-                    { backgroundColor: getRoleBadgeColor(userData.role) }
+                    { backgroundColor: userData.role === 'responder' && userData.responderType 
+                      ? getResponderTypeInfo(userData.responderType).color 
+                      : getRoleBadgeColor(userData.role) }
                   ]}>
                     <Text style={styles.userAvatarText}>
-                      {userData.displayName?.charAt(0)?.toUpperCase() || 'U'}
+                      {userData.firstName?.charAt(0)?.toUpperCase() || 'U'}
                     </Text>
                   </View>
                   <View style={styles.userInfo}>
-                    <Text style={styles.userName}>{userData.displayName || 'Unknown User'}</Text>
+                    <Text style={styles.userName}>{getFullName(userData)}</Text>
                     <Text style={styles.userEmail}>{userData.email}</Text>
                   </View>
-                  <View style={[styles.roleBadge, { backgroundColor: getRoleBadgeColor(userData.role) }]}>
-                    <Text style={styles.roleText}>{userData.role?.toUpperCase() || 'USER'}</Text>
-                  </View>
-                </View>
-
-                {/* Responder Type Badge */}
-                {userData.role === 'responder' && userData.responderType && (
-                  <View style={styles.responderTypeRow}>
+                  {/* Show responder type badge for responders, role badge for others */}
+                  {userData.role === 'responder' && userData.responderType ? (
                     <View style={[
-                      styles.responderTypeBadge,
-                      { backgroundColor: getResponderTypeInfo(userData.responderType).color + '20' }
+                      styles.roleBadge, 
+                      { backgroundColor: getResponderTypeInfo(userData.responderType).color }
                     ]}>
                       <Ionicons 
                         name={getResponderTypeInfo(userData.responderType).icon} 
-                        size={14} 
-                        color={getResponderTypeInfo(userData.responderType).color} 
+                        size={10} 
+                        color="#FFFFFF" 
+                        style={{ marginRight: 4 }}
                       />
-                      <Text style={[
-                        styles.responderTypeText,
-                        { color: getResponderTypeInfo(userData.responderType).color }
-                      ]}>
-                        {getResponderTypeInfo(userData.responderType).label}
+                      <Text style={styles.roleText}>
+                        {getResponderTypeInfo(userData.responderType).label.toUpperCase()}
                       </Text>
                     </View>
-                  </View>
-                )}
+                  ) : (
+                    <View style={[styles.roleBadge, { backgroundColor: getRoleBadgeColor(userData.role) }]}>
+                      <Text style={styles.roleText}>{userData.role?.toUpperCase() || 'USER'}</Text>
+                    </View>
+                  )}
+                </View>
 
                 <View style={styles.userCardFooter}>
                   <Text style={styles.userDate}>Joined: {formatDate(userData.createdAt)}</Text>
@@ -635,6 +688,70 @@ export default function UserLogsScreen({ navigation }) {
                 </View>
               </View>
             ))}
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <View style={styles.paginationContainer}>
+                {/* First Page */}
+                <TouchableOpacity 
+                  style={[styles.paginationButton, currentPage === 1 && styles.paginationButtonDisabled]}
+                  onPress={() => goToPage(1)}
+                  disabled={currentPage === 1}
+                >
+                  <Text style={[styles.paginationButtonText, currentPage === 1 && styles.paginationButtonTextDisabled]}>{'<<'}</Text>
+                </TouchableOpacity>
+
+                {/* Previous Page */}
+                <TouchableOpacity 
+                  style={[styles.paginationButton, currentPage === 1 && styles.paginationButtonDisabled]}
+                  onPress={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                >
+                  <Text style={[styles.paginationButtonText, currentPage === 1 && styles.paginationButtonTextDisabled]}>{'<'}</Text>
+                </TouchableOpacity>
+
+                {/* Show ellipsis before if needed */}
+                {currentPage > 2 && totalPages > 3 && (
+                  <Text style={styles.paginationEllipsis}>...</Text>
+                )}
+
+                {/* Page Numbers */}
+                {getPageNumbers().map((page) => (
+                  <TouchableOpacity 
+                    key={page}
+                    style={[styles.paginationButton, currentPage === page && styles.paginationButtonActive]}
+                    onPress={() => goToPage(page)}
+                  >
+                    <Text style={[styles.paginationButtonText, currentPage === page && styles.paginationButtonTextActive]}>
+                      {page}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+
+                {/* Show ellipsis after if needed */}
+                {currentPage < totalPages - 1 && totalPages > 3 && (
+                  <Text style={styles.paginationEllipsis}>...</Text>
+                )}
+
+                {/* Next Page */}
+                <TouchableOpacity 
+                  style={[styles.paginationButton, currentPage === totalPages && styles.paginationButtonDisabled]}
+                  onPress={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                >
+                  <Text style={[styles.paginationButtonText, currentPage === totalPages && styles.paginationButtonTextDisabled]}>{'>'}</Text>
+                </TouchableOpacity>
+
+                {/* Last Page */}
+                <TouchableOpacity 
+                  style={[styles.paginationButton, currentPage === totalPages && styles.paginationButtonDisabled]}
+                  onPress={() => goToPage(totalPages)}
+                  disabled={currentPage === totalPages}
+                >
+                  <Text style={[styles.paginationButtonText, currentPage === totalPages && styles.paginationButtonTextDisabled]}>{'>>'}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
       </ScrollView>
@@ -658,15 +775,27 @@ export default function UserLogsScreen({ navigation }) {
             </View>
 
             <ScrollView style={styles.modalBody}>
-              {/* Display Name */}
+              {/* First Name */}
               <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Display Name</Text>
+                <Text style={styles.inputLabel}>First Name</Text>
                 <TextInput
                   style={styles.textInput}
-                  placeholder="Enter display name"
+                  placeholder="Enter first name"
                   placeholderTextColor="#9CA3AF"
-                  value={formData.displayName}
-                  onChangeText={(text) => setFormData({ ...formData, displayName: text })}
+                  value={formData.firstName}
+                  onChangeText={(text) => setFormData({ ...formData, firstName: text })}
+                />
+              </View>
+
+              {/* Last Name */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Last Name</Text>
+                <TextInput
+                  style={styles.textInput}
+                  placeholder="Enter last name"
+                  placeholderTextColor="#9CA3AF"
+                  value={formData.lastName}
+                  onChangeText={(text) => setFormData({ ...formData, lastName: text })}
                 />
               </View>
 
@@ -1052,6 +1181,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   roleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
@@ -1060,25 +1191,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '700',
     color: '#FFFFFF',
-  },
-  responderTypeRow: {
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  responderTypeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
-    gap: 6,
-  },
-  responderTypeText: {
-    fontSize: 12,
-    fontWeight: '600',
   },
   userCardFooter: {
     flexDirection: 'row',
@@ -1230,5 +1342,47 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  // Pagination Styles
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 16,
+    gap: 6,
+  },
+  paginationButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  paginationButtonActive: {
+    backgroundColor: '#DC2626',
+    borderColor: '#DC2626',
+  },
+  paginationButtonDisabled: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#E5E7EB',
+  },
+  paginationButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  paginationButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  paginationButtonTextDisabled: {
+    color: '#9CA3AF',
+  },
+  paginationEllipsis: {
+    fontSize: 14,
+    color: '#6B7280',
+    paddingHorizontal: 4,
   },
 });
