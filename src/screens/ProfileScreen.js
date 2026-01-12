@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
+import { db } from '../services/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { useAuth } from '../context/AuthContext';
 import {
   StyleSheet,
   View,
@@ -26,20 +30,36 @@ const NAV_ITEMS = [
 export default function ProfileScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
+  const { user } = useAuth();
   const [profileData, setProfileData] = useState({
-    firstName: 'Juan',
-    lastName: 'Dela Cruz',
-    email: 'juan.delacruz@email.com',
-    contactNumber: '+63 912 345 6789',
-    address: '123 Main Street',
-    city: 'Manila',
-    province: 'Metro Manila',
-    zipCode: '1000',
-    emergencyContactName: 'Maria Dela Cruz',
-    emergencyContactNumber: '+63 912 999 8888',
-    profileImage: 'https://i.pravatar.cc/150?img=8',
+    firstName: user?.displayName
+      ? user.displayName.split(' ').slice(0, -1).join(' ')
+      : '',
+    lastName: user?.displayName
+      ? user.displayName.split(' ').slice(-1)[0]
+      : '',
+    email: user?.email || '',
+    contactNumber: '',
+    profileImage: null,
   });
 
+  // Fetch contact number from Firestore on mount or user change
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (user?.uid) {
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setProfileData(prev => ({
+            ...prev,
+            contactNumber: data.contactNumber || '',
+          }));
+        }
+      }
+    };
+    fetchProfile();
+  }, [user]);
   const [editData, setEditData] = useState(profileData);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordData, setPasswordData] = useState({
@@ -51,10 +71,20 @@ export default function ProfileScreen({ navigation }) {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setProfileData(editData);
     setIsEditing(false);
-    Alert.alert('Success', 'Profile updated successfully');
+    // Save contact number to Firestore
+    if (user?.uid) {
+      try {
+        await setDoc(doc(db, 'users', user.uid), {
+          contactNumber: editData.contactNumber,
+        }, { merge: true });
+        Alert.alert('Success', 'Profile updated successfully');
+      } catch (err) {
+        Alert.alert('Error', 'Failed to update contact number');
+      }
+    }
   };
 
   const handleCancel = () => {
@@ -126,7 +156,7 @@ export default function ProfileScreen({ navigation }) {
   const renderInputField = (label, field, placeholder = '') => (
     <View style={styles.inputFieldContainer}>
       <Text style={styles.inputLabel}>{label}</Text>
-      {isEditing ? (
+      {isEditing && field === 'contactNumber' ? (
         <TextInput
           style={styles.input}
           placeholder={placeholder}
@@ -172,10 +202,16 @@ export default function ProfileScreen({ navigation }) {
         {/* Profile Picture Section */}
         <View style={styles.profilePictureSection}>
           <View style={styles.profileImageContainer}>
-            <Image
-              source={{ uri: profileData.profileImage }}
-              style={styles.profileImage}
-            />
+            {profileData.profileImage ? (
+              <Image
+                source={{ uri: profileData.profileImage }}
+                style={styles.profileImage}
+              />
+            ) : (
+              <View style={[styles.profileImage, styles.defaultProfileIcon]}>
+                <Ionicons name="person" size={60} color="#9CA3AF" />
+              </View>
+            )}
             {isEditing && (
               <TouchableOpacity style={styles.editImageButton}>
                 <Ionicons name="camera" size={20} color="#FFFFFF" />
@@ -183,7 +219,7 @@ export default function ProfileScreen({ navigation }) {
             )}
           </View>
           <Text style={styles.profileName}>
-            {profileData.firstName} {profileData.lastName}
+            {user?.displayName || ''}
           </Text>
           <Text style={styles.profileRole}>User • Emergency Responder Ready</Text>
         </View>
@@ -450,6 +486,11 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     borderWidth: 4,
     borderColor: '#DC2626',
+  },
+  defaultProfileIcon: {
+    backgroundColor: '#E5E7EB',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   editImageButton: {
     position: 'absolute',
