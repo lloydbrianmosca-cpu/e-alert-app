@@ -357,12 +357,16 @@ export default function AdminHomeScreen({ navigation }) {
           <Text style={styles.sectionTitle}>Quick Actions</Text>
           <View style={styles.actionsContainer}>
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="people" size={28} color="#DC2626" />
-              <Text style={styles.actionText}>Manage Users</Text>
+              <Ionicons name="list" size={28} color="#DC2626" />
+              <Text style={styles.actionText}>Manage User</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.actionButton}>
-              <Ionicons name="stats-chart" size={28} color="#DC2626" />
-              <Text style={styles.actionText}>View Reports</Text>
+              <Ionicons name="person-add" size={28} color="#DC2626" />
+              <Text style={styles.actionText}>Register Responder</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton}>
+              <Ionicons name="people-circle" size={28} color="#DC2626" />
+              <Text style={styles.actionText}>Manage Responders</Text>
             </TouchableOpacity>
           </View>
         </View>
