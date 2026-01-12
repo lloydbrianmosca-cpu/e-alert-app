@@ -189,6 +189,10 @@ export default function ChatScreen({ navigation }) {
                 navigation.navigate('Home');
               } else if (item.id === 'locations') {
                 navigation.navigate('Locations');
+              } else if (item.id === 'hotline') {
+                navigation.navigate('Hotlines');
+              } else if (item.id === 'profile') {
+                navigation.navigate('Profile');
               } else if (item.id === 'chat') {
                 // Already on chat screen
               }

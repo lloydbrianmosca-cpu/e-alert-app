@@ -317,6 +317,10 @@ export default function HomeScreen({ navigation }) {
                 navigation.navigate('Chat');
               } else if (item.id === 'locations') {
                 navigation.navigate('Locations');
+              } else if (item.id === 'hotline') {
+                navigation.navigate('Hotlines');
+              } else if (item.id === 'profile') {
+                navigation.navigate('Profile');
               }
             }}
             activeOpacity={0.7}

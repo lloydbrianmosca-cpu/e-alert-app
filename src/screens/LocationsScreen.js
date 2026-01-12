@@ -260,6 +260,10 @@ export default function LocationsScreen({ navigation, route }) {
                 navigation.navigate('Home');
               } else if (item.id === 'chat') {
                 navigation.navigate('Chat');
+              } else if (item.id === 'hotline') {
+                navigation.navigate('Hotlines');
+              } else if (item.id === 'profile') {
+                navigation.navigate('Profile');
               } else if (item.id === 'locations') {
                 // Already on locations
               }
