@@ -101,17 +101,10 @@ export default function LocationsScreen({ navigation, route }) {
 
       {/* Header */}
       <View style={[styles.header, { backgroundColor: '#DC2626' }]}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
         <View style={styles.headerContent}>
           <Ionicons name="navigate" size={24} color="#FFFFFF" />
           <Text style={styles.headerTitle}>Responder Location</Text>
         </View>
-        <View style={styles.headerRight} />
       </View>
 
       {/* Mock Map */}
