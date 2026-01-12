@@ -15,11 +15,19 @@ import {
   Alert,
   Modal,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '../components';
+import {
+  REGIONS,
+  getProvincesByRegion,
+  getCitiesByProvince,
+  getBarangaysByCity,
+} from '../constants/addressData';
 
 // Bottom navigation items
 const NAV_ITEMS = [
@@ -45,7 +53,19 @@ export default function ProfileScreen({ navigation }) {
     email: user?.email || '',
     contactNumber: '',
     profileImage: null,
+    // Address fields
+    address: '',
+    region: '',
+    province: '',
+    city: '',
+    barangay: '',
+    zipCode: '',
   });
+
+  // Dropdown options based on selections
+  const [provinceOptions, setProvinceOptions] = useState([{ label: 'Select Province', value: '' }]);
+  const [cityOptions, setCityOptions] = useState([{ label: 'Select City/Municipality', value: '' }]);
+  const [barangayOptions, setBarangayOptions] = useState([{ label: 'Select Barangay', value: '' }]);
 
   // Fetch contact number from Firestore on mount or user change
   useEffect(() => {
@@ -60,7 +80,24 @@ export default function ProfileScreen({ navigation }) {
             contactNumber: data.contactNumber || '',
             emergencyContactName: data.emergencyContactName || '',
             emergencyContactNumber: data.emergencyContactNumber || '',
+            // Address fields
+            address: data.address || '',
+            region: data.region || '',
+            province: data.province || '',
+            city: data.city || '',
+            barangay: data.barangay || '',
+            zipCode: data.zipCode || '',
           }));
+          // Set dropdown options based on saved data
+          if (data.region) {
+            setProvinceOptions(getProvincesByRegion(data.region));
+          }
+          if (data.province) {
+            setCityOptions(getCitiesByProvince(data.province));
+          }
+          if (data.city) {
+            setBarangayOptions(getBarangaysByCity(data.city));
+          }
         }
       }
       setIsLoading(false);
@@ -88,6 +125,13 @@ export default function ProfileScreen({ navigation }) {
           contactNumber: editData.contactNumber,
           emergencyContactName: editData.emergencyContactName,
           emergencyContactNumber: editData.emergencyContactNumber,
+          // Address fields
+          address: editData.address,
+          region: editData.region,
+          province: editData.province,
+          city: editData.city,
+          barangay: editData.barangay,
+          zipCode: editData.zipCode,
         }, { merge: true });
         Toast.show({
           type: 'success',
@@ -170,6 +214,43 @@ export default function ProfileScreen({ navigation }) {
     }));
   };
 
+  // Handle dropdown changes with cascading logic
+  const handleDropdownChange = (field, value) => {
+    if (field === 'region') {
+      setEditData(prev => ({
+        ...prev,
+        region: value,
+        province: '',
+        city: '',
+        barangay: '',
+      }));
+      setProvinceOptions(getProvincesByRegion(value));
+      setCityOptions([{ label: 'Select City/Municipality', value: '' }]);
+      setBarangayOptions([{ label: 'Select Barangay', value: '' }]);
+    } else if (field === 'province') {
+      setEditData(prev => ({
+        ...prev,
+        province: value,
+        city: '',
+        barangay: '',
+      }));
+      setCityOptions(getCitiesByProvince(value));
+      setBarangayOptions([{ label: 'Select Barangay', value: '' }]);
+    } else if (field === 'city') {
+      setEditData(prev => ({
+        ...prev,
+        city: value,
+        barangay: '',
+      }));
+      setBarangayOptions(getBarangaysByCity(value));
+    } else if (field === 'barangay') {
+      setEditData(prev => ({
+        ...prev,
+        barangay: value,
+      }));
+    }
+  };
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -195,6 +276,42 @@ export default function ProfileScreen({ navigation }) {
       )}
     </View>
   );
+
+  const renderDropdown = (label, field, options, isDisabled = false) => {
+    const currentValue = isEditing ? editData[field] : profileData[field];
+    const displayLabel = options.find(opt => opt.value === currentValue)?.label || 'Not set';
+    
+    return (
+      <View style={styles.inputFieldContainer}>
+        <Text style={styles.inputLabel}>{label}</Text>
+        {isEditing ? (
+          <View style={[
+            styles.pickerContainer,
+            isDisabled && styles.pickerContainerDisabled
+          ]}>
+            <Picker
+              selectedValue={editData[field] || ''}
+              onValueChange={(value) => handleDropdownChange(field, value)}
+              style={styles.picker}
+              enabled={!isDisabled}
+              dropdownIconColor={isDisabled ? '#D1D5DB' : '#6B7280'}
+            >
+              {options.map((option) => (
+                <Picker.Item
+                  key={option.value}
+                  label={option.label}
+                  value={option.value}
+                  color={option.value === '' ? '#9CA3AF' : '#1F2937'}
+                />
+              ))}
+            </Picker>
+          </View>
+        ) : (
+          <Text style={styles.inputValue}>{displayLabel !== 'Select Region' && displayLabel !== 'Select Province' && displayLabel !== 'Select City/Municipality' && displayLabel !== 'Select Barangay' ? displayLabel : 'Not set'}</Text>
+        )}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -283,14 +400,39 @@ export default function ProfileScreen({ navigation }) {
 
           <View style={styles.sectionContent}>
             {renderInputField('Street Address', 'address', 'Enter street address')}
+            
+            {/* Region Dropdown */}
+            {renderDropdown('Region', 'region', REGIONS, false)}
+            
+            {/* Province Dropdown - disabled until region is selected */}
+            {renderDropdown(
+              'Province',
+              'province',
+              provinceOptions,
+              !editData?.region
+            )}
+            
             <View style={styles.rowContainer}>
               <View style={styles.halfInput}>
-                {renderInputField('City', 'city', 'Enter city')}
+                {/* City Dropdown - disabled until province is selected */}
+                {renderDropdown(
+                  'City/Municipality',
+                  'city',
+                  cityOptions,
+                  !editData?.province
+                )}
               </View>
               <View style={styles.halfInput}>
-                {renderInputField('Province', 'province', 'Enter province')}
+                {/* Barangay Dropdown - disabled until city is selected */}
+                {renderDropdown(
+                  'Barangay',
+                  'barangay',
+                  barangayOptions,
+                  !editData?.city
+                )}
               </View>
             </View>
+            
             {renderInputField('Zip Code', 'zipCode', 'Enter zip code')}
           </View>
         </View>
@@ -658,6 +800,21 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     fontWeight: '500',
     paddingVertical: 12,
+  },
+  pickerContainer: {
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    overflow: 'hidden',
+  },
+  pickerContainerDisabled: {
+    backgroundColor: '#E5E7EB',
+    opacity: 0.6,
+  },
+  picker: {
+    height: 50,
+    color: '#1F2937',
   },
   rowContainer: {
     flexDirection: 'row',
