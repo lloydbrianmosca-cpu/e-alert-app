@@ -272,6 +272,20 @@ export default function HomeScreen({ navigation }) {
 
             <Text style={styles.sosHint}>Press the button 3 times to send emergency alert</Text>
 
+            {/* Active Emergency Shortcut */}
+            {activeEmergencyType && (
+              <View style={styles.activeEmergencyContainer}>
+                <TouchableOpacity
+                  style={styles.activeEmergencyButton}
+                  onPress={() => navigation.navigate('Locations')}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="navigate" size={20} color="#FFFFFF" />
+                  <Text style={styles.activeEmergencyButtonText}>View Active Emergency</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
             {/* Emergency Info Card */}
             <View style={styles.infoCard}>
               <View style={styles.infoRow}>
@@ -287,20 +301,6 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.infoText}>ETA and distance will be shown once button is active.</Text>
               </View>
             </View>
-
-            {/* Active Emergency Shortcut */}
-            {activeEmergencyType && (
-              <View style={styles.activeEmergencyContainer}>
-                <TouchableOpacity
-                  style={[styles.activeEmergencyButton, { backgroundColor: selectedEmergency?.color || '#DC2626' }]}
-                  onPress={() => navigation.navigate('Locations')}
-                  activeOpacity={0.85}
-                >
-                  <Ionicons name="navigate" size={20} color="#FFFFFF" />
-                  <Text style={styles.activeEmergencyButtonText}>View Active Emergency</Text>
-                </TouchableOpacity>
-              </View>
-            )}
           </>
         )}
       </ScrollView>
@@ -587,7 +587,7 @@ const styles = StyleSheet.create({
   },
   activeEmergencyContainer: {
     paddingHorizontal: 20,
-    marginBottom: 24,
+    marginBottom: 15,
   },
   activeEmergencyButton: {
     flexDirection: 'row',
@@ -596,6 +596,7 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingVertical: 14,
     borderRadius: 12,
+    backgroundColor: '#DC2626',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
