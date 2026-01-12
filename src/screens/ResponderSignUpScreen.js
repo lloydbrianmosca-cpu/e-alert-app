@@ -8,7 +8,6 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
@@ -18,6 +17,8 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
 import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import Toast from 'react-native-toast-message';
+import { toastConfig } from '../components';
 
 const RESPONDER_TYPES = [
   { id: 'police', label: 'Police', icon: 'shield-checkmark' },
@@ -40,36 +41,68 @@ export default function ResponderSignUpScreen({ navigation }) {
 
   const validateForm = () => {
     if (!firstName.trim()) {
-      Alert.alert('Error', 'Please enter first name');
+      Toast.show({
+        type: 'error',
+        text1: 'First Name Required',
+        text2: 'Please enter first name',
+      });
       return false;
     }
     if (!lastName.trim()) {
-      Alert.alert('Error', 'Please enter last name');
+      Toast.show({
+        type: 'error',
+        text1: 'Last Name Required',
+        text2: 'Please enter last name',
+      });
       return false;
     }
     if (!email.trim()) {
-      Alert.alert('Error', 'Please enter email address');
+      Toast.show({
+        type: 'error',
+        text1: 'Email Required',
+        text2: 'Please enter email address',
+      });
       return false;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      Alert.alert('Error', 'Please enter a valid email address');
+      Toast.show({
+        type: 'error',
+        text1: 'Invalid Email',
+        text2: 'Please enter a valid email address',
+      });
       return false;
     }
     if (!password) {
-      Alert.alert('Error', 'Please enter password');
+      Toast.show({
+        type: 'error',
+        text1: 'Password Required',
+        text2: 'Please enter password',
+      });
       return false;
     }
     if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
+      Toast.show({
+        type: 'error',
+        text1: 'Weak Password',
+        text2: 'Password must be at least 6 characters',
+      });
       return false;
     }
     if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
+      Toast.show({
+        type: 'error',
+        text1: 'Password Mismatch',
+        text2: 'Passwords do not match',
+      });
       return false;
     }
     if (!responderType) {
-      Alert.alert('Error', 'Please select a responder type');
+      Toast.show({
+        type: 'error',
+        text1: 'Responder Type Required',
+        text2: 'Please select a responder type',
+      });
       return false;
     }
     return true;
@@ -117,24 +150,19 @@ export default function ResponderSignUpScreen({ navigation }) {
         updatedAt: serverTimestamp(),
       });
 
-      Alert.alert(
-        'Success',
-        `Responder account created successfully!\n\nName: ${firstName} ${lastName}\nEmail: ${email}\nType: ${RESPONDER_TYPES.find(t => t.id === responderType)?.label}`,
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Clear form
-              setFirstName('');
-              setLastName('');
-              setEmail('');
-              setPassword('');
-              setConfirmPassword('');
-              setResponderType('');
-            },
-          },
-        ]
-      );
+      Toast.show({
+        type: 'success',
+        text1: 'Responder Registered!',
+        text2: `${firstName} ${lastName} (${RESPONDER_TYPES.find(t => t.id === responderType)?.label})`,
+      });
+
+      // Clear form
+      setFirstName('');
+      setLastName('');
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setResponderType('');
     } catch (error) {
       console.log('Error creating responder:', error);
       let errorMessage = 'Failed to create responder account';
@@ -156,7 +184,11 @@ export default function ResponderSignUpScreen({ navigation }) {
           errorMessage = error.message;
       }
       
-      Alert.alert('Error', errorMessage);
+      Toast.show({
+        type: 'error',
+        text1: 'Registration Failed',
+        text2: errorMessage,
+      });
     } finally {
       setIsLoading(false);
     }
@@ -351,6 +383,7 @@ export default function ResponderSignUpScreen({ navigation }) {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <Toast config={toastConfig} />
     </View>
   );
 }
