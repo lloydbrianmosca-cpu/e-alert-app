@@ -515,20 +515,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sosText: {
-    fontSize: 56,
+    fontSize: 68,
     fontWeight: '900',
     color: '#FFFFFF',
     letterSpacing: 6,
   },
   sosSubtext: {
-    fontSize: 14,
+    fontSize: 18,
     fontWeight: '700',
     color: 'rgba(255,255,255,0.9)',
     marginTop: 8,
     letterSpacing: 2,
   },
   sosHint: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#6B7280',
     textAlign: 'center',
     marginTop: 16,
@@ -538,6 +538,7 @@ const styles = StyleSheet.create({
   infoCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: 20,
+    marginTop: 20,
     marginBottom: 20,
     padding: 18,
     borderRadius: 16,
@@ -554,7 +555,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   infoText: {
-    fontSize: 14,
+    fontSize: 18,
     color: '#4B5563',
     fontWeight: '500',
     flex: 1,
