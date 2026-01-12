@@ -82,10 +82,10 @@ export default function LocationsScreen({ navigation, route }) {
   return (
     <View style={styles.container}>
       <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor={emergencyColor} />
+      <StatusBar barStyle="light-content" backgroundColor="#DC2626" />
 
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: emergencyColor }]}>
+      <View style={[styles.header, { backgroundColor: '#DC2626' }]}>
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => navigation.goBack()}
