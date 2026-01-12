@@ -184,14 +184,16 @@ export default function HomeScreen({ navigation }) {
             {/* Title */}
             <Text style={styles.selectTitle}>Select an Emergency Type</Text>
 
-            {/* Emergency Type Grid */}
+            {/* Emergency Type Grid - 2 by 2 */}
             <View style={styles.gridContainer}>
-              {EMERGENCY_TYPES.map((item) => (
+              {EMERGENCY_TYPES.map((item, idx) => (
                 <TouchableOpacity
                   key={item.id}
                   style={[
                     styles.emergencyBox,
                     { backgroundColor: item.lightColor },
+                    idx % 2 === 0 ? { marginRight: 8 } : { marginLeft: 8 },
+                    { marginBottom: 16 },
                   ]}
                   onPress={() => handleEmergencyTypeSelect(item)}
                   activeOpacity={0.8}
@@ -424,7 +426,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     paddingHorizontal: 20,
-    gap: 16,
     justifyContent: 'center',
   },
   emergencyBox: {

@@ -115,7 +115,47 @@ export default function ProfileScreen({ navigation }) {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Validate all required fields are filled (except profileImage)
+  const validateProfileData = () => {
+    const requiredFields = [
+      { field: 'firstName', label: 'First Name' },
+      { field: 'lastName', label: 'Last Name' },
+      { field: 'email', label: 'Email' },
+      { field: 'contactNumber', label: 'Contact Number' },
+      { field: 'address', label: 'Street Address' },
+      { field: 'region', label: 'Region' },
+      { field: 'province', label: 'Province' },
+      { field: 'city', label: 'City/Municipality' },
+      { field: 'barangay', label: 'Barangay' },
+      { field: 'zipCode', label: 'ZIP Code' },
+      { field: 'emergencyContactName', label: 'Emergency Contact Name' },
+      { field: 'emergencyContactNumber', label: 'Emergency Contact Number' },
+    ];
+
+    const emptyFields = requiredFields.filter(
+      ({ field }) => !editData[field] || editData[field].trim() === ''
+    );
+
+    if (emptyFields.length > 0) {
+      const fieldNames = emptyFields.map(f => f.label).join(', ');
+      Toast.show({
+        type: 'error',
+        text1: 'Required Fields Missing',
+        text2: `Please fill in: ${fieldNames}`,
+        visibilityTime: 4000,
+      });
+      return false;
+    }
+
+    return true;
+  };
+
   const handleSave = async () => {
+    // Validate all required fields before saving
+    if (!validateProfileData()) {
+      return;
+    }
+
     setProfileData(editData);
     setIsEditing(false);
     // Save contact number and emergency contact info to Firestore
@@ -364,7 +404,7 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.profileName}>
             {user?.displayName || ''}
           </Text>
-          <Text style={styles.profileRole}>User • Emergency Responder Ready</Text>
+          <Text style={styles.profileRole}>User</Text>
         </View>
 
         {/* Account Setup Alert */}
