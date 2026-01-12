@@ -135,7 +135,7 @@ export default function ChatScreen({ navigation, route }) {
   // Required profile fields
   const requiredFields = [
     'firstName', 'lastName', 'email', 'contactNumber',
-    'address', 'region', 'province', 'city', 'barangay',
+    'address', 'region', 'province', 'city',
     'emergencyContactName', 'emergencyContactNumber'
   ];
 
