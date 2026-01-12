@@ -13,6 +13,7 @@ import {
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
+import { useEmergency } from '../context/EmergencyContext';
 
 const { width } = Dimensions.get('window');
 const BOX_SIZE = (width - 60) / 2;
@@ -73,6 +74,7 @@ export default function HomeScreen({ navigation }) {
   const [sosCount, setSosCount] = useState(0);
   const [activeTab, setActiveTab] = useState('home');
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
+  const { activeEmergencyType, activateEmergency } = useEmergency();
 
   // Pulse animation for SOS button
   React.useEffect(() => {
@@ -95,6 +97,14 @@ export default function HomeScreen({ navigation }) {
       return () => pulse.stop();
     }
   }, [showSOS]);
+
+  // Ensure SOS view persists when there's an active emergency
+  React.useEffect(() => {
+    if (activeEmergencyType) {
+      setSelectedType(activeEmergencyType);
+      setShowSOS(true);
+    }
+  }, [activeEmergencyType]);
 
   const handleEmergencyTypeSelect = (type) => {
     setSelectedType(type.id);
@@ -122,6 +132,8 @@ export default function HomeScreen({ navigation }) {
     setTimeout(() => {
       setSosPressed(false);
       setSosCount(0);
+      // Persist active emergency globally
+      activateEmergency(selectedType);
       navigation.navigate('Locations', { emergencyType: selectedType });
     }, 1500);
   };
@@ -275,6 +287,20 @@ export default function HomeScreen({ navigation }) {
                 <Text style={styles.infoText}>ETA and distance will be shown once button is active.</Text>
               </View>
             </View>
+
+            {/* Active Emergency Shortcut */}
+            {activeEmergencyType && (
+              <View style={styles.activeEmergencyContainer}>
+                <TouchableOpacity
+                  style={[styles.activeEmergencyButton, { backgroundColor: selectedEmergency?.color || '#DC2626' }]}
+                  onPress={() => navigation.navigate('Locations')}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="navigate" size={20} color="#FFFFFF" />
+                  <Text style={styles.activeEmergencyButtonText}>View Active Emergency</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </>
         )}
       </ScrollView>
@@ -558,6 +584,28 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     fontWeight: '500',
     flex: 1,
+  },
+  activeEmergencyContainer: {
+    paddingHorizontal: 20,
+    marginBottom: 24,
+  },
+  activeEmergencyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    paddingVertical: 14,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  activeEmergencyButtonText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   bottomNav: {
     flexDirection: 'row',

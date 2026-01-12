@@ -11,6 +11,7 @@ import {
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import { useEmergency } from '../context/EmergencyContext';
 
 const { width } = Dimensions.get('window');
 
@@ -32,10 +33,11 @@ const EMERGENCY_COLORS = {
 
 export default function LocationsScreen({ navigation, route }) {
   const [activeTab, setActiveTab] = useState('locations');
+  const { activeEmergencyType } = useEmergency();
   
   // Check if emergency is active (SOS was pressed 3 times)
-  const isEmergencyActive = route?.params?.emergencyType ? true : false;
-  const emergencyType = route?.params?.emergencyType || 'police';
+  const isEmergencyActive = !!activeEmergencyType || !!route?.params?.emergencyType;
+  const emergencyType = activeEmergencyType || route?.params?.emergencyType || 'police';
   
   // Mock responder data based on emergency type
   const responderData = {
