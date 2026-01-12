@@ -36,7 +36,7 @@ export default function SignInScreen({ navigation }) {
       
       // Check against mock account
       if (email === MOCK_ACCOUNT.email && password === MOCK_ACCOUNT.password) {
-        alert('Welcome! Login successful.');
+        navigation.replace('Home');
       } else {
         alert('Invalid credentials. Please try again.');
       }
