@@ -271,13 +271,14 @@ export const assignResponder = async (emergencyId, responderId, responderData) =
 };
 
 // ==================== RESPONDER MANAGEMENT ====================
+// Structure: LGU/{agency}/responders/{userId}
 
-// Agency/Department mapping
+// Agency/Department mapping (emergency type -> agency name)
 export const RESPONDER_AGENCIES = {
   police: 'PNP',
   fire: 'BFP',
-  medical: 'Medical',
-  flood: 'MDRRMO',
+  medical: 'EMS',
+  flood: 'NDRRMC',
 };
 
 // Get agency name from emergency type
@@ -285,36 +286,44 @@ const getAgencyFromType = (emergencyType) => {
   return RESPONDER_AGENCIES[emergencyType] || emergencyType?.toUpperCase();
 };
 
-// Initialize agency document if it doesn't exist
-const initializeAgency = async (agencyName) => {
+// Initialize LGU with all agencies
+export const initializeLGU = async () => {
   try {
-    const agencyRef = doc(db, 'responders', agencyName);
-    const agencySnap = await getDoc(agencyRef);
+    const agencies = ['PNP', 'BFP', 'EMS', 'NDRRMC'];
     
-    if (!agencySnap.exists()) {
-      await setDoc(agencyRef, {
-        name: agencyName,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
+    for (const agency of agencies) {
+      const agencyRef = doc(db, 'LGU', agency);
+      const agencySnap = await getDoc(agencyRef);
+      
+      if (!agencySnap.exists()) {
+        await setDoc(agencyRef, {
+          name: agency,
+          fullName: agency === 'PNP' ? 'Philippine National Police' :
+                    agency === 'BFP' ? 'Bureau of Fire Protection' :
+                    agency === 'EMS' ? 'Emergency Medical Services' :
+                    'National Disaster Risk Reduction and Management Council',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      }
     }
     return { success: true };
   } catch (error) {
-    console.error('Error initializing agency:', error);
+    console.error('Error initializing LGU:', error);
     return { success: false, error: error.message };
   }
 };
 
-// Create responder profile under agency
+// Create responder profile under LGU/{agency}/responders/{userId}
 export const createResponderProfile = async (userId, responderData) => {
   try {
     const agencyName = getAgencyFromType(responderData.emergencyType);
     
-    // Initialize agency if needed
-    await initializeAgency(agencyName);
+    // Ensure LGU agency exists
+    await initializeLGU();
     
-    // Create responder under agency/members subcollection
-    const responderRef = doc(db, 'responders', agencyName, 'members', userId);
+    // Create responder in LGU/{agency}/responders/{userId}
+    const responderRef = doc(db, 'LGU', agencyName, 'responders', userId);
     await setDoc(responderRef, {
       ...responderData,
       userId,
@@ -330,13 +339,13 @@ export const createResponderProfile = async (userId, responderData) => {
   }
 };
 
-// Get responder profile
+// Get responder profile from LGU/{agency}/responders/{userId}
 export const getResponderProfile = async (userId, emergencyType = null) => {
   try {
     // If emergency type is provided, look in specific agency
     if (emergencyType) {
       const agencyName = getAgencyFromType(emergencyType);
-      const responderRef = doc(db, 'responders', agencyName, 'members', userId);
+      const responderRef = doc(db, 'LGU', agencyName, 'responders', userId);
       const responderSnap = await getDoc(responderRef);
       
       if (responderSnap.exists()) {
@@ -347,7 +356,7 @@ export const getResponderProfile = async (userId, emergencyType = null) => {
     // Search all agencies for the responder
     const agencies = Object.values(RESPONDER_AGENCIES);
     for (const agency of agencies) {
-      const responderRef = doc(db, 'responders', agency, 'members', userId);
+      const responderRef = doc(db, 'LGU', agency, 'responders', userId);
       const responderSnap = await getDoc(responderRef);
       
       if (responderSnap.exists()) {
@@ -372,7 +381,7 @@ export const updateResponderAvailability = async (userId, isAvailable, emergency
     }
     
     const agencyName = profileResult.data.agency;
-    const responderRef = doc(db, 'responders', agencyName, 'members', userId);
+    const responderRef = doc(db, 'LGU', agencyName, 'responders', userId);
     await updateDoc(responderRef, {
       isAvailable,
       updatedAt: serverTimestamp(),
@@ -384,12 +393,12 @@ export const updateResponderAvailability = async (userId, isAvailable, emergency
   }
 };
 
-// Get available responders by type/agency
+// Get available responders by agency
 export const getAvailableResponders = async (emergencyType) => {
   try {
     const agencyName = getAgencyFromType(emergencyType);
-    const membersRef = collection(db, 'responders', agencyName, 'members');
-    const q = query(membersRef, where('isAvailable', '==', true));
+    const respondersRef = collection(db, 'LGU', agencyName, 'responders');
+    const q = query(respondersRef, where('isAvailable', '==', true));
     const querySnapshot = await getDocs(q);
     
     const responders = [];
@@ -404,11 +413,11 @@ export const getAvailableResponders = async (emergencyType) => {
   }
 };
 
-// Get all members of an agency
+// Get all responders in an agency
 export const getAgencyMembers = async (agencyName) => {
   try {
-    const membersRef = collection(db, 'responders', agencyName, 'members');
-    const querySnapshot = await getDocs(membersRef);
+    const respondersRef = collection(db, 'LGU', agencyName, 'responders');
+    const querySnapshot = await getDocs(respondersRef);
     
     const members = [];
     querySnapshot.forEach((doc) => {
@@ -429,14 +438,20 @@ export const getAgencyMembers = async (agencyName) => {
   }
 };
 
-// Get all agencies with their member counts
+// Get all agencies with their responder counts
 export const getAllAgencies = async () => {
   try {
     const agencies = [];
     
     for (const [type, agencyName] of Object.entries(RESPONDER_AGENCIES)) {
-      const membersRef = collection(db, 'responders', agencyName, 'members');
-      const querySnapshot = await getDocs(membersRef);
+      // Get agency info
+      const agencyDocRef = doc(db, 'LGU', agencyName);
+      const agencySnap = await getDoc(agencyDocRef);
+      const agencyData = agencySnap.exists() ? agencySnap.data() : {};
+      
+      // Get responders
+      const respondersRef = collection(db, 'LGU', agencyName, 'responders');
+      const querySnapshot = await getDocs(respondersRef);
       
       const members = [];
       let availableCount = 0;
@@ -449,6 +464,7 @@ export const getAllAgencies = async () => {
       agencies.push({
         id: agencyName,
         name: agencyName,
+        fullName: agencyData.fullName || agencyName,
         type,
         totalMembers: members.length,
         availableMembers: availableCount,

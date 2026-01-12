@@ -4,57 +4,30 @@ service cloud.firestore {
     
     // ==================== USERS COLLECTION ====================
     match /users/{userId} {
-      // Anyone authenticated can read user profiles
       allow read: if request.auth != null;
-      // Users can only write their own profile
       allow create, update: if request.auth != null && request.auth.uid == userId;
-      // Only admins can delete users
-      allow delete: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow delete: if request.auth != null;
     }
     
-    // ==================== RESPONDERS COLLECTION (Hierarchical) ====================
-    // Structure: responders/{agency}/members/{userId}
-    match /responders/{agencyId} {
-      // Anyone authenticated can read agency info
-      allow read: if request.auth != null;
-      // Only authenticated users can create/update agency docs
-      allow write: if request.auth != null;
-      
-      // Members subcollection
-      match /members/{memberId} {
-        // Anyone authenticated can read responder profiles
-        allow read: if request.auth != null;
-        // Responders can only write their own profile
-        allow create, update: if request.auth != null && request.auth.uid == memberId;
-        // Admins can manage all responders
-        allow write: if request.auth != null && 
-          get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
-      }
+    // ==================== LGU COLLECTION (Hierarchical) ====================
+    // Structure: LGU/{agency}/responders/{userId}
+    
+    match /LGU/{document=**} {
+      allow read, write: if request.auth != null;
     }
     
     // ==================== EMERGENCIES COLLECTION ====================
     match /emergencies/{emergencyId} {
-      // Anyone authenticated can read emergencies
       allow read: if request.auth != null;
-      // Authenticated users can create emergencies
       allow create: if request.auth != null;
-      // Users can update their own emergencies, responders and admins can update any
-      allow update: if request.auth != null && (
-        resource.data.userId == request.auth.uid ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'responder' ||
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-      );
-      // Only admins can delete emergencies
-      allow delete: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
     }
     
     // ==================== CHATS COLLECTION ====================
     match /chats/{chatId} {
       allow read, write: if request.auth != null;
       
-      // Messages subcollection
       match /messages/{messageId} {
         allow read, write: if request.auth != null;
       }
@@ -62,9 +35,7 @@ service cloud.firestore {
     
     // ==================== NOTIFICATIONS COLLECTION ====================
     match /notifications/{notificationId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read, write: if request.auth != null;
     }
   }
 }
