@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { useChat } from '../context/ChatContext';
 
 // Sample chat data - uncomment to test with data
 /*
@@ -71,8 +72,7 @@ const NAV_ITEMS = [
 
 export default function ChatScreen({ navigation, route }) {
   const responder = route?.params?.responder;
-  // Set to empty array for empty state, or use SAMPLE_CONVERSATIONS for testing
-  const [conversations, setConversations] = useState([]);
+  const { activeConversations, addOrUpdateConversation } = useChat();
   const [activeTab, setActiveTab] = useState('chat');
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState([
@@ -106,6 +106,12 @@ export default function ChatScreen({ navigation, route }) {
     };
     
     setMessages([...messages, newMessage]);
+    
+    // Save conversation to context
+    if (responder) {
+      addOrUpdateConversation(responder, message.trim());
+    }
+    
     setMessage('');
     
     // Simulate responder reply after 2 seconds
@@ -256,8 +262,16 @@ export default function ChatScreen({ navigation, route }) {
       style={styles.conversationCard}
       activeOpacity={0.7}
       onPress={() => {
-        // TODO: Navigate to individual chat screen
-        console.log('Open chat with:', conversation.responderName);
+        // Navigate to individual chat with responder
+        navigation.push('Chat', {
+          responder: {
+            name: conversation.responderName,
+            avatar: conversation.responderAvatar,
+            building: conversation.responderBuilding,
+            tag: conversation.responderType,
+            emergencyType: conversation.emergencyType,
+          }
+        });
       }}
     >
       <View style={styles.avatarContainer}>
@@ -306,7 +320,7 @@ export default function ChatScreen({ navigation, route }) {
           <Ionicons name="chatbubbles" size={28} color="#FFFFFF" />
           <Text style={styles.headerTitle}>Emergency Chats</Text>
         </View>
-        {conversations.length > 0 && (
+        {activeConversations.length > 0 && (
           <TouchableOpacity style={styles.headerButton}>
             <Ionicons name="search" size={24} color="#FFFFFF" />
           </TouchableOpacity>
@@ -319,14 +333,14 @@ export default function ChatScreen({ navigation, route }) {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
-        {conversations.length === 0 ? (
+        {activeConversations.length === 0 ? (
           renderEmptyState()
         ) : (
           <>
             <Text style={styles.sectionTitle}>
-              Active Conversations ({conversations.length})
+              Active Conversations ({activeConversations.length})
             </Text>
-            {conversations.map((conversation) =>
+            {activeConversations.map((conversation) =>
               renderConversationItem(conversation)
             )}
           </>
