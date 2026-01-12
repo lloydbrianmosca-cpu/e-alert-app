@@ -11,11 +11,19 @@ import {
   getDocs,
   setDoc,
   getDoc,
-  updateDoc
+  updateDoc,
+  Timestamp
 } from 'firebase/firestore';
 import { app } from './firebase';
 
 const db = getFirestore(app);
+
+// Helper to calculate expiration date (3 days from now)
+const getExpirationDate = () => {
+  const now = new Date();
+  now.setDate(now.getDate() + 3); // Add 3 days
+  return Timestamp.fromDate(now);
+};
 
 // Chat-related functions
 
@@ -41,6 +49,12 @@ export const getOrCreateConversation = async (userId, responder) => {
       lastMessage: '',
       lastMessageAt: serverTimestamp(),
       unreadCount: 0,
+      expiresAt: getExpirationDate(), // Auto-delete after 3 days
+    });
+  } else {
+    // Reset expiration when conversation is accessed
+    await updateDoc(conversationRef, {
+      expiresAt: getExpirationDate(),
     });
   }
   
