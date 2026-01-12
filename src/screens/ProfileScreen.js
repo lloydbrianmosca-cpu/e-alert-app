@@ -14,6 +14,7 @@ import {
   TextInput,
   Alert,
   Modal,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -32,6 +33,7 @@ const NAV_ITEMS = [
 export default function ProfileScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const [profileData, setProfileData] = useState({
     firstName: user?.displayName
@@ -61,6 +63,7 @@ export default function ProfileScreen({ navigation }) {
           }));
         }
       }
+      setIsLoading(false);
     };
     fetchProfile();
   }, [user]);
@@ -166,6 +169,15 @@ export default function ProfileScreen({ navigation }) {
       [field]: value,
     }));
   };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#DC2626" />
+        <Text style={styles.loadingText}>Loading profile...</Text>
+      </View>
+    );
+  }
 
   const renderInputField = (label, field, placeholder = '') => (
     <View style={styles.inputFieldContainer}>
@@ -467,6 +479,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F3F4F6',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '500',
   },
   header: {
     flexDirection: 'row',
