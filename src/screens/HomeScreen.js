@@ -80,7 +80,7 @@ export default function HomeScreen({ navigation }) {
   const [showProfileOverlay, setShowProfileOverlay] = useState(false);
   const [isCheckingProfile, setIsCheckingProfile] = useState(true);
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
-  const { activeEmergencyType, activateEmergency, clearEmergency } = useEmergency();
+  const { activeEmergencyType, activeResponder, activateEmergency, clearEmergency } = useEmergency();
   const { user } = useAuth();
 
   // Required profile fields
@@ -303,82 +303,130 @@ export default function HomeScreen({ navigation }) {
               </View>
             </TouchableOpacity>
 
-            {/* SOS Button */}
-            <View style={styles.sosContainer}>
-              <Text style={styles.sosPressCount}>
-                {sosCount}/3 Presses
-              </Text>
-              <Animated.View style={[
-                styles.sosOuterRing,
-                { transform: [{ scale: pulseAnim }] }
-              ]}>
-                <View style={styles.sosMiddleRing}>
-                  <TouchableOpacity
-                    style={[
-                      styles.sosButton,
-                      sosPressed && styles.sosButtonPressed,
-                    ]}
-                    onPress={handleSOSPress}
-                    activeOpacity={0.9}
-                  >
-                    <LinearGradient
-                      colors={sosPressed ? ['#991B1B', '#7F1D1D'] : ['#DC2626', '#B91C1C']}
-                      style={styles.sosGradient}
+            {/* Show Active Emergency Card OR SOS Button */}
+            {activeEmergencyType && activeResponder ? (
+              <>
+                {/* Active Emergency Status Card */}
+                <View style={styles.activeEmergencyCard}>
+                  <View style={styles.activeEmergencyHeader}>
+                    <View style={styles.activeStatusBadge}>
+                      <View style={styles.activeStatusDot} />
+                      <Text style={styles.activeStatusText}>ACTIVE EMERGENCY</Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.responderInfoSection}>
+                    <Image
+                      source={{ uri: activeResponder.avatar }}
+                      style={styles.responderAvatar}
+                    />
+                    <View style={styles.responderDetails}>
+                      <Text style={styles.responderName}>{activeResponder.name}</Text>
+                      <Text style={styles.responderTag}>{activeResponder.tag} Responder</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.responderInfoRows}>
+                    <View style={styles.responderInfoRow}>
+                      <Ionicons name="business" size={18} color="#6B7280" />
+                      <Text style={styles.responderInfoLabel}>Location:</Text>
+                      <Text style={styles.responderInfoValue}>{activeResponder.building}</Text>
+                    </View>
+                    <View style={styles.responderInfoRow}>
+                      <Ionicons name="call" size={18} color="#6B7280" />
+                      <Text style={styles.responderInfoLabel}>Hotline:</Text>
+                      <Text style={styles.responderInfoValue}>{activeResponder.hotline}</Text>
+                    </View>
+                    <View style={styles.responderInfoRow}>
+                      <Ionicons name="time" size={18} color="#6B7280" />
+                      <Text style={styles.responderInfoLabel}>ETA:</Text>
+                      <Text style={[styles.responderInfoValue, styles.etaValue]}>{activeResponder.eta}</Text>
+                    </View>
+                    <View style={styles.responderInfoRow}>
+                      <Ionicons name="navigate" size={18} color="#6B7280" />
+                      <Text style={styles.responderInfoLabel}>Distance:</Text>
+                      <Text style={styles.responderInfoValue}>{activeResponder.distance}</Text>
+                    </View>
+                  </View>
+
+                  <View style={styles.emergencyActionButtons}>
+                    <TouchableOpacity
+                      style={styles.viewLocationButton}
+                      onPress={() => navigation.navigate('Locations')}
+                      activeOpacity={0.85}
                     >
-                      <Text style={styles.sosText}>SOS</Text>
-                      <Text style={styles.sosSubtext}>
-                        {sosPressed ? 'SENDING...' : `TAP ${3 - sosCount}x`}
-                      </Text>
-                    </LinearGradient>
-                  </TouchableOpacity>
+                      <Ionicons name="map" size={18} color="#FFFFFF" />
+                      <Text style={styles.viewLocationButtonText}>View on Map</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.cancelAlertButton}
+                      onPress={() => {
+                        clearEmergency();
+                        setShowSOS(false);
+                        setSelectedType(null);
+                        setSosCount(0);
+                      }}
+                      activeOpacity={0.85}
+                    >
+                      <Ionicons name="close-circle" size={18} color="#DC2626" />
+                      <Text style={styles.cancelAlertButtonText}>Cancel Alert</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
-              </Animated.View>
-            </View>
+              </>
+            ) : (
+              <>
+                {/* SOS Button */}
+                <View style={styles.sosContainer}>
+                  <Text style={styles.sosPressCount}>
+                    {sosCount}/3 Presses
+                  </Text>
+                  <Animated.View style={[
+                    styles.sosOuterRing,
+                    { transform: [{ scale: pulseAnim }] }
+                  ]}>
+                    <View style={styles.sosMiddleRing}>
+                      <TouchableOpacity
+                        style={[
+                          styles.sosButton,
+                          sosPressed && styles.sosButtonPressed,
+                        ]}
+                        onPress={handleSOSPress}
+                        activeOpacity={0.9}
+                      >
+                        <LinearGradient
+                          colors={sosPressed ? ['#991B1B', '#7F1D1D'] : ['#DC2626', '#B91C1C']}
+                          style={styles.sosGradient}
+                        >
+                          <Text style={styles.sosText}>SOS</Text>
+                          <Text style={styles.sosSubtext}>
+                            {sosPressed ? 'SENDING...' : `TAP ${3 - sosCount}x`}
+                          </Text>
+                        </LinearGradient>
+                      </TouchableOpacity>
+                    </View>
+                  </Animated.View>
+                </View>
 
-            <Text style={styles.sosHint}>Press the button 3 times to send emergency alert</Text>
+                <Text style={styles.sosHint}>Press the button 3 times to send emergency alert</Text>
 
-            {/* Active Emergency Shortcut */}
-            {activeEmergencyType && (
-              <View style={styles.activeEmergencyContainer}>
-                <TouchableOpacity
-                  style={styles.viewEmergencyButton}
-                  onPress={() => navigation.navigate('Locations')}
-                  activeOpacity={0.85}
-                >
-                  <Ionicons name="navigate" size={18} color="#DC2626" />
-                  <Text style={styles.viewEmergencyButtonText}>View Active</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.cancelEmergencyButton}
-                  onPress={() => {
-                    clearEmergency();
-                    setShowSOS(false);
-                    setSelectedType(null);
-                    setSosCount(0);
-                  }}
-                  activeOpacity={0.85}
-                >
-                  <Ionicons name="close-circle" size={18} color="#FFFFFF" />
-                  <Text style={styles.cancelEmergencyButtonText}>Cancel Emergency</Text>
-                </TouchableOpacity>
-              </View>
+                {/* Emergency Info Card */}
+                <View style={styles.infoCard}>
+                  <View style={styles.infoRow}>
+                    <Ionicons name="location" size={20} color="#DC2626" />
+                    <Text style={styles.infoText}>After pressing the button 3 times, your location will be shared.</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Ionicons name="notifications" size={20} color="#DC2626" />
+                    <Text style={styles.infoText}>Nearest emergency service will automatically be notified.</Text>
+                  </View>
+                  <View style={styles.infoRow}>
+                    <Ionicons name="time" size={20} color="#DC2626" />
+                    <Text style={styles.infoText}>ETA and distance will be shown once button is active.</Text>
+                  </View>
+                </View>
+              </>
             )}
-
-            {/* Emergency Info Card */}
-            <View style={styles.infoCard}>
-              <View style={styles.infoRow}>
-                <Ionicons name="location" size={20} color="#DC2626" />
-                <Text style={styles.infoText}>After pressing the button 3 times, your location will be shared.</Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Ionicons name="notifications" size={20} color="#DC2626" />
-                <Text style={styles.infoText}>Nearest emergency service will automatically be notified.</Text>
-              </View>
-              <View style={styles.infoRow}>
-                <Ionicons name="time" size={20} color="#DC2626" />
-                <Text style={styles.infoText}>ETA and distance will be shown once button is active.</Text>
-              </View>
-            </View>
           </>
         )}
       </ScrollView>
@@ -824,5 +872,140 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+  // Active Emergency Card Styles
+  activeEmergencyCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: 20,
+    marginTop: 20,
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+    borderWidth: 2,
+    borderColor: '#DC2626',
+  },
+  activeEmergencyHeader: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  activeStatusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 8,
+  },
+  activeStatusDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#DC2626',
+  },
+  activeStatusText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#DC2626',
+    letterSpacing: 1,
+  },
+  responderInfoSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+    marginBottom: 16,
+  },
+  responderAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 3,
+    borderColor: '#DC2626',
+  },
+  responderDetails: {
+    marginLeft: 14,
+    flex: 1,
+  },
+  responderName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  responderTag: {
+    fontSize: 14,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  responderInfoRows: {
+    gap: 12,
+  },
+  responderInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  responderInfoLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+    width: 70,
+  },
+  responderInfoValue: {
+    fontSize: 14,
+    color: '#1F2937',
+    fontWeight: '600',
+    flex: 1,
+  },
+  etaValue: {
+    color: '#059669',
+    fontWeight: '700',
+  },
+  emergencyActionButtons: {
+    flexDirection: 'row',
+    marginTop: 20,
+    gap: 12,
+  },
+  viewLocationButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#DC2626',
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  viewLocationButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  cancelAlertButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 2,
+    borderColor: '#DC2626',
+  },
+  cancelAlertButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#DC2626',
   },
 });
