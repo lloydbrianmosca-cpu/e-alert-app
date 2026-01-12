@@ -9,6 +9,9 @@ import {
   Image,
   RefreshControl,
   ActivityIndicator,
+  Modal,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -16,12 +19,49 @@ import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
 import { collection, query, orderBy, onSnapshot, getDocs } from 'firebase/firestore';
 
+const { width } = Dimensions.get('window');
+const DRAWER_WIDTH = width * 0.55;
+
 export default function AdminHomeScreen({ navigation }) {
   const [activeEmergencies, setActiveEmergencies] = useState([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [drawerAnimation] = useState(new Animated.Value(-DRAWER_WIDTH));
   const { user, logout } = useAuth();
+
+  const toggleDrawer = () => {
+    if (drawerOpen) {
+      Animated.timing(drawerAnimation, {
+        toValue: -DRAWER_WIDTH,
+        duration: 250,
+        useNativeDriver: true,
+      }).start(() => setDrawerOpen(false));
+    } else {
+      setDrawerOpen(true);
+      Animated.timing(drawerAnimation, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
+
+  const menuItems = [
+    { id: 'dashboard', title: 'Dashboard', icon: 'grid', screen: 'AdminHome' },
+    { id: 'responder-signup', title: 'Responder Sign Up', icon: 'person-add', screen: 'ResponderSignUp' },
+    { id: 'user-logs', title: 'User Logs', icon: 'list', screen: 'UserLogs' },
+    { id: 'emergency-history', title: 'Emergency History', icon: 'time', screen: 'EmergencyHistory' },
+    { id: 'realtime-monitoring', title: 'Real Time Monitoring', icon: 'pulse', screen: 'RealtimeMonitoring' },
+    { id: 'responder-management', title: 'Responder Management', icon: 'people-circle', screen: 'ResponderManagement' },
+  ];
+
+  const handleMenuPress = (screen) => {
+    toggleDrawer();
+    // navigation.navigate(screen);
+    console.log(`Navigate to ${screen}`);
+  };
 
   // Fetch active emergencies
   useEffect(() => {
@@ -101,11 +141,14 @@ export default function AdminHomeScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor="#1E3A8A" />
+      <StatusBar barStyle="light-content" backgroundColor="#DC2626" />
       
       {/* Header */}
       <View style={styles.header}>
-        <View style={styles.headerLeft}>
+        <TouchableOpacity style={styles.menuButton} onPress={toggleDrawer}>
+          <Ionicons name="menu" size={28} color="#FFFFFF" />
+        </TouchableOpacity>
+        <View style={styles.headerCenter}>
           <Text style={styles.greeting}>Admin Dashboard</Text>
           <Text style={styles.welcomeText}>Welcome, {user?.displayName || 'Admin'}</Text>
         </View>
@@ -113,6 +156,52 @@ export default function AdminHomeScreen({ navigation }) {
           <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
         </TouchableOpacity>
       </View>
+
+      {/* Drawer Overlay */}
+      {drawerOpen && (
+        <TouchableOpacity 
+          style={styles.overlay} 
+          activeOpacity={1} 
+          onPress={toggleDrawer}
+        />
+      )}
+
+      {/* Navigation Drawer */}
+      <Animated.View 
+        style={[
+          styles.drawer,
+          { transform: [{ translateX: drawerAnimation }] }
+        ]}
+      >
+        <View style={styles.drawerHeader}>
+          <View style={styles.drawerLogoContainer}>
+            <Ionicons name="shield-checkmark" size={40} color="#FFFFFF" />
+          </View>
+          <Text style={styles.drawerTitle}>E-Alert Admin</Text>
+          <Text style={styles.drawerSubtitle}>{user?.email}</Text>
+        </View>
+        
+        <ScrollView style={styles.drawerMenu}>
+          {menuItems.map((item) => (
+            <TouchableOpacity 
+              key={item.id}
+              style={styles.drawerMenuItem}
+              onPress={() => handleMenuPress(item.screen)}
+            >
+              <Ionicons name={item.icon} size={24} color="#DC2626" />
+              <Text style={styles.drawerMenuText}>{item.title}</Text>
+              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <View style={styles.drawerFooter}>
+          <TouchableOpacity style={styles.drawerLogout} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
+            <Text style={styles.drawerLogoutText}>Logout</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
 
       <ScrollView 
         style={styles.content}
@@ -240,12 +329,16 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: 50,
-    paddingHorizontal: 20,
+    paddingHorizontal: 15,
     paddingBottom: 20,
-    backgroundColor: '#1E3A8A',
+    backgroundColor: '#DC2626',
   },
-  headerLeft: {
+  menuButton: {
+    padding: 8,
+  },
+  headerCenter: {
     flex: 1,
+    marginLeft: 10,
   },
   greeting: {
     fontSize: 24,
@@ -259,6 +352,93 @@ const styles = StyleSheet.create({
   },
   logoutButton: {
     padding: 10,
+  },
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    zIndex: 10,
+  },
+  drawer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: DRAWER_WIDTH,
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    zIndex: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 2, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 10,
+  },
+  drawerHeader: {
+    backgroundColor: '#DC2626',
+    paddingTop: 60,
+    paddingBottom: 30,
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
+  drawerLogoContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  drawerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  drawerSubtitle: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.8)',
+    marginTop: 4,
+  },
+  drawerMenu: {
+    flex: 1,
+    paddingTop: 10,
+  },
+  drawerMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  drawerMenuText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#1F2937',
+    marginLeft: 15,
+  },
+  drawerFooter: {
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  drawerLogout: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DC2626',
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 10,
+  },
+  drawerLogoutText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   content: {
     flex: 1,
