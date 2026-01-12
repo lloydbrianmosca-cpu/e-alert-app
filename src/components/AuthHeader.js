@@ -1,7 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Image } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+
+// Logo
+const logoWithoutName = require('../assets/logo/without-name.png');
 
 export default function AuthHeader({ title = 'E-Alert', subtitle = 'Emergency Response System' }) {
   return (
@@ -17,7 +19,7 @@ export default function AuthHeader({ title = 'E-Alert', subtitle = 'Emergency Re
       
       <View style={styles.logoContainer}>
         <View style={styles.alertIcon}>
-          <Ionicons name="alert-circle" size={48} color="#DC2626" />
+          <Image source={logoWithoutName} style={styles.logoImage} />
         </View>
       </View>
       <Text style={styles.title}>{title}</Text>
@@ -70,6 +72,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 16,
     elevation: 10,
+  },
+  logoImage: {
+    width: 55,
+    height: 55,
+    resizeMode: 'contain',
   },
   title: {
     fontSize: 38,

@@ -15,6 +15,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons, Feather } from '@expo/vector-icons';
 import { useEmergency } from '../context/EmergencyContext';
 
+// Logo
+const logoWithoutName = require('../assets/logo/without-name.png');
+
 const { width } = Dimensions.get('window');
 const BOX_SIZE = (width - 60) / 2;
 
@@ -181,7 +184,7 @@ export default function HomeScreen({ navigation }) {
       >
         {/* Title Section */}
         <View style={styles.titleSection}>
-          <Ionicons name="alert-circle" size={36} color="#DC2626" />
+          <Image source={logoWithoutName} style={styles.logoImage} />
           <Text style={styles.titleText}>E-Alert</Text>
         </View>
         
@@ -416,6 +419,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginTop: 24,
     gap: 8,
+  },
+  logoImage: {
+    width: 40,
+    height: 40,
+    resizeMode: 'contain',
   },
   titleText: {
     fontSize: 32,
