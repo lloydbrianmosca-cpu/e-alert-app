@@ -33,12 +33,12 @@ const RESPONDER_TYPES = [
 ];
 
 const menuItems = [
-  { id: 'dashboard', title: 'Dashboard', icon: 'grid-outline', screen: 'AdminHome' },
-  { id: 'responder-signup', title: 'Responder Sign up', icon: 'person-add-outline', screen: 'ResponderSignUp' },
-  { id: 'user-logs', title: 'User Logs', icon: 'document-text-outline', screen: null },
-  { id: 'emergency-history', title: 'Emergency History', icon: 'time-outline', screen: null },
-  { id: 'realtime-monitoring', title: 'Real-time Monitoring', icon: 'pulse-outline', screen: null },
-  { id: 'responder-management', title: 'Responder Management', icon: 'people-outline', screen: null },
+  { id: 'dashboard', title: 'Dashboard', icon: 'grid', screen: 'AdminHome' },
+  { id: 'responder-signup', title: 'Responder Sign Up', icon: 'person-add', screen: 'ResponderSignUp' },
+  { id: 'user-logs', title: 'User Logs', icon: 'list', screen: 'UserLogs' },
+  { id: 'emergency-history', title: 'Emergency History', icon: 'time', screen: 'EmergencyHistory' },
+  { id: 'realtime-monitoring', title: 'Real Time Monitoring', icon: 'pulse', screen: 'RealtimeMonitoring' },
+  { id: 'responder-management', title: 'Responder Management', icon: 'people-circle', screen: 'ResponderManagement' },
 ];
 
 export default function ResponderSignUpScreen({ navigation }) {
