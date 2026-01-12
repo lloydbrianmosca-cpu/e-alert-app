@@ -1,0 +1,34 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection - users can read/write their own data
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Conversations collection
+    match /conversations/{conversationId} {
+      // Users can read/write conversations where:
+      // 1. The conversationId starts with their UID (for direct access)
+      // 2. Or the participantId field matches their UID (for queries)
+      allow read: if request.auth != null && (
+        conversationId.matches(request.auth.uid + '_.*') ||
+        resource.data.participantId == request.auth.uid
+      );
+      
+      // For writes, we check the conversationId pattern
+      allow create: if request.auth != null && 
+        conversationId.matches(request.auth.uid + '_.*') &&
+        request.resource.data.participantId == request.auth.uid;
+      
+      allow update: if request.auth != null && 
+        conversationId.matches(request.auth.uid + '_.*');
+      
+      // Messages subcollection - only conversation participants can read/write
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null && 
+          conversationId.matches(request.auth.uid + '_.*');
+      }
+    }
+  }
+}

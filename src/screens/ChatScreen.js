@@ -10,6 +10,7 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
@@ -75,12 +76,23 @@ const NAV_ITEMS = [
 
 export default function ChatScreen({ navigation, route }) {
   const responder = route?.params?.responder;
-  const { activeConversations, addOrUpdateConversation } = useChat();
+  const { 
+    activeConversations, 
+    startConversation, 
+    sendMessage: sendChatMessage, 
+    subscribeToCurrentMessages,
+    loading: chatLoading 
+  } = useChat();
   const [activeTab, setActiveTab] = useState('chat');
   const [message, setMessage] = useState('');
   const [showProfileOverlay, setShowProfileOverlay] = useState(false);
   const [isCheckingProfile, setIsCheckingProfile] = useState(true);
   const { user } = useAuth();
+  const [messages, setMessages] = useState([]);
+  const [conversationId, setConversationId] = useState(null);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+  const [isSending, setIsSending] = useState(false);
+  const scrollViewRef = useRef(null);
 
   // Required profile fields
   const requiredFields = [
@@ -139,59 +151,86 @@ export default function ChatScreen({ navigation, route }) {
     return unsubscribe;
   }, [navigation, user]);
 
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      text: 'We have received your emergency alert. Help is on the way.',
-      sender: 'responder',
-      timestamp: new Date(Date.now() - 300000),
-    },
-    {
-      id: 2,
-      text: 'Please stay calm and remain in a safe location.',
-      sender: 'responder',
-      timestamp: new Date(Date.now() - 240000),
-    },
-  ]);
-  const scrollViewRef = useRef(null);
+  // Initialize conversation and subscribe to messages when responder is present
+  useEffect(() => {
+    if (!responder || !user?.uid) {
+      setIsLoadingMessages(false);
+      return;
+    }
+
+    let unsubscribe = () => {};
+
+    const initConversation = async () => {
+      setIsLoadingMessages(true);
+      try {
+        const convId = await startConversation(responder);
+        console.log('Conversation initialized with ID:', convId);
+        if (convId) {
+          setConversationId(convId);
+          unsubscribe = subscribeToCurrentMessages(convId, (msgs) => {
+            setMessages(msgs);
+            setIsLoadingMessages(false);
+          });
+        } else {
+          console.error('Failed to create conversation');
+          setIsLoadingMessages(false);
+        }
+      } catch (error) {
+        console.error('Error initializing conversation:', error);
+        setIsLoadingMessages(false);
+      }
+    };
+
+    initConversation();
+
+    return () => unsubscribe();
+  }, [responder, user?.uid]);
 
   const getEmergencyColor = (type) => {
     return EMERGENCY_COLORS[type] || '#6B7280';
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim()) return;
     
-    const newMessage = {
-      id: messages.length + 1,
-      text: message.trim(),
-      sender: 'user',
-      timestamp: new Date(),
-    };
-    
-    setMessages([...messages, newMessage]);
-    
-    // Save conversation to context
-    if (responder) {
-      addOrUpdateConversation(responder, message.trim());
+    // If no conversationId yet, wait for it
+    if (!conversationId) {
+      console.log('No conversation ID yet, waiting...');
+      return;
     }
     
+    const messageText = message.trim();
     setMessage('');
+    setIsSending(true);
     
-    // Simulate responder reply after 2 seconds
-    setTimeout(() => {
-      const replyMessage = {
-        id: messages.length + 2,
-        text: 'Thank you for the update. We are almost there.',
-        sender: 'responder',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, replyMessage]);
-    }, 2000);
+    try {
+      await sendChatMessage(conversationId, messageText);
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Restore the message if sending failed
+      setMessage(messageText);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const formatTime = (date) => {
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    if (!date) return '';
+    const d = date instanceof Date ? date : new Date(date);
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  };
+
+  const formatTimestamp = (date) => {
+    if (!date) return '';
+    const d = date instanceof Date ? date : new Date(date);
+    const now = new Date();
+    const diffMs = now - d;
+    const diffMins = Math.floor(diffMs / 60000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins} min ago`;
+    if (diffMins < 1440) return `${Math.floor(diffMins / 60)} hr ago`;
+    return d.toLocaleDateString();
   };
 
   // Render conversation view when responder is passed
@@ -240,28 +279,41 @@ export default function ChatScreen({ navigation, route }) {
             showsVerticalScrollIndicator={false}
             onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: true })}
           >
-            {messages.map((msg) => (
-              <View
-                key={msg.id}
-                style={[
-                  styles.messageBubble,
-                  msg.sender === 'user' ? styles.userMessage : styles.responderMessage,
-                ]}
-              >
-                <Text style={[
-                  styles.messageText,
-                  msg.sender === 'user' ? styles.userMessageText : styles.responderMessageText,
-                ]}>
-                  {msg.text}
-                </Text>
-                <Text style={[
-                  styles.messageTime,
-                  msg.sender === 'user' ? styles.userMessageTime : styles.responderMessageTime,
-                ]}>
-                  {formatTime(msg.timestamp)}
-                </Text>
+            {isLoadingMessages ? (
+              <View style={styles.loadingMessages}>
+                <ActivityIndicator size="large" color="#DC2626" />
+                <Text style={styles.loadingMessagesText}>Loading messages...</Text>
               </View>
-            ))}
+            ) : messages.length === 0 ? (
+              <View style={styles.noMessagesContainer}>
+                <Ionicons name="chatbubble-outline" size={48} color="#D1D5DB" />
+                <Text style={styles.noMessagesText}>No messages yet</Text>
+                <Text style={styles.noMessagesSubtext}>Send a message to start the conversation</Text>
+              </View>
+            ) : (
+              messages.map((msg) => (
+                <View
+                  key={msg.id}
+                  style={[
+                    styles.messageBubble,
+                    msg.senderType === 'user' ? styles.userMessage : styles.responderMessage,
+                  ]}
+                >
+                  <Text style={[
+                    styles.messageText,
+                    msg.senderType === 'user' ? styles.userMessageText : styles.responderMessageText,
+                  ]}>
+                    {msg.text}
+                  </Text>
+                  <Text style={[
+                    styles.messageTime,
+                    msg.senderType === 'user' ? styles.userMessageTime : styles.responderMessageTime,
+                  ]}>
+                    {formatTime(msg.timestamp)}
+                  </Text>
+                </View>
+              ))
+            )}
           </ScrollView>
 
           {/* Quick Chats */}
@@ -283,17 +335,26 @@ export default function ChatScreen({ navigation, route }) {
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.messageInput}
-              placeholder="Type a message..."
+              placeholder={conversationId ? "Type a message..." : "Connecting..."}
               placeholderTextColor="#9CA3AF"
               value={message}
               onChangeText={setMessage}
               multiline
+              editable={!!conversationId && !isSending}
             />
             <TouchableOpacity
-              style={styles.sendButton}
+              style={[
+                styles.sendButton,
+                (!conversationId || isSending || !message.trim()) && styles.sendButtonDisabled
+              ]}
               onPress={handleSendMessage}
+              disabled={!conversationId || isSending || !message.trim()}
             >
-              <Ionicons name="send" size={20} color="#FFFFFF" />
+              {isSending ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Ionicons name="send" size={20} color="#FFFFFF" />
+              )}
             </TouchableOpacity>
           </View>
         </KeyboardAvoidingView>
@@ -343,7 +404,7 @@ export default function ChatScreen({ navigation, route }) {
           source={{ uri: conversation.responderAvatar }}
           style={styles.avatar}
         />
-        {conversation.isOnline && <View style={styles.onlineBadge} />}
+        <View style={styles.onlineBadge} />
         <View
           style={[
             styles.emergencyBadge,
@@ -357,11 +418,11 @@ export default function ChatScreen({ navigation, route }) {
       <View style={styles.conversationContent}>
         <View style={styles.conversationHeader}>
           <Text style={styles.responderName}>{conversation.responderName}</Text>
-          <Text style={styles.timestamp}>{conversation.timestamp}</Text>
+          <Text style={styles.timestamp}>{formatTimestamp(conversation.lastMessageAt)}</Text>
         </View>
         <Text style={styles.responderType}>{conversation.responderType}</Text>
         <Text style={styles.lastMessage} numberOfLines={1}>
-          {conversation.lastMessage}
+          {conversation.lastMessage || 'No messages yet'}
         </Text>
       </View>
 
@@ -846,6 +907,39 @@ const styles = StyleSheet.create({
     backgroundColor: '#DC2626',
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  sendButtonDisabled: {
+    backgroundColor: '#9CA3AF',
+  },
+  loadingMessages: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  loadingMessagesText: {
+    marginTop: 12,
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  noMessagesContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingTop: 100,
+  },
+  noMessagesText: {
+    marginTop: 16,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  noMessagesSubtext: {
+    marginTop: 8,
+    fontSize: 14,
+    color: '#9CA3AF',
+    textAlign: 'center',
   },
   overlayContainer: {
     position: 'absolute',
