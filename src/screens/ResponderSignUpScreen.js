@@ -102,7 +102,7 @@ export default function ResponderSignUpScreen({ navigation }) {
         responderType: responderType,
         role: 'responder',
         status: 'active',
-        isAvailable: true,
+        isAvailable: false,
         createdAt: serverTimestamp(),
         createdBy: user?.uid || 'admin',
         createdByEmail: user?.email || 'admin@system.com',
