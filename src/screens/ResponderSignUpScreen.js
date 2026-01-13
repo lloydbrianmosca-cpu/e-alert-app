@@ -174,14 +174,8 @@ export default function ResponderSignUpScreen({ navigation }) {
         createdByEmail: user?.email || 'admin@system.com',
       };
 
-      // Save to responders collection
+      // Save ONLY to responders collection (not users)
       await setDoc(doc(db, 'responders', newUser.uid), responderData);
-
-      // Also save to users collection with responder role
-      await setDoc(doc(db, 'users', newUser.uid), {
-        ...responderData,
-        updatedAt: serverTimestamp(),
-      });
 
       // Send verification email to the responder
       try {
