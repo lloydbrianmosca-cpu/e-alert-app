@@ -153,6 +153,16 @@ export default function ResponderHomeScreen({ navigation }) {
   const toggleAvailability = async (value) => {
     if (!user?.uid) return;
 
+    // Prevent turning off if there's an active emergency
+    if (!value && assignedEmergencies.length > 0) {
+      Toast.show({
+        type: 'error',
+        text1: 'Cannot Change Status',
+        text2: 'You have an active emergency. Complete it first.',
+      });
+      return;
+    }
+
     try {
       const docRef = doc(db, 'responders', user.uid);
       
@@ -398,42 +408,55 @@ export default function ResponderHomeScreen({ navigation }) {
             <View
               style={[
                 styles.statusIndicator,
-                { backgroundColor: isAvailable ? '#10B981' : '#EF4444' },
+                { backgroundColor: assignedEmergencies.length > 0 ? '#F59E0B' : (isAvailable ? '#10B981' : '#EF4444') },
               ]}
             />
           </View>
           <View style={styles.statusContent}>
             <View style={styles.statusInfo}>
               <MaterialCommunityIcons
-                name={isAvailable ? 'account-check' : 'account-cancel'}
+                name={assignedEmergencies.length > 0 ? 'account-clock' : (isAvailable ? 'account-check' : 'account-cancel')}
                 size={48}
-                color={isAvailable ? '#10B981' : '#EF4444'}
+                color={assignedEmergencies.length > 0 ? '#F59E0B' : (isAvailable ? '#10B981' : '#EF4444')}
               />
               <Text
                 style={[
                   styles.statusText,
-                  { color: isAvailable ? '#10B981' : '#EF4444' },
+                  { color: assignedEmergencies.length > 0 ? '#F59E0B' : (isAvailable ? '#10B981' : '#EF4444') },
                 ]}
               >
-                {isAvailable ? 'AVAILABLE' : 'UNAVAILABLE'}
+                {assignedEmergencies.length > 0 ? 'ONGOING' : (isAvailable ? 'AVAILABLE' : 'UNAVAILABLE')}
               </Text>
               <Text style={styles.statusSubtext}>
-                {isAvailable
-                  ? 'You can receive emergency assignments'
-                  : 'You will not receive new assignments'}
+                {assignedEmergencies.length > 0
+                  ? 'You have an active emergency assignment'
+                  : (isAvailable
+                    ? 'You can receive emergency assignments'
+                    : 'You will not receive new assignments')}
               </Text>
             </View>
             <View style={styles.toggleContainer}>
-              <Text style={styles.toggleLabel}>Toggle Status</Text>
+              <Text style={styles.toggleLabel}>
+                {assignedEmergencies.length > 0 ? 'Status Locked' : 'Toggle Status'}
+              </Text>
               <Switch
                 value={isAvailable}
                 onValueChange={toggleAvailability}
-                trackColor={{ false: '#D1D5DB', true: '#86EFAC' }}
-                thumbColor={isAvailable ? '#10B981' : '#9CA3AF'}
+                trackColor={{ false: '#D1D5DB', true: assignedEmergencies.length > 0 ? '#FCD34D' : '#86EFAC' }}
+                thumbColor={assignedEmergencies.length > 0 ? '#F59E0B' : (isAvailable ? '#10B981' : '#9CA3AF')}
                 ios_backgroundColor="#D1D5DB"
+                disabled={assignedEmergencies.length > 0}
               />
             </View>
           </View>
+          {assignedEmergencies.length > 0 && (
+            <View style={styles.statusWarning}>
+              <Ionicons name="information-circle" size={18} color="#F59E0B" />
+              <Text style={styles.statusWarningText}>
+                Complete your active emergency to change status
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Stats Cards */}
@@ -735,6 +758,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#374151',
     fontWeight: '500',
+  },
+  statusWarning: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginTop: 12,
+    gap: 8,
+  },
+  statusWarningText: {
+    fontSize: 13,
+    color: '#92400E',
+    flex: 1,
   },
   statsContainer: {
     flexDirection: 'row',
