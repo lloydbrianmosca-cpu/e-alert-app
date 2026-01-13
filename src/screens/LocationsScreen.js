@@ -296,13 +296,13 @@ export default function LocationsScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor="#DC2626" />
+      <ExpoStatusBar style="dark" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header */}
-      <View style={[styles.header, { backgroundColor: '#DC2626' }]}>
+      <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Ionicons name="navigate" size={24} color="#FFFFFF" />
+          <Ionicons name="navigate" size={24} color="#DC2626" />
           <Text style={styles.headerTitle}>Responder Location</Text>
         </View>
       </View>
@@ -601,27 +601,29 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 14,
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
   },
   backButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#F5F5F7',
     justifyContent: 'center',
     alignItems: 'center',
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#1D1D1F',
+    letterSpacing: -0.4,
   },
   headerRight: {
     width: 36,
@@ -873,11 +875,11 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingTop: 8,
+    paddingTop: 10,
     paddingBottom: 28,
     paddingHorizontal: 10,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#F5F5F7',
   },
   navItem: {
     flex: 1,
@@ -886,8 +888,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   navLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
+    fontSize: 11,
+    color: '#86868B',
     marginTop: 4,
     fontWeight: '500',
   },
@@ -901,7 +903,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -909,8 +911,8 @@ const styles = StyleSheet.create({
   },
   overlayContent: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
+    padding: 28,
     alignItems: 'center',
     width: '100%',
     maxWidth: 320,
@@ -937,9 +939,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#DC2626',
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 10,
+    borderRadius: 12,
     gap: 8,
     width: '100%',
   },

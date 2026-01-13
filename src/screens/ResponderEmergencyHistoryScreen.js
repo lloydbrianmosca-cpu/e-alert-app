@@ -198,13 +198,13 @@ export default function ResponderEmergencyHistoryScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor={PRIMARY_COLOR} />
+      <ExpoStatusBar style="dark" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Ionicons name="time" size={24} color="#FFFFFF" />
+          <Ionicons name="time" size={24} color="#DC2626" />
           <Text style={styles.headerTitle}>Emergency History</Text>
         </View>
       </View>
@@ -411,10 +411,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingTop: 50,
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-    backgroundColor: PRIMARY_COLOR,
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
   },
   headerContent: {
     flexDirection: 'row',
@@ -422,20 +422,23 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1D1D1F',
+    letterSpacing: -0.4,
   },
   searchContainer: {
-    padding: 16,
-    backgroundColor: PRIMARY_COLOR,
-    paddingTop: 0,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F7',
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
+    backgroundColor: '#F5F5F7',
+    borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
     gap: 8,
@@ -448,16 +451,16 @@ const styles = StyleSheet.create({
   filterContainer: {
     backgroundColor: '#FFFFFF',
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#F5F5F7',
   },
   filterButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    marginRight: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F7',
+    marginRight: 8,
   },
   filterButtonActive: {
     backgroundColor: PRIMARY_COLOR,
@@ -472,12 +475,13 @@ const styles = StyleSheet.create({
   },
   statsContainer: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    backgroundColor: '#F5F5F7',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    marginHorizontal: 24,
+    marginTop: 12,
+    borderRadius: 16,
     marginBottom: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   statItem: {
     flex: 1,
@@ -531,13 +535,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   emergencyCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 14,
-    borderLeftWidth: 3,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
-    marginBottom: 10,
+    backgroundColor: '#F5F5F7',
+    borderRadius: 16,
+    padding: 16,
+    borderLeftWidth: 4,
+    borderWidth: 0,
+    borderColor: 'transparent',
+    marginBottom: 12,
   },
   emergencyHeader: {
     flexDirection: 'row',
@@ -647,11 +651,11 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingTop: 8,
+    paddingTop: 10,
     paddingBottom: 28,
     paddingHorizontal: 10,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#F5F5F7',
   },
   navItem: {
     flex: 1,
@@ -660,7 +664,7 @@ const styles = StyleSheet.create({
   },
   navLabel: {
     fontSize: 11,
-    color: '#6B7280',
+    color: '#86868B',
     marginTop: 3,
   },
   navLabelActive: {

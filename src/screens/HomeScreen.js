@@ -265,13 +265,14 @@ export default function HomeScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor="#DC2626" />
+      <ExpoStatusBar style="dark" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.greeting}>Hello, <Text style={styles.userName}>{firstName || 'User'}</Text></Text>
+          <Text style={styles.greeting}>Welcome back</Text>
+          <Text style={styles.userName}>{firstName || 'User'}</Text>
         </View>
         <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('Profile')}>
           {profileImage ? (
@@ -620,41 +621,43 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 56,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    backgroundColor: '#DC2626',
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F7',
   },
   headerLeft: {
     flex: 1,
   },
   greeting: {
     fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontWeight: '500',
+    color: '#86868B',
+    fontWeight: '400',
   },
   userName: {
-    fontSize: 15,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#1D1D1F',
+    letterSpacing: -0.4,
+    marginTop: 2,
   },
   profileButton: {
     position: 'relative',
   },
   profileImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: '#F5F5F7',
   },
   profileImagePlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F5F5F7',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -676,19 +679,22 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   selectTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#111827',
+    color: '#1D1D1F',
     textAlign: 'center',
-    marginTop: 24,
-    marginBottom: 20,
+    marginTop: 28,
+    marginBottom: 8,
+    letterSpacing: -0.4,
   },
   subtitleText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 15,
+    color: '#86868B',
     textAlign: 'center',
-    marginTop: 6,
-    marginBottom: 20,
+    marginTop: 0,
+    marginBottom: 24,
+    paddingHorizontal: 32,
+    lineHeight: 22,
   },
   gridContainer: {
     flexDirection: 'row',
@@ -699,30 +705,33 @@ const styles = StyleSheet.create({
   emergencyBox: {
     width: BOX_SIZE,
     height: BOX_SIZE,
-    borderRadius: 16,
-    padding: 14,
+    borderRadius: 20,
+    padding: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.04)',
+    backgroundColor: '#F5F5F7',
+    marginBottom: 12,
+    marginHorizontal: 6,
   },
   iconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 20,
+    width: 60,
+    height: 60,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   boxTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    marginBottom: 3,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1D1D1F',
+    marginBottom: 2,
+    letterSpacing: -0.3,
   },
   boxSubtitle: {
     fontSize: 12,
-    fontWeight: '500',
-    opacity: 0.8,
+    fontWeight: '400',
+    color: '#86868B',
   },
   selectedTypeCard: {
     flexDirection: 'row',
@@ -902,10 +911,11 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 8,
+    paddingBottom: 28,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#F5F5F7',
   },
   navItem: {
     flex: 1,
@@ -914,9 +924,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   navLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    marginTop: 3,
+    fontSize: 11,
+    color: '#86868B',
+    marginTop: 4,
     fontWeight: '500',
   },
   navLabelActive: {
@@ -929,7 +939,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -938,43 +948,45 @@ const styles = StyleSheet.create({
   overlayContent: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 28,
+    padding: 32,
     alignItems: 'center',
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 340,
   },
   overlayIconContainer: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   overlayTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#111827',
+    color: '#1D1D1F',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
+    letterSpacing: -0.4,
   },
   overlaySubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 15,
+    color: '#86868B',
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
+    lineHeight: 22,
+    marginBottom: 24,
   },
   overlayButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#DC2626',
-    height: 48,
+    height: 50,
     paddingHorizontal: 24,
     borderRadius: 12,
     gap: 8,
     width: '100%',
   },
   overlayButtonText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: '#FFFFFF',
+    letterSpacing: -0.4,
   },
   // Active Emergency Card Styles
   activeEmergencyCard: {

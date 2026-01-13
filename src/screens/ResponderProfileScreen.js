@@ -473,13 +473,13 @@ export default function ResponderProfileScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor={PRIMARY_COLOR} />
+      <ExpoStatusBar style="dark" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header - Unified with user screens */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Ionicons name="person" size={28} color="#FFFFFF" />
+          <Ionicons name="person" size={26} color="#DC2626" />
           <Text style={styles.headerTitle}>My Profile</Text>
         </View>
         {isEditing ? (
@@ -491,7 +491,7 @@ export default function ResponderProfileScreen({ navigation }) {
             onPress={() => setIsEditing(true)}
             style={styles.editButton}
           >
-            <Ionicons name="pencil" size={20} color="#FFFFFF" />
+            <Ionicons name="pencil" size={20} color="#86868B" />
           </TouchableOpacity>
         )}
       </View>
@@ -1039,10 +1039,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 56,
-    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingHorizontal: 24,
     paddingBottom: 16,
-    backgroundColor: '#DC2626',
+    backgroundColor: '#FFFFFF',
   },
   headerContent: {
     flexDirection: 'row',
@@ -1050,34 +1050,40 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#1D1D1F',
+    letterSpacing: -0.4,
   },
   headerButton: {
-    padding: 4,
+    padding: 6,
   },
   headerButtonText: {
-    fontSize: 14,
-    color: '#FFFFFF',
-    fontWeight: '500',
+    fontSize: 15,
+    color: '#DC2626',
+    fontWeight: '600',
   },
   editButton: {
-    padding: 6,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F7',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   content: {
     flex: 1,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
   profileCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
+    backgroundColor: '#F5F5F7',
+    borderRadius: 20,
+    padding: 24,
     alignItems: 'center',
     marginTop: 16,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    marginBottom: 16,
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   profileImageContainer: {
     position: 'relative',
@@ -1195,18 +1201,18 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   section: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    backgroundColor: '#F5F5F7',
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 16,
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
-    marginBottom: 14,
+    color: '#1D1D1F',
+    marginBottom: 16,
   },
   inputGroup: {
     marginBottom: 14,
@@ -1218,18 +1224,18 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   input: {
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#111827',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 0,
+    borderColor: 'transparent',
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#1D1D1F',
   },
   inputDisabled: {
-    backgroundColor: '#F3F4F6',
-    color: '#6B7280',
+    backgroundColor: '#FFFFFF',
+    color: '#86868B',
   },
   pickerContainer: {
     backgroundColor: '#F9FAFB',
@@ -1368,11 +1374,11 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingTop: 8,
+    paddingTop: 10,
     paddingBottom: 28,
     paddingHorizontal: 10,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#F5F5F7',
   },
   navItem: {
     flex: 1,
@@ -1381,8 +1387,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   navLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
+    fontSize: 11,
+    color: '#86868B',
     marginTop: 4,
     fontWeight: '500',
   },

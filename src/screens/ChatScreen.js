@@ -275,16 +275,16 @@ export default function ChatScreen({ navigation, route }) {
   if (responder) {
     return (
       <View style={styles.container}>
-        <ExpoStatusBar style="light" />
-        <StatusBar barStyle="light-content" backgroundColor="#DC2626" />
+        <ExpoStatusBar style="dark" />
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
         {/* Conversation Header */}
-        <View style={[styles.header, { backgroundColor: '#DC2626' }]}>
+        <View style={styles.chatHeader}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+            <Ionicons name="chevron-back" size={28} color="#1D1D1F" />
           </TouchableOpacity>
           <Image
             source={{ uri: responder.avatar }}
@@ -300,7 +300,7 @@ export default function ChatScreen({ navigation, route }) {
             <Text style={styles.headerBuilding}>{responder.building}</Text>
           </View>
           <TouchableOpacity style={styles.callHeaderButton}>
-            <Ionicons name="call" size={22} color="#FFFFFF" />
+            <Ionicons name="call" size={22} color="#DC2626" />
           </TouchableOpacity>
         </View>
 
@@ -476,18 +476,18 @@ export default function ChatScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor="#DC2626" />
+      <ExpoStatusBar style="dark" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Ionicons name="chatbubbles" size={28} color="#FFFFFF" />
+          <Ionicons name="chatbubbles" size={26} color="#DC2626" />
           <Text style={styles.headerTitle}>Emergency Chats</Text>
         </View>
         {activeConversations.length > 0 && (
           <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="search" size={24} color="#FFFFFF" />
+            <Ionicons name="search" size={22} color="#86868B" />
           </TouchableOpacity>
         )}
       </View>
@@ -584,10 +584,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 50,
-    paddingHorizontal: 20,
+    paddingTop: 60,
+    paddingHorizontal: 24,
     paddingBottom: 16,
-    backgroundColor: '#DC2626',
+    backgroundColor: '#FFFFFF',
   },
   headerContent: {
     flexDirection: 'row',
@@ -595,15 +595,16 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#1D1D1F',
+    letterSpacing: -0.4,
   },
   headerButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: '#F5F5F7',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -614,24 +615,23 @@ const styles = StyleSheet.create({
     paddingBottom: 30,
   },
   sectionTitle: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#6B7280',
-    marginHorizontal: 20,
+    color: '#86868B',
+    marginHorizontal: 24,
     marginTop: 16,
-    marginBottom: 10,
+    marginBottom: 12,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   conversationCard: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginBottom: 10,
+    backgroundColor: '#F5F5F7',
+    marginHorizontal: 24,
+    marginBottom: 12,
     padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderRadius: 16,
+    alignItems: 'center',
   },
   avatarContainer: {
     position: 'relative',
@@ -641,35 +641,35 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    backgroundColor: '#E5E7EB',
   },
   onlineBadge: {
     position: 'absolute',
-    bottom: 1,
-    right: 1,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    bottom: 0,
+    right: 0,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     backgroundColor: '#10B981',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: '#F5F5F7',
   },
   emergencyBadge: {
     position: 'absolute',
-    top: -2,
-    right: -2,
-    width: 18,
-    height: 18,
-    borderRadius: 9,
+    top: -4,
+    right: -4,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: '#F5F5F7',
   },
   conversationContent: {
     flex: 1,
-    justifyContent: 'center',
   },
   conversationHeader: {
     flexDirection: 'row',
@@ -678,24 +678,24 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   responderName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#1F2937',
+    color: '#1D1D1F',
   },
   timestamp: {
-    fontSize: 11,
-    color: '#9CA3AF',
+    fontSize: 12,
+    color: '#86868B',
     fontWeight: '500',
   },
   responderType: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 13,
+    color: '#86868B',
     fontWeight: '500',
-    marginBottom: 3,
+    marginBottom: 2,
   },
   lastMessage: {
-    fontSize: 13,
-    color: '#6B7280',
+    fontSize: 14,
+    color: '#1D1D1F',
     fontWeight: '400',
   },
   unreadBadge: {
@@ -724,34 +724,34 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F5F5F7',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    marginBottom: 24,
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#1D1D1F',
     marginBottom: 8,
     textAlign: 'center',
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 15,
+    color: '#86868B',
     textAlign: 'center',
     lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: 28,
   },
   backHomeButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#DC2626',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 10,
+    paddingVertical: 14,
+    paddingHorizontal: 28,
+    borderRadius: 12,
     gap: 8,
   },
   backHomeText: {
@@ -762,11 +762,11 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingTop: 8,
+    paddingTop: 10,
     paddingBottom: 28,
     paddingHorizontal: 10,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#F5F5F7',
   },
   navItem: {
     flex: 1,
@@ -775,8 +775,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   navLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
+    fontSize: 11,
+    color: '#86868B',
     marginTop: 4,
     fontWeight: '500',
   },
@@ -785,21 +785,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   // Conversation View Styles
+  chatHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: 14,
+    paddingHorizontal: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F7',
+  },
   backButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F7',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
   },
   headerAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    borderWidth: 2,
+    borderColor: '#F5F5F7',
     marginRight: 10,
   },
   headerInfo: {
@@ -812,14 +822,14 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   headerName: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#1D1D1F',
   },
   responderTag: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 8,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
   },
   responderTagText: {
     fontSize: 10,
@@ -827,15 +837,15 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   headerBuilding: {
-    fontSize: 11,
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: 12,
+    color: '#86868B',
     fontWeight: '500',
   },
   callHeaderButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F7',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -978,7 +988,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -986,8 +996,8 @@ const styles = StyleSheet.create({
   },
   overlayContent: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
+    padding: 28,
     alignItems: 'center',
     width: '100%',
     maxWidth: 320,
@@ -1014,9 +1024,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#DC2626',
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 10,
+    borderRadius: 12,
     gap: 8,
     width: '100%',
   },

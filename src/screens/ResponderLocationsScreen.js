@@ -418,14 +418,14 @@ export default function ResponderLocationsScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor={PRIMARY_COLOR} />
+      <ExpoStatusBar style="dark" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header - Unified with user screens */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
           <View style={styles.headerLeft}>
-            <Ionicons name="location" size={24} color="#FFFFFF" />
+            <Ionicons name="location" size={24} color="#DC2626" />
             <Text style={styles.headerTitle}>Location Tracking</Text>
           </View>
           <TouchableOpacity onPress={fitAllMarkers} style={styles.fitButton}>
@@ -741,10 +741,10 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
   header: {
-    paddingTop: 56,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
-    backgroundColor: '#DC2626',
+    paddingTop: 60,
+    paddingBottom: 16,
+    paddingHorizontal: 24,
+    backgroundColor: '#FFFFFF',
   },
   headerContent: {
     flexDirection: 'row',
@@ -757,12 +757,18 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#1D1D1F',
+    letterSpacing: -0.4,
   },
   fitButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F7',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   mapContainer: {
     flex: 1,
@@ -793,8 +799,8 @@ const styles = StyleSheet.create({
   },
   mapControls: {
     position: 'absolute',
-    right: 14,
-    bottom: 180,
+    right: 10,
+    bottom: 10,
     gap: 6,
   },
   controlButton: {
@@ -811,26 +817,31 @@ const styles = StyleSheet.create({
   },
   emergencyList: {
     position: 'absolute',
-    top: 14,
-    left: 14,
-    right: 14,
+    top: 10,
+    left: 10,
+    right: 10,
     backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 10,
-    maxHeight: 160,
+    borderRadius: 12,
+    padding: 8,
+    maxHeight: 100,
     borderWidth: 1,
     borderColor: '#E5E7EB',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   listTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#374151',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   emergencyItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 6,
+    paddingVertical: 4,
     borderBottomWidth: 1,
     borderBottomColor: '#F9FAFB',
   },
@@ -888,23 +899,26 @@ const styles = StyleSheet.create({
   },
   emergencyDetails: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 16,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 10,
     borderWidth: 1,
     borderBottomWidth: 0,
     borderColor: '#F3F4F6',
+    maxHeight: 320,
   },
   detailsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   detailsTypeBadge: {
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
   detailsTypeText: {
     color: '#FFFFFF',
@@ -913,25 +927,25 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   detailsUser: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 6,
+    marginBottom: 4,
   },
   distanceInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#F9FAFB',
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 8,
-    marginBottom: 10,
+    marginBottom: 6,
     gap: 6,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   distanceText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#374151',
     flex: 1,
@@ -948,44 +962,44 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   detailsContact: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#374151',
-    marginBottom: 5,
+    marginBottom: 3,
     fontWeight: '500',
   },
   detailsAddress: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#6B7280',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   emergencyContactInfo: {
     backgroundColor: '#FEF2F2',
-    padding: 8,
+    padding: 6,
     borderRadius: 6,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   emergencyContactLabel: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#991B1B',
     fontWeight: '600',
     marginBottom: 1,
   },
   emergencyContactText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#DC2626',
     fontWeight: '500',
   },
   detailsActions: {
     flexDirection: 'row',
     gap: 10,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   detailsButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 10,
     gap: 6,
   },
@@ -1003,30 +1017,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#059669',
-    paddingVertical: 14,
+    paddingVertical: 12,
     borderRadius: 10,
-    gap: 8,
+    gap: 6,
   },
   emergencyDoneButtonDisabled: {
     backgroundColor: '#E5E7EB',
   },
   emergencyDoneButtonText: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
   },
   emergencyDoneButtonTextDisabled: {
     color: '#9CA3AF',
-    fontSize: 13,
+    fontSize: 12,
   },
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingTop: 8,
+    paddingTop: 10,
     paddingBottom: 28,
     paddingHorizontal: 10,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#F5F5F7',
   },
   navItem: {
     flex: 1,
@@ -1035,8 +1049,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   navLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
+    fontSize: 11,
+    color: '#86868B',
     marginTop: 4,
     fontWeight: '500',
   },
@@ -1051,7 +1065,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -1059,8 +1073,8 @@ const styles = StyleSheet.create({
   },
   overlayContent: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
+    padding: 28,
     alignItems: 'center',
     width: '100%',
     maxWidth: 320,
@@ -1087,9 +1101,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#DC2626',
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 10,
+    borderRadius: 12,
     gap: 8,
     width: '100%',
   },

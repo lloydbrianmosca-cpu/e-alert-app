@@ -207,6 +207,7 @@ export const subscribeToMessages = (conversationId, callback) => {
 
 /**
  * Subscribe to user's conversations
+ * Also refreshes responder profile images from their documents
  */
 export const subscribeToConversations = (userId, callback) => {
   const conversationsRef = collection(db, 'conversations');
@@ -216,13 +217,40 @@ export const subscribeToConversations = (userId, callback) => {
     orderBy('lastMessageAt', 'desc')
   );
   
-  return onSnapshot(q, (snapshot) => {
-    const conversations = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      lastMessageAt: doc.data().lastMessageAt?.toDate() || new Date(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-    }));
+  return onSnapshot(q, async (snapshot) => {
+    const conversations = await Promise.all(
+      snapshot.docs.map(async (docSnap) => {
+        const data = docSnap.data();
+        let responderAvatar = data.responderAvatar;
+        
+        // Fetch latest profile image from responder document if available
+        if (data.responderId) {
+          try {
+            const responderDoc = await getDoc(doc(db, 'responders', data.responderId));
+            if (responderDoc.exists()) {
+              const respData = responderDoc.data();
+              if (respData.profileImage) {
+                responderAvatar = respData.profileImage;
+                // Update conversation with latest avatar (async, don't wait)
+                updateDoc(doc(db, 'conversations', docSnap.id), {
+                  responderAvatar: respData.profileImage,
+                }).catch(() => {}); // Silent fail
+              }
+            }
+          } catch (e) {
+            // Silent fail - use cached avatar
+          }
+        }
+        
+        return {
+          id: docSnap.id,
+          ...data,
+          responderAvatar,
+          lastMessageAt: data.lastMessageAt?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate() || new Date(),
+        };
+      })
+    );
     callback(conversations);
   }, (error) => {
     // Ignore permission errors on sign out
@@ -237,6 +265,7 @@ export const subscribeToConversations = (userId, callback) => {
 
 /**
  * Subscribe to responder's assigned conversations (for responder accounts)
+ * Also refreshes user profile images from their documents
  */
 export const subscribeToResponderConversations = (responderId, callback) => {
   const conversationsRef = collection(db, 'conversations');
@@ -246,13 +275,40 @@ export const subscribeToResponderConversations = (responderId, callback) => {
     orderBy('lastMessageAt', 'desc')
   );
   
-  return onSnapshot(q, (snapshot) => {
-    const conversations = snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      lastMessageAt: doc.data().lastMessageAt?.toDate() || new Date(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-    }));
+  return onSnapshot(q, async (snapshot) => {
+    const conversations = await Promise.all(
+      snapshot.docs.map(async (docSnap) => {
+        const data = docSnap.data();
+        let participantAvatar = data.participantAvatar;
+        
+        // Fetch latest profile image from user document if available
+        if (data.participantId) {
+          try {
+            const userDoc = await getDoc(doc(db, 'users', data.participantId));
+            if (userDoc.exists()) {
+              const userData = userDoc.data();
+              if (userData.profileImage) {
+                participantAvatar = userData.profileImage;
+                // Update conversation with latest avatar (async, don't wait)
+                updateDoc(doc(db, 'conversations', docSnap.id), {
+                  participantAvatar: userData.profileImage,
+                }).catch(() => {}); // Silent fail
+              }
+            }
+          } catch (e) {
+            // Silent fail - use cached avatar
+          }
+        }
+        
+        return {
+          id: docSnap.id,
+          ...data,
+          participantAvatar,
+          lastMessageAt: data.lastMessageAt?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate() || new Date(),
+        };
+      })
+    );
     callback(conversations);
   }, (error) => {
     // Ignore permission errors on sign out

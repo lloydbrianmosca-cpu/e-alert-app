@@ -27,7 +27,7 @@ export default function PrimaryButton({
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: '#0071E3',
+    backgroundColor: '#DC2626',
     borderRadius: 12,
     height: 50,
     flexDirection: 'row',

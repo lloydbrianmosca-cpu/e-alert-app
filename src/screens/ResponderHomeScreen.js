@@ -424,13 +424,14 @@ export default function ResponderHomeScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor={PRIMARY_COLOR} />
+      <ExpoStatusBar style="dark" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header - Unified with user screens */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.greeting}>Hello, <Text style={styles.userName}>{responderData?.firstName || 'Responder'}</Text></Text>
+          <Text style={styles.greeting}>Welcome back</Text>
+          <Text style={styles.userName}>{responderData?.firstName || 'Responder'}</Text>
         </View>
         <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('ResponderProfile')}>
           {profileImage ? (
@@ -440,10 +441,10 @@ export default function ResponderHomeScreen({ navigation }) {
             />
           ) : (
             <View style={styles.profileImagePlaceholder}>
-              <Ionicons name="person" size={24} color="#FFFFFF" />
+              <Ionicons name="person" size={24} color="#86868B" />
             </View>
           )}
-          <View style={styles.onlineIndicator} />
+          {isAvailable && <View style={styles.onlineIndicator} />}
         </TouchableOpacity>
       </View>
 
@@ -663,62 +664,64 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   loadingText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: '#6B7280',
+    marginTop: 12,
+    fontSize: 15,
+    color: '#86868B',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 56,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    backgroundColor: '#DC2626',
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F7',
   },
   headerLeft: {
     flex: 1,
   },
   greeting: {
     fontSize: 15,
-    color: 'rgba(255, 255, 255, 0.85)',
-    fontWeight: '500',
+    color: '#86868B',
+    fontWeight: '400',
   },
   userName: {
-    fontSize: 15,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#1D1D1F',
+    letterSpacing: -0.4,
+    marginTop: 2,
   },
   profileButton: {
     position: 'relative',
   },
   profileImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderColor: '#F5F5F7',
   },
   profileImagePlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.3)',
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#F5F5F7',
     justifyContent: 'center',
     alignItems: 'center',
   },
   onlineIndicator: {
     position: 'absolute',
-    bottom: 1,
-    right: 1,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#10B981',
+    bottom: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#34C759',
     borderWidth: 2,
-    borderColor: '#DC2626',
+    borderColor: '#FFFFFF',
   },
   content: {
     flex: 1,
@@ -744,23 +747,22 @@ const styles = StyleSheet.create({
     textTransform: 'capitalize',
   },
   statusCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F5F7',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
   },
   statusHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 14,
+    marginBottom: 16,
   },
   statusTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1D1D1F',
+    letterSpacing: -0.3,
   },
   statusIndicator: {
     width: 10,
@@ -772,16 +774,17 @@ const styles = StyleSheet.create({
   },
   statusInfo: {
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 18,
   },
   statusText: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    marginTop: 10,
+    marginTop: 12,
+    letterSpacing: -0.4,
   },
   statusSubtext: {
-    fontSize: 13,
-    color: '#6B7280',
+    fontSize: 14,
+    color: '#86868B',
     marginTop: 6,
     textAlign: 'center',
   },
@@ -790,13 +793,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',
-    paddingTop: 14,
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#E5E7EB',
+    borderTopColor: '#E5E5EA',
   },
   toggleLabel: {
-    fontSize: 14,
-    color: '#374151',
+    fontSize: 15,
+    color: '#1D1D1F',
     fontWeight: '500',
   },
   statusWarning: {
@@ -958,11 +961,11 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingTop: 8,
-    paddingBottom: 28,
+    paddingTop: 10,
+    paddingBottom: 32,
     paddingHorizontal: 8,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#F5F5F7',
   },
   navItem: {
     flex: 1,
@@ -971,9 +974,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   navLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    marginTop: 3,
+    fontSize: 11,
+    color: '#86868B',
+    marginTop: 4,
     fontWeight: '500',
   },
   navLabelActive: {
@@ -987,7 +990,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -996,42 +999,44 @@ const styles = StyleSheet.create({
   overlayContent: {
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
-    padding: 28,
+    padding: 32,
     alignItems: 'center',
     width: '100%',
-    maxWidth: 320,
+    maxWidth: 340,
   },
   overlayIconContainer: {
-    marginBottom: 16,
+    marginBottom: 20,
   },
   overlayTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#111827',
+    color: '#1D1D1F',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 12,
+    letterSpacing: -0.4,
   },
   overlaySubtitle: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 15,
+    color: '#86868B',
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
+    lineHeight: 22,
+    marginBottom: 24,
   },
   overlayButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#DC2626',
-    height: 48,
+    height: 50,
     paddingHorizontal: 24,
     borderRadius: 12,
     gap: 8,
     width: '100%',
   },
   overlayButtonText: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
     color: '#FFFFFF',
+    letterSpacing: -0.4,
   },
 });

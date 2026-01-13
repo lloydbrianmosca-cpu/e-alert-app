@@ -565,13 +565,12 @@ export default function ProfileScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor="#DC2626" />
+      <ExpoStatusBar style="dark" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Ionicons name="person" size={28} color="#FFFFFF" />
           <Text style={styles.headerTitle}>My Profile</Text>
         </View>
         {!isEditing && (
@@ -582,7 +581,7 @@ export default function ProfileScreen({ navigation }) {
               setIsEditing(true);
             }}
           >
-            <Ionicons name="pencil" size={20} color="#FFFFFF" />
+            <Ionicons name="pencil" size={20} color="#1D1D1F" />
           </TouchableOpacity>
         )}
       </View>
@@ -1022,28 +1021,30 @@ export default function ProfileScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 16,
-    color: '#6B7280',
-    fontWeight: '500',
+    fontSize: 15,
+    color: '#86868B',
+    fontWeight: '400',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 16,
-    backgroundColor: '#DC2626',
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingBottom: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F7',
   },
   headerContent: {
     flexDirection: 'row',
@@ -1051,15 +1052,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#1D1D1F',
+    letterSpacing: -0.4,
   },
   editButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F7',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1072,22 +1074,22 @@ const styles = StyleSheet.create({
   },
   profilePictureSection: {
     alignItems: 'center',
-    paddingVertical: 24,
+    paddingVertical: 28,
     backgroundColor: '#FFFFFF',
   },
   profileImageContainer: {
     position: 'relative',
-    marginBottom: 14,
+    marginBottom: 16,
   },
   profileImage: {
     width: 100,
     height: 100,
     borderRadius: 50,
     borderWidth: 3,
-    borderColor: '#FCA5A5',
+    borderColor: '#F5F5F7',
   },
   defaultProfileIcon: {
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F5F5F7',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1101,13 +1103,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#DC2626',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: '#FFFFFF',
   },
   profileName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#111827',
+    color: '#1D1D1F',
+    letterSpacing: -0.4,
     marginBottom: 3,
   },
   profileRoleContainer: {
@@ -1191,50 +1194,45 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   section: {
-    marginTop: 20,
-    paddingHorizontal: 20,
+    marginTop: 24,
+    paddingHorizontal: 24,
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '600',
-    color: '#111827',
-    marginBottom: 12,
+    color: '#1D1D1F',
+    marginBottom: 14,
+    letterSpacing: -0.3,
   },
   sectionContent: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F5F7',
+    borderRadius: 14,
+    padding: 16,
   },
   inputFieldContainer: {
-    marginBottom: 14,
+    marginBottom: 16,
   },
   inputLabel: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#4B5563',
-    marginBottom: 6,
+    color: '#86868B',
+    marginBottom: 8,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#FFFFFF',
     borderRadius: 10,
     paddingHorizontal: 14,
-    paddingVertical: 11,
-    fontSize: 14,
-    color: '#111827',
-    backgroundColor: '#FFFFFF',
+    paddingVertical: 12,
+    fontSize: 15,
+    color: '#1D1D1F',
   },
   inputValue: {
-    fontSize: 14,
-    color: '#111827',
+    fontSize: 15,
+    color: '#1D1D1F',
     fontWeight: '500',
     paddingVertical: 10,
   },
   pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
     borderRadius: 10,
     backgroundColor: '#FFFFFF',
     overflow: 'hidden',
@@ -1255,46 +1253,49 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionSection: {
-    marginTop: 20,
-    paddingHorizontal: 20,
+    marginTop: 24,
+    paddingHorizontal: 24,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    paddingHorizontal: 14,
-    paddingVertical: 14,
-    borderRadius: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    gap: 10,
+    backgroundColor: '#F5F5F7',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    gap: 12,
   },
   actionButtonText: {
     flex: 1,
   },
   actionButtonTitle: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1D1D1F',
     marginBottom: 2,
+    letterSpacing: -0.3,
   },
   actionButtonSubtitle: {
-    fontSize: 12,
-    color: '#6B7280',
-    fontWeight: '500',
+    fontSize: 13,
+    color: '#86868B',
+    fontWeight: '400',
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#DC2626',
-    height: 48,
-    borderRadius: 10,
-    marginTop: 6,
+    height: 50,
+    borderRadius: 12,
+    marginTop: 8,
     gap: 8,
   },
   logoutButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#FFFFFF',
+    letterSpacing: -0.4,
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',
@@ -1329,10 +1330,11 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
+    paddingVertical: 10,
     paddingHorizontal: 8,
+    paddingBottom: 28,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#F5F5F7',
   },
   navItem: {
     flex: 1,
@@ -1341,9 +1343,9 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   navLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
-    marginTop: 3,
+    fontSize: 11,
+    color: '#86868B',
+    marginTop: 4,
     fontWeight: '500',
   },
   navLabelActive: {

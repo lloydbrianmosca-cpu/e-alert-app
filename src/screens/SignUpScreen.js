@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   termsLink: {
-    color: '#0071E3',
+    color: '#DC2626',
     fontWeight: '400',
   },
   footer: {
@@ -646,7 +646,7 @@ const styles = StyleSheet.create({
     color: '#86868B',
   },
   signInLink: {
-    color: '#0071E3',
+    color: '#DC2626',
     fontWeight: '400',
     fontSize: 15,
   },
@@ -709,7 +709,7 @@ const styles = StyleSheet.create({
     color: '#AEAEB2',
   },
   verifyButton: {
-    backgroundColor: '#0071E3',
+    backgroundColor: '#DC2626',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -738,7 +738,7 @@ const styles = StyleSheet.create({
   },
   resendLink: {
     fontSize: 15,
-    color: '#0071E3',
+    color: '#DC2626',
     fontWeight: '400',
   },
 });

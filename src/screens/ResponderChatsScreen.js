@@ -385,8 +385,8 @@ export default function ResponderChatsScreen({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor={PRIMARY_COLOR} />
+      <ExpoStatusBar style="dark" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header - Unified with user screens */}
       <View style={styles.header}>
@@ -397,7 +397,7 @@ export default function ResponderChatsScreen({ navigation, route }) {
                 onPress={() => setSelectedConversation(null)}
                 style={styles.backButton}
               >
-                <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
+                <Ionicons name="chevron-back" size={28} color="#1D1D1F" />
               </TouchableOpacity>
               <View style={styles.headerTitleContainer}>
                 <Text style={styles.headerTitle}>{selectedConversation.userName}</Text>
@@ -413,12 +413,12 @@ export default function ResponderChatsScreen({ navigation, route }) {
                 }
                 style={styles.locationButton}
               >
-                <Ionicons name="location" size={24} color="#FFFFFF" />
+                <Ionicons name="location" size={24} color="#DC2626" />
               </TouchableOpacity>
             </>
           ) : (
             <>
-              <Ionicons name="chatbubbles" size={24} color="#FFFFFF" />
+              <Ionicons name="chatbubbles" size={24} color="#DC2626" />
               <Text style={styles.headerTitle}>Messages</Text>
               <View style={{ width: 24 }} />
             </>
@@ -597,10 +597,12 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
   },
   header: {
-    paddingTop: 56,
-    paddingBottom: 14,
-    paddingHorizontal: 16,
-    backgroundColor: '#DC2626',
+    paddingTop: 60,
+    paddingBottom: 16,
+    paddingHorizontal: 24,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F7',
   },
   headerContent: {
     flexDirection: 'row',
@@ -609,23 +611,34 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   backButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F7',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitleContainer: {
     flex: 1,
   },
   headerTitle: {
-    fontSize: 17,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#1D1D1F',
+    letterSpacing: -0.4,
   },
   headerSubtitle: {
-    fontSize: 11,
-    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 12,
+    color: '#86868B',
     marginTop: 2,
   },
   locationButton: {
-    padding: 4,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F7',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   listContainer: {
     flex: 1,
@@ -635,42 +648,46 @@ const styles = StyleSheet.create({
   },
   conversationItem: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    backgroundColor: '#F5F5F7',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+    alignItems: 'center',
   },
   conversationItemSelected: {
-    borderWidth: 1,
+    borderWidth: 2,
     borderColor: '#DC2626',
   },
   avatarContainer: {
     position: 'relative',
-    marginRight: 10,
+    marginRight: 12,
   },
   avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
+    backgroundColor: '#E5E7EB',
   },
   avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
   emergencyTypeDot: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
     borderWidth: 2,
-    borderColor: '#FFFFFF',
+    borderColor: '#F5F5F7',
   },
   conversationInfo: {
     flex: 1,
@@ -679,49 +696,51 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 3,
+    marginBottom: 2,
   },
   conversationName: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
+    color: '#1D1D1F',
   },
   conversationTime: {
-    fontSize: 10,
-    color: '#9CA3AF',
+    fontSize: 12,
+    color: '#86868B',
+    fontWeight: '500',
   },
   conversationPreview: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 5,
+    marginBottom: 4,
   },
   conversationMessage: {
     flex: 1,
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 14,
+    color: '#1D1D1F',
+    fontWeight: '400',
   },
   unreadBadge: {
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 5,
-    marginLeft: 6,
+    paddingHorizontal: 6,
+    marginLeft: 8,
   },
   unreadText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
     color: '#FFFFFF',
   },
   emergencyTag: {
     alignSelf: 'flex-start',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
   },
   emergencyTagText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '600',
   },
   emptyState: {
@@ -864,11 +883,11 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingTop: 8,
+    paddingTop: 10,
     paddingBottom: 28,
     paddingHorizontal: 10,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#F5F5F7',
   },
   navItem: {
     flex: 1,
@@ -877,8 +896,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   navLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
+    fontSize: 11,
+    color: '#86868B',
     marginTop: 4,
     fontWeight: '500',
   },
@@ -893,7 +912,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -901,8 +920,8 @@ const styles = StyleSheet.create({
   },
   overlayContent: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
+    padding: 28,
     alignItems: 'center',
     width: '100%',
     maxWidth: 320,
@@ -929,9 +948,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#DC2626',
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 10,
+    borderRadius: 12,
     gap: 8,
     width: '100%',
   },

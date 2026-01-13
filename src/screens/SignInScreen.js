@@ -521,7 +521,7 @@ const styles = StyleSheet.create({
   },
   forgotPassword: {
     fontSize: 15,
-    color: '#0071E3',
+    color: '#DC2626',
     fontWeight: '400',
   },
   // Divider styles
@@ -567,7 +567,7 @@ const styles = StyleSheet.create({
     color: '#86868B',
   },
   signUpLink: {
-    color: '#0071E3',
+    color: '#DC2626',
     fontWeight: '400',
     fontSize: 15,
   },
@@ -634,7 +634,7 @@ const styles = StyleSheet.create({
     color: '#AEAEB2',
   },
   resetButton: {
-    backgroundColor: '#0071E3',
+    backgroundColor: '#DC2626',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -658,12 +658,12 @@ const styles = StyleSheet.create({
   },
   resendLink: {
     fontSize: 15,
-    color: '#0071E3',
+    color: '#DC2626',
     fontWeight: '400',
   },
   // Verification modal styles
   verifyButton: {
-    backgroundColor: '#0071E3',
+    backgroundColor: '#DC2626',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

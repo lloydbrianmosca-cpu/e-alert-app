@@ -355,13 +355,13 @@ export default function HotlinesScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor="#DC2626" />
+      <ExpoStatusBar style="dark" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Ionicons name="call" size={28} color="#FFFFFF" />
+          <Ionicons name="call" size={26} color="#DC2626" />
           <Text style={styles.headerTitle}>Emergency Hotlines</Text>
         </View>
       </View>
@@ -515,10 +515,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    backgroundColor: '#DC2626',
+    paddingTop: 60,
+    paddingHorizontal: 24,
+    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
   },
   headerContent: {
     flexDirection: 'row',
@@ -526,27 +526,28 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#1D1D1F',
+    letterSpacing: -0.4,
   },
   searchContainer: {
-    paddingHorizontal: 20,
-    paddingTop: 14,
-    paddingBottom: 10,
+    paddingHorizontal: 24,
+    paddingTop: 8,
+    paddingBottom: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#F5F5F7',
   },
   searchInputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F5F7',
+    borderRadius: 12,
+    borderWidth: 0,
+    borderColor: 'transparent',
     paddingHorizontal: 14,
-    paddingVertical: 2,
+    paddingVertical: 4,
     gap: 8,
   },
   searchInput: {
@@ -559,10 +560,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     maxHeight: 60,
     borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
+    borderBottomColor: '#F5F5F7',
   },
   filterContent: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
     paddingVertical: 10,
     gap: 8,
     alignItems: 'center',
@@ -570,13 +571,13 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: 'transparent',
-    gap: 4,
+    borderWidth: 0,
+    borderColor: 'transparent',
+    backgroundColor: '#F5F5F7',
+    gap: 6,
   },
   filterButtonActive: {
     backgroundColor: '#DC2626',
@@ -600,13 +601,13 @@ const styles = StyleSheet.create({
   },
   hotlineCard: {
     flexDirection: 'row',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+    backgroundColor: '#F5F5F7',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 12,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#F3F4F6',
+    borderWidth: 0,
+    borderColor: 'transparent',
   },
   hotlineIconContainer: {
     width: 48,
@@ -698,11 +699,11 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingTop: 8,
+    paddingTop: 10,
     paddingBottom: 28,
     paddingHorizontal: 10,
     borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
+    borderTopColor: '#F5F5F7',
   },
   navItem: {
     flex: 1,
@@ -711,8 +712,8 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   navLabel: {
-    fontSize: 10,
-    color: '#9CA3AF',
+    fontSize: 11,
+    color: '#86868B',
     marginTop: 4,
     fontWeight: '500',
   },
@@ -726,7 +727,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 24,
@@ -734,8 +735,8 @@ const styles = StyleSheet.create({
   },
   overlayContent: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: 20,
+    padding: 28,
     alignItems: 'center',
     width: '100%',
     maxWidth: 320,
@@ -762,9 +763,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#DC2626',
-    paddingVertical: 14,
+    paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 10,
+    borderRadius: 12,
     gap: 8,
     width: '100%',
   },
