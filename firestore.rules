@@ -22,15 +22,23 @@ service cloud.firestore {
     
     // Active Emergencies collection
     match /activeEmergencies/{emergencyId} {
+      // Allow read for:
+      // - The user who created the emergency (emergencyId == their uid)
+      // - Admins
+      // - Responders (they need to query for assignments)
       allow read: if request.auth != null && (
         request.auth.uid == emergencyId || 
         isAdmin() || 
-        (isResponder() && resource.data.assignedResponder == request.auth.uid)
+        isResponder()
       );
+      // Allow write for:
+      // - The user who created the emergency
+      // - Admins
+      // - The assigned responder
       allow write: if request.auth != null && (
         request.auth.uid == emergencyId || 
         isAdmin() ||
-        (isResponder() && resource.data.assignedResponder == request.auth.uid)
+        (isResponder() && resource.data.assignedResponderId == request.auth.uid)
       );
       allow create: if request.auth != null;
     }

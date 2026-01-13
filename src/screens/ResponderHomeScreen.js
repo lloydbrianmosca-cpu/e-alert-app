@@ -109,7 +109,7 @@ export default function ResponderHomeScreen({ navigation }) {
 
     const q = query(
       collection(db, 'activeEmergencies'),
-      where('assignedResponder', '==', user.uid),
+      where('assignedResponderId', '==', user.uid),
       orderBy('createdAt', 'desc'),
       limit(10)
     );
@@ -124,6 +124,8 @@ export default function ResponderHomeScreen({ navigation }) {
         ...prev,
         pendingAssignments: emergencies.length,
       }));
+    }, (error) => {
+      console.log('Error listening to emergencies:', error);
     });
 
     return () => unsubscribe();
