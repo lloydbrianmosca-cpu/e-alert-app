@@ -607,6 +607,48 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     flex: 1,
   },
+  paginationContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 20,
+    gap: 8,
+  },
+  paginationButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  paginationButtonActive: {
+    backgroundColor: PRIMARY_COLOR,
+    borderColor: PRIMARY_COLOR,
+  },
+  paginationButtonDisabled: {
+    backgroundColor: '#F3F4F6',
+    borderColor: '#E5E7EB',
+  },
+  paginationButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  paginationButtonTextActive: {
+    color: '#FFFFFF',
+  },
+  paginationButtonTextDisabled: {
+    color: '#9CA3AF',
+  },
+  pageInfo: {
+    textAlign: 'center',
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 12,
+  },
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
