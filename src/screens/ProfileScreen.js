@@ -87,7 +87,7 @@ export default function ProfileScreen({ navigation }) {
             region: data.region || '',
             province: data.province || '',
             city: data.city || '',
-
+            profileImage: data.profileImage || null,
           }));
           // Set dropdown options based on saved data
           if (data.region) {
@@ -114,6 +114,13 @@ export default function ProfileScreen({ navigation }) {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Sync editData when profileData is fetched or changed
+  useEffect(() => {
+    if (!isEditing) {
+      setEditData(profileData);
+    }
+  }, [profileData]);
 
   // Validate all required fields are filled (except profileImage)
   const validateProfileData = () => {
@@ -154,8 +161,9 @@ export default function ProfileScreen({ navigation }) {
       return;
     }
 
-    setProfileData(editData);
+    setIsUploadingImage(true);
     setIsEditing(false);
+    
     // Save contact number and emergency contact info to Firestore
     if (user?.uid) {
       try {
@@ -173,12 +181,67 @@ export default function ProfileScreen({ navigation }) {
           city: editData.city,
         };
         
-        // Add profileImage if it exists
-        if (editData.profileImage) {
+        // Handle profile image upload if it's a new local image
+        if (editData.profileImage && editData.profileImage !== profileData.profileImage) {
+          console.log('Uploading new profile image...');
+          console.log('Old image:', profileData.profileImage);
+          console.log('New image:', editData.profileImage);
+          
+          // Check if it's a local URI (needs to be uploaded)
+          // Local URIs start with file:// on native, or are cache paths
+          const isLocalUri = editData.profileImage.startsWith('file://') || 
+                            !editData.profileImage.startsWith('http');
+          
+          console.log('Is local URI:', isLocalUri);
+          
+          if (isLocalUri) {
+            try {
+              // Use the stored image asset if available, otherwise create one from URI
+              const imageAsset = editData._imageAsset || { uri: editData.profileImage };
+              
+              // Upload the new image to Firebase Storage
+              const downloadURL = await updateProfileImage(
+                user.uid,
+                'user',
+                imageAsset,
+                profileData.profileImage,
+                null // updateFirestore will be done below
+              );
+              console.log('Image uploaded successfully:', downloadURL);
+              updateData.profileImage = downloadURL;
+            } catch (uploadError) {
+              console.log('Error uploading image:', uploadError);
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Failed to upload profile picture',
+              });
+              setIsUploadingImage(false);
+              setIsEditing(true);
+              return;
+            }
+          } else {
+            updateData.profileImage = editData.profileImage;
+          }
+        } else if (editData.profileImage) {
           updateData.profileImage = editData.profileImage;
         }
 
         await setDoc(doc(db, 'users', user.uid), updateData, { merge: true });
+        
+        // Refetch from Firestore to ensure we have the latest data
+        const docRef = doc(db, 'users', user.uid);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const freshData = docSnap.data();
+          setProfileData(prev => ({
+            ...prev,
+            ...freshData,
+          }));
+        } else {
+          setProfileData(updateData);
+        }
+        
         Toast.show({
           type: 'success',
           text1: 'Success',
@@ -190,6 +253,8 @@ export default function ProfileScreen({ navigation }) {
           text1: 'Error',
           text2: 'Failed to update profile info',
         });
+      } finally {
+        setIsUploadingImage(false);
       }
     }
   };
@@ -205,10 +270,11 @@ export default function ProfileScreen({ navigation }) {
       const image = await pickImageFromLibrary();
       
       if (image) {
-        // Create a local URI preview
+        // Store both the URI and the full image asset
         setEditData(prev => ({
           ...prev,
           profileImage: image.uri,
+          _imageAsset: image, // Store the full asset for upload
         }));
         setShowImageModal(false);
       }
@@ -229,10 +295,11 @@ export default function ProfileScreen({ navigation }) {
       const image = await takePhoto();
       
       if (image) {
-        // Create a local URI preview
+        // Store both the URI and the full image asset
         setEditData(prev => ({
           ...prev,
           profileImage: image.uri,
+          _imageAsset: image, // Store the full asset for upload
         }));
         setShowImageModal(false);
       }

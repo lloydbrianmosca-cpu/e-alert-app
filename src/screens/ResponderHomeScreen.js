@@ -10,6 +10,7 @@ import {
   ActivityIndicator,
   Dimensions,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -55,6 +56,7 @@ export default function ResponderHomeScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [responderData, setResponderData] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
   const [isAvailable, setIsAvailable] = useState(false);
   const [assignedEmergencies, setAssignedEmergencies] = useState([]);
   const [emergencyHistory, setEmergencyHistory] = useState([]);
@@ -86,6 +88,7 @@ export default function ResponderHomeScreen({ navigation }) {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setResponderData(data);
+        setProfileImage(data.profileImage || null);
         setIsAvailable(data.isAvailable !== undefined ? data.isAvailable : false);
         
         // Check profile completeness
@@ -430,9 +433,16 @@ export default function ResponderHomeScreen({ navigation }) {
           <Text style={styles.greeting}>Hello, <Text style={styles.userName}>{responderData?.firstName || 'Responder'}</Text></Text>
         </View>
         <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('ResponderProfile')}>
-          <View style={styles.profileImagePlaceholder}>
-            <Ionicons name="person" size={24} color="#FFFFFF" />
-          </View>
+          {profileImage ? (
+            <Image
+              source={{ uri: profileImage }}
+              style={styles.profileImage}
+            />
+          ) : (
+            <View style={styles.profileImagePlaceholder}>
+              <Ionicons name="person" size={24} color="#FFFFFF" />
+            </View>
+          )}
           <View style={styles.onlineIndicator} />
         </TouchableOpacity>
       </View>
@@ -681,6 +691,13 @@ const styles = StyleSheet.create({
   },
   profileButton: {
     position: 'relative',
+  },
+  profileImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
   },
   profileImagePlaceholder: {
     width: 50,

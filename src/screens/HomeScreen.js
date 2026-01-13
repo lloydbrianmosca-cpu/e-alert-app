@@ -80,6 +80,7 @@ export default function HomeScreen({ navigation }) {
   const [showProfileOverlay, setShowProfileOverlay] = useState(false);
   const [isCheckingProfile, setIsCheckingProfile] = useState(true);
   const [firstName, setFirstName] = useState('');
+  const [profileImage, setProfileImage] = useState(null);
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
   const { activeEmergencyType, activeResponder, activateEmergency, clearEmergency, isSearchingResponder } = useEmergency();
   const { user } = useAuth();
@@ -108,6 +109,7 @@ export default function HomeScreen({ navigation }) {
         // Set first name from profile data or displayName
         const userFirstName = data.firstName || user?.displayName?.split(' ')[0] || '';
         setFirstName(userFirstName);
+        setProfileImage(data.profileImage || null);
         
         // Check if all required fields are filled
         const isComplete = requiredFields.every(field => {
@@ -245,9 +247,16 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.greeting}>Hello, <Text style={styles.userName}>{firstName || 'User'}</Text></Text>
         </View>
         <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('Profile')}>
-          <View style={styles.profileImagePlaceholder}>
-            <Ionicons name="person" size={24} color="#FFFFFF" />
-          </View>
+          {profileImage ? (
+            <Image
+              source={{ uri: profileImage }}
+              style={styles.profileImage}
+            />
+          ) : (
+            <View style={styles.profileImagePlaceholder}>
+              <Ionicons name="person" size={24} color="#FFFFFF" />
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -544,6 +553,13 @@ const styles = StyleSheet.create({
   },
   profileButton: {
     position: 'relative',
+  },
+  profileImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
   },
   profileImagePlaceholder: {
     width: 50,

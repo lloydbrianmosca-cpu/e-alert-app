@@ -89,24 +89,70 @@ export const uploadProfileImage = async (userId, userType, imageAsset) => {
       throw new Error('Invalid image asset');
     }
 
+    console.log('Starting image upload...', { userId, userType, uri: imageAsset.uri });
+
     // Create a reference to the file
     const fileName = `${userType}/${userId}/profile-${Date.now()}.jpg`;
     const storageRef = ref(storage, fileName);
 
-    // Read the file as a blob
-    const response = await fetch(imageAsset.uri);
-    const blob = await response.blob();
+    // Read the file and convert to blob
+    let blob;
+    
+    try {
+      // Try to fetch the URI
+      const response = await fetch(imageAsset.uri);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.status}`);
+      }
+      blob = await response.blob();
+    } catch (fetchError) {
+      console.log('Fetch failed, trying FileSystem approach...', fetchError);
+      // Fallback: use FileSystem to read the file
+      try {
+        const base64 = await FileSystem.readAsStringAsync(imageAsset.uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        const byteCharacters = atob(base64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+          byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        blob = new Blob([byteArray], { type: 'image/jpeg' });
+      } catch (fsError) {
+        console.log('FileSystem approach failed:', fsError);
+        // Last resort: use fetch with proper headers
+        const response = await fetch(imageAsset.uri, {
+          method: 'GET',
+          headers: {
+            'Accept': 'image/*',
+          },
+        });
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+        blob = await response.blob();
+      }
+    }
+
+    if (!blob) {
+      throw new Error('Failed to create blob from image');
+    }
+
+    console.log('Blob created, uploading to Firebase...', { size: blob.size, type: blob.type });
 
     // Upload the file
     const snapshot = await uploadBytes(storageRef, blob);
+    console.log('Upload complete, getting download URL...');
 
     // Get the download URL
     const downloadURL = await getDownloadURL(snapshot.ref);
     
+    console.log('Image uploaded successfully:', downloadURL);
     return downloadURL;
   } catch (error) {
     console.log('Error uploading profile image:', error);
-    throw error;
+    throw new Error(`Image upload failed: ${error.message}`);
   }
 };
 

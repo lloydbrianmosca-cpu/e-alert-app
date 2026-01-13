@@ -2,7 +2,7 @@ rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
     // Profile images for users
-    match /user/{userId}/profile-{allPaths=**} {
+    match /user/{userId}/{allPaths=**} {
       // Allow authenticated users to upload their own profile pictures
       allow read: if request.auth != null;
       allow create: if request.auth != null && request.auth.uid == userId;
@@ -11,18 +11,13 @@ service firebase.storage {
     }
     
     // Profile images for responders
-    match /responder/{responderId}/profile-{allPaths=**} {
+    match /responder/{responderId}/{allPaths=**} {
       // Allow authenticated users to read any responder profile picture
       allow read: if request.auth != null;
       // Allow responders to upload their own profile pictures
       allow create: if request.auth != null && request.auth.uid == responderId;
       // Allow update/delete only for the owner
       allow update, delete: if request.auth != null && request.auth.uid == responderId;
-    }
-    
-    // Deny all other access by default
-    match /{allPaths=**} {
-      allow read, write: if false;
     }
   }
 }

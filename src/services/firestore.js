@@ -56,17 +56,45 @@ export const getOrCreateConversation = async (userId, responder, emergencyId = n
       console.log('Error fetching user data:', e);
     }
 
+    // Fetch responder data to get latest profileImage if responder has a real ID
+    let responderData = {
+      name: responder.name,
+      type: responder.tag,
+      avatar: responder.avatar,
+      building: responder.building,
+      emergencyType: responder.emergencyType,
+    };
+
+    if (responderId && responder.id) {
+      try {
+        const responderDoc = await getDoc(doc(db, 'responders', responder.id));
+        if (responderDoc.exists()) {
+          const respData = responderDoc.data();
+          responderData = {
+            name: respData.firstName ? `${respData.firstName} ${respData.lastName}`.trim() : responder.name,
+            type: respData.responderType || responder.tag,
+            avatar: respData.profileImage || responder.avatar, // Use profileImage if available
+            building: respData.stationName || responder.building,
+            emergencyType: responder.emergencyType,
+          };
+        }
+      } catch (e) {
+        console.log('Error fetching responder data:', e);
+      }
+    }
+
     await setDoc(conversationRef, {
       id: conversationId,
       participantId: userId, // User ID
       participantName: userData ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() : 'User',
       participantEmail: userData?.email || '',
+      participantAvatar: userData?.profileImage || null, // Store user's profile picture
       responderId: responder.id || null, // Real responder's UID
-      responderName: responder.name,
-      responderType: responder.tag,
-      responderAvatar: responder.avatar,
-      responderBuilding: responder.building,
-      emergencyType: responder.emergencyType,
+      responderName: responderData.name,
+      responderType: responderData.type,
+      responderAvatar: responderData.avatar,
+      responderBuilding: responderData.building,
+      emergencyType: responderData.emergencyType,
       emergencyId: emergencyId || userId, // Link to emergency
       createdAt: serverTimestamp(),
       lastMessage: '',
@@ -87,6 +115,19 @@ export const getOrCreateConversation = async (userId, responder, emergencyId = n
     const existingData = conversationSnap.data();
     if (!existingData.responderId && responder.id) {
       updateData.responderId = responder.id;
+      
+      // Also fetch and update responder's latest profile image
+      try {
+        const responderDoc = await getDoc(doc(db, 'responders', responder.id));
+        if (responderDoc.exists()) {
+          const respData = responderDoc.data();
+          updateData.responderAvatar = respData.profileImage || existingData.responderAvatar;
+          updateData.responderName = respData.firstName ? `${respData.firstName} ${respData.lastName}`.trim() : existingData.responderName;
+          updateData.responderType = respData.responderType || existingData.responderType;
+        }
+      } catch (e) {
+        console.log('Error updating responder profile:', e);
+      }
     }
     
     await updateDoc(conversationRef, updateData);

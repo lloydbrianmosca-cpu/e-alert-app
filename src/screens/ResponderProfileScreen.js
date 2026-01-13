@@ -101,6 +101,13 @@ export default function ResponderProfileScreen({ navigation }) {
   const [provinceOptions, setProvinceOptions] = useState([{ label: 'Select Province', value: '' }]);
   const [cityOptions, setCityOptions] = useState([{ label: 'Select City/Municipality', value: '' }]);
 
+  // Sync editData when profileData changes
+  useEffect(() => {
+    if (!isEditing) {
+      setEditData(profileData);
+    }
+  }, [profileData]);
+
   // Fetch responder profile data
   const fetchProfileData = async () => {
     if (!user?.uid) return;
@@ -195,16 +202,63 @@ export default function ResponderProfileScreen({ navigation }) {
     setIsSaving(true);
 
     try {
-      const docRef = doc(db, 'responders', user.uid);
-      
-      // Use setDoc with merge to handle both create and update
-      await setDoc(docRef, {
+      const updateData = {
         ...editData,
         email: user.email,
         updatedAt: new Date().toISOString(),
-      }, { merge: true });
+      };
 
-      setProfileData(editData);
+      // Handle profile image upload if it's a new local image
+      if (editData.profileImage && editData.profileImage !== profileData.profileImage) {
+        // Check if it's a local URI (needs to be uploaded)
+        // Local URIs start with file:// on native, or are cache paths
+        const isLocalUri = editData.profileImage.startsWith('file://') || 
+                          !editData.profileImage.startsWith('http');
+        
+        if (isLocalUri) {
+          try {
+            // Use the stored image asset if available, otherwise create one from URI
+            const imageAsset = editData._imageAsset || { uri: editData.profileImage };
+            
+            // Upload the new image to Firebase Storage
+            const downloadURL = await updateProfileImage(
+              user.uid,
+              'responder',
+              imageAsset,
+              profileData.profileImage,
+              null // updateFirestore will be done below
+            );
+            updateData.profileImage = downloadURL;
+          } catch (uploadError) {
+            console.log('Error uploading image:', uploadError);
+            Toast.show({
+              type: 'error',
+              text1: 'Error',
+              text2: 'Failed to upload profile picture',
+            });
+            setIsSaving(false);
+            return;
+          }
+        }
+      }
+
+      const docRef = doc(db, 'responders', user.uid);
+      
+      // Use setDoc with merge to handle both create and update
+      await setDoc(docRef, updateData, { merge: true });
+
+      // Refetch from Firestore to ensure we have the latest data
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const freshData = docSnap.data();
+        setProfileData(prev => ({
+          ...prev,
+          ...freshData,
+        }));
+      } else {
+        setProfileData(updateData);
+      }
+      
       setIsEditing(false);
       Toast.show({
         type: 'success',
@@ -235,10 +289,11 @@ export default function ResponderProfileScreen({ navigation }) {
       const image = await pickImageFromLibrary();
       
       if (image) {
-        // Create a local URI preview
+        // Store both the URI and the full image asset
         setEditData(prev => ({
           ...prev,
           profileImage: image.uri,
+          _imageAsset: image, // Store the full asset for upload
         }));
         setShowImageModal(false);
       }
@@ -259,10 +314,11 @@ export default function ResponderProfileScreen({ navigation }) {
       const image = await takePhoto();
       
       if (image) {
-        // Create a local URI preview
+        // Store both the URI and the full image asset
         setEditData(prev => ({
           ...prev,
           profileImage: image.uri,
+          _imageAsset: image, // Store the full asset for upload
         }));
         setShowImageModal(false);
       }
