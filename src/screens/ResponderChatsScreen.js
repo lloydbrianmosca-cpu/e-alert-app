@@ -165,7 +165,7 @@ export default function ResponderChatsScreen({ navigation, route }) {
 
     const q = query(
       collection(db, 'conversations', selectedConversation.id, 'messages'),
-      orderBy('createdAt', 'asc')
+      orderBy('timestamp', 'asc')
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -219,7 +219,8 @@ export default function ResponderChatsScreen({ navigation, route }) {
         text,
         senderId: user.uid,
         senderType: 'responder',
-        createdAt: serverTimestamp(),
+        timestamp: serverTimestamp(),
+        read: false,
       });
 
       // Update conversation with last message
@@ -322,6 +323,8 @@ export default function ResponderChatsScreen({ navigation, route }) {
   // Render message item
   const renderMessage = (msg, index) => {
     const isMe = msg.senderType === 'responder';
+    // Handle timestamp - it could be a Firestore Timestamp or already a Date
+    const msgTime = msg.timestamp?.toDate ? msg.timestamp.toDate() : msg.timestamp;
     return (
       <View
         key={msg.id || index}
@@ -337,7 +340,7 @@ export default function ResponderChatsScreen({ navigation, route }) {
         >
           <Text style={[styles.messageText, isMe && styles.messageTextRight]}>{msg.text}</Text>
           <Text style={[styles.messageTime, isMe && styles.messageTimeRight]}>
-            {msg.createdAt ? getRelativeTime(msg.createdAt) : ''}
+            {msgTime ? getRelativeTime(msgTime) : ''}
           </Text>
         </View>
       </View>
@@ -422,6 +425,30 @@ export default function ResponderChatsScreen({ navigation, route }) {
               messages.map((msg, index) => renderMessage(msg, index))
             )}
           </ScrollView>
+
+          {/* Quick Chats for Responder */}
+          <View style={styles.quickChatsContainer}>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false} 
+              contentContainerStyle={styles.quickChatsScroll}
+            >
+              {[
+                'On my way!',
+                'I have arrived',
+                'Stay where you are',
+                'Are you safe?',
+              ].map((quickMsg, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.quickChatButton}
+                  onPress={() => setMessageText(quickMsg)}
+                >
+                  <Text style={styles.quickChatText}>{quickMsg}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
 
           {/* Message Input */}
           <View style={styles.inputContainer}>
@@ -756,6 +783,30 @@ const styles = StyleSheet.create({
   },
   messageTimeRight: {
     color: 'rgba(255, 255, 255, 0.7)',
+  },
+  quickChatsContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingVertical: 10,
+  },
+  quickChatsScroll: {
+    paddingHorizontal: 12,
+    gap: 8,
+  },
+  quickChatButton: {
+    backgroundColor: '#FEE2E2',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    marginRight: 8,
+  },
+  quickChatText: {
+    fontSize: 13,
+    color: '#DC2626',
+    fontWeight: '500',
   },
   inputContainer: {
     flexDirection: 'row',
