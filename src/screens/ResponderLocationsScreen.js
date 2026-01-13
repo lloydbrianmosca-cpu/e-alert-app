@@ -20,13 +20,17 @@ import { toastConfig } from '../components';
 
 const { width, height } = Dimensions.get('window');
 
-// Bottom navigation items for responder
+// Bottom navigation items - unified with user screens
 const NAV_ITEMS = [
   { id: 'home', name: 'Home', icon: 'home', iconFamily: 'Ionicons' },
   { id: 'locations', name: 'Locations', icon: 'location', iconFamily: 'Ionicons' },
+  { id: 'hotline', name: 'Hotlines', icon: 'call', iconFamily: 'Ionicons' },
   { id: 'chat', name: 'Chat', icon: 'chatbubbles', iconFamily: 'Ionicons' },
   { id: 'profile', name: 'Profile', icon: 'person', iconFamily: 'Ionicons' },
 ];
+
+// Primary color - unified with user screens
+const PRIMARY_COLOR = '#DC2626';
 
 // Emergency type colors
 const EMERGENCY_COLORS = {
@@ -34,14 +38,6 @@ const EMERGENCY_COLORS = {
   medical: '#059669',
   fire: '#DC2626',
   flood: '#0369A1',
-};
-
-// Responder type colors
-const RESPONDER_COLORS = {
-  police: '#1E3A8A',
-  medical: '#059669',
-  fireman: '#DC2626',
-  rescue: '#0369A1',
 };
 
 export default function ResponderLocationsScreen({ navigation, route }) {
@@ -195,6 +191,9 @@ export default function ResponderLocationsScreen({ navigation, route }) {
         break;
       case 'locations':
         break;
+      case 'hotline':
+        navigation.navigate('Hotlines');
+        break;
       case 'chat':
         navigation.navigate('ResponderChats');
         break;
@@ -204,18 +203,10 @@ export default function ResponderLocationsScreen({ navigation, route }) {
     }
   };
 
-  // Get responder color based on type
-  const getResponderColor = () => {
-    if (!responderData?.responderType) return '#1E3A8A';
-    return RESPONDER_COLORS[responderData.responderType.toLowerCase()] || '#1E3A8A';
-  };
-
-  const responderColor = getResponderColor();
-
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1E3A8A" />
+        <ActivityIndicator size="large" color={PRIMARY_COLOR} />
         <Text style={styles.loadingText}>Loading map...</Text>
       </View>
     );
@@ -224,10 +215,10 @@ export default function ResponderLocationsScreen({ navigation, route }) {
   return (
     <View style={styles.container}>
       <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor={responderColor} />
+      <StatusBar barStyle="light-content" backgroundColor={PRIMARY_COLOR} />
 
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: responderColor }]}>
+      {/* Header - Unified with user screens */}
+      <View style={styles.header}>
         <View style={styles.headerContent}>
           <TouchableOpacity
             onPress={() => navigation.navigate('ResponderHome')}
@@ -384,7 +375,7 @@ export default function ResponderLocationsScreen({ navigation, route }) {
           </Text>
           <View style={styles.detailsActions}>
             <TouchableOpacity
-              style={[styles.detailsButton, { backgroundColor: responderColor }]}
+              style={[styles.detailsButton, { backgroundColor: PRIMARY_COLOR }]}
               onPress={() =>
                 navigation.navigate('ResponderChats', { emergencyId: selectedEmergency.id })
               }
@@ -393,10 +384,10 @@ export default function ResponderLocationsScreen({ navigation, route }) {
               <Text style={styles.detailsButtonText}>Chat</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.detailsButton, styles.detailsButtonOutline, { borderColor: responderColor }]}
+              style={[styles.detailsButton, styles.detailsButtonOutline, { borderColor: PRIMARY_COLOR }]}
             >
-              <MaterialIcons name="phone" size={18} color={responderColor} />
-              <Text style={[styles.detailsButtonText, { color: responderColor }]}>Call</Text>
+              <MaterialIcons name="phone" size={18} color={PRIMARY_COLOR} />
+              <Text style={[styles.detailsButtonText, { color: PRIMARY_COLOR }]}>Call</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -410,22 +401,15 @@ export default function ResponderLocationsScreen({ navigation, route }) {
             style={styles.navItem}
             onPress={() => handleTabPress(item.id)}
           >
-            <View
-              style={[
-                styles.navIconContainer,
-                activeTab === item.id && { backgroundColor: `${responderColor}20` },
-              ]}
-            >
-              <Ionicons
-                name={activeTab === item.id ? item.icon : `${item.icon}-outline`}
-                size={24}
-                color={activeTab === item.id ? responderColor : '#6B7280'}
-              />
-            </View>
+            <Ionicons
+              name={activeTab === item.id ? item.icon : `${item.icon}-outline`}
+              size={24}
+              color={activeTab === item.id ? PRIMARY_COLOR : '#6B7280'}
+            />
             <Text
               style={[
                 styles.navLabel,
-                activeTab === item.id && { color: responderColor, fontWeight: '600' },
+                activeTab === item.id && styles.navLabelActive,
               ]}
             >
               {item.name}
@@ -456,9 +440,10 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   header: {
-    paddingTop: StatusBar.currentHeight || 44,
+    paddingTop: 50,
     paddingBottom: 16,
     paddingHorizontal: 16,
+    backgroundColor: '#DC2626',
   },
   headerContent: {
     flexDirection: 'row',
@@ -676,28 +661,30 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowRadius: 8,
+    elevation: 10,
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 8,
-  },
-  navIconContainer: {
-    padding: 8,
-    borderRadius: 12,
-    marginBottom: 4,
   },
   navLabel: {
     fontSize: 11,
     color: '#6B7280',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  navLabelActive: {
+    color: '#DC2626',
+    fontWeight: '600',
   },
 });

@@ -22,13 +22,17 @@ import { doc, getDoc, collection, query, where, onSnapshot, orderBy, addDoc, upd
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '../components';
 
-// Bottom navigation items for responder
+// Bottom navigation items - unified with user screens
 const NAV_ITEMS = [
   { id: 'home', name: 'Home', icon: 'home', iconFamily: 'Ionicons' },
   { id: 'locations', name: 'Locations', icon: 'location', iconFamily: 'Ionicons' },
+  { id: 'hotline', name: 'Hotlines', icon: 'call', iconFamily: 'Ionicons' },
   { id: 'chat', name: 'Chat', icon: 'chatbubbles', iconFamily: 'Ionicons' },
   { id: 'profile', name: 'Profile', icon: 'person', iconFamily: 'Ionicons' },
 ];
+
+// Primary color - unified with user screens
+const PRIMARY_COLOR = '#DC2626';
 
 // Emergency type colors
 const EMERGENCY_COLORS = {
@@ -36,14 +40,6 @@ const EMERGENCY_COLORS = {
   medical: '#059669',
   fire: '#DC2626',
   flood: '#0369A1',
-};
-
-// Responder type colors
-const RESPONDER_COLORS = {
-  police: '#1E3A8A',
-  medical: '#059669',
-  fireman: '#DC2626',
-  rescue: '#0369A1',
 };
 
 // Helper function for relative time
@@ -236,6 +232,9 @@ export default function ResponderChatsScreen({ navigation, route }) {
       case 'locations':
         navigation.navigate('ResponderLocations');
         break;
+      case 'hotline':
+        navigation.navigate('Hotlines');
+        break;
       case 'chat':
         break;
       case 'profile':
@@ -243,14 +242,6 @@ export default function ResponderChatsScreen({ navigation, route }) {
         break;
     }
   };
-
-  // Get responder color based on type
-  const getResponderColor = () => {
-    if (!responderData?.responderType) return '#1E3A8A';
-    return RESPONDER_COLORS[responderData.responderType.toLowerCase()] || '#1E3A8A';
-  };
-
-  const responderColor = getResponderColor();
 
   // Render conversation list item
   const renderConversationItem = ({ item }) => (
@@ -265,8 +256,8 @@ export default function ResponderChatsScreen({ navigation, route }) {
         {item.userAvatar ? (
           <Image source={{ uri: item.userAvatar }} style={styles.avatar} />
         ) : (
-          <View style={[styles.avatarPlaceholder, { backgroundColor: `${responderColor}20` }]}>
-            <Ionicons name="person" size={24} color={responderColor} />
+          <View style={[styles.avatarPlaceholder, { backgroundColor: `${PRIMARY_COLOR}20` }]}>
+            <Ionicons name="person" size={24} color={PRIMARY_COLOR} />
           </View>
         )}
         <View
@@ -288,7 +279,7 @@ export default function ResponderChatsScreen({ navigation, route }) {
             {item.lastMessage || 'No messages yet'}
           </Text>
           {item.responderUnread > 0 && (
-            <View style={[styles.unreadBadge, { backgroundColor: responderColor }]}>
+            <View style={[styles.unreadBadge, { backgroundColor: PRIMARY_COLOR }]}>
               <Text style={styles.unreadText}>{item.responderUnread}</Text>
             </View>
           )}
@@ -324,7 +315,7 @@ export default function ResponderChatsScreen({ navigation, route }) {
           style={[
             styles.messageBubble,
             isMe
-              ? [styles.messageBubbleRight, { backgroundColor: responderColor }]
+              ? [styles.messageBubbleRight, { backgroundColor: PRIMARY_COLOR }]
               : styles.messageBubbleLeft,
           ]}
         >
@@ -340,7 +331,7 @@ export default function ResponderChatsScreen({ navigation, route }) {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1E3A8A" />
+        <ActivityIndicator size="large" color={PRIMARY_COLOR} />
         <Text style={styles.loadingText}>Loading chats...</Text>
       </View>
     );
@@ -349,10 +340,10 @@ export default function ResponderChatsScreen({ navigation, route }) {
   return (
     <View style={styles.container}>
       <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor={responderColor} />
+      <StatusBar barStyle="light-content" backgroundColor={PRIMARY_COLOR} />
 
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: responderColor }]}>
+      {/* Header - Unified with user screens */}
+      <View style={styles.header}>
         <View style={styles.headerContent}>
           {selectedConversation ? (
             <>
@@ -430,7 +421,7 @@ export default function ResponderChatsScreen({ navigation, route }) {
             <TouchableOpacity
               style={[
                 styles.sendButton,
-                { backgroundColor: messageText.trim() ? responderColor : '#D1D5DB' },
+                { backgroundColor: messageText.trim() ? PRIMARY_COLOR : '#D1D5DB' },
               ]}
               onPress={sendMessage}
               disabled={!messageText.trim() || isSending}
@@ -474,22 +465,15 @@ export default function ResponderChatsScreen({ navigation, route }) {
             style={styles.navItem}
             onPress={() => handleTabPress(item.id)}
           >
-            <View
-              style={[
-                styles.navIconContainer,
-                activeTab === item.id && { backgroundColor: `${responderColor}20` },
-              ]}
-            >
-              <Ionicons
-                name={activeTab === item.id ? item.icon : `${item.icon}-outline`}
-                size={24}
-                color={activeTab === item.id ? responderColor : '#6B7280'}
-              />
-            </View>
+            <Ionicons
+              name={activeTab === item.id ? item.icon : `${item.icon}-outline`}
+              size={24}
+              color={activeTab === item.id ? PRIMARY_COLOR : '#6B7280'}
+            />
             <Text
               style={[
                 styles.navLabel,
-                activeTab === item.id && { color: responderColor, fontWeight: '600' },
+                activeTab === item.id && styles.navLabelActive,
               ]}
             >
               {item.name}
@@ -520,9 +504,10 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   header: {
-    paddingTop: StatusBar.currentHeight || 44,
+    paddingTop: 50,
     paddingBottom: 16,
     paddingHorizontal: 16,
+    backgroundColor: '#DC2626',
   },
   headerContent: {
     flexDirection: 'row',
@@ -569,7 +554,7 @@ const styles = StyleSheet.create({
   },
   conversationItemSelected: {
     borderWidth: 2,
-    borderColor: '#1E3A8A',
+    borderColor: '#DC2626',
   },
   avatarContainer: {
     position: 'relative',
@@ -763,28 +748,30 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowRadius: 8,
+    elevation: 10,
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 8,
-  },
-  navIconContainer: {
-    padding: 8,
-    borderRadius: 12,
-    marginBottom: 4,
   },
   navLabel: {
     fontSize: 11,
     color: '#6B7280',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  navLabelActive: {
+    color: '#DC2626',
+    fontWeight: '600',
   },
 });

@@ -28,15 +28,19 @@ import {
   getCitiesByProvince,
 } from '../constants/addressData';
 
-// Bottom navigation items for responder
+// Bottom navigation items - unified with user screens
 const NAV_ITEMS = [
   { id: 'home', name: 'Home', icon: 'home', iconFamily: 'Ionicons' },
   { id: 'locations', name: 'Locations', icon: 'location', iconFamily: 'Ionicons' },
+  { id: 'hotline', name: 'Hotlines', icon: 'call', iconFamily: 'Ionicons' },
   { id: 'chat', name: 'Chat', icon: 'chatbubbles', iconFamily: 'Ionicons' },
   { id: 'profile', name: 'Profile', icon: 'person', iconFamily: 'Ionicons' },
 ];
 
-// Responder type colors
+// Primary color - unified with user screens
+const PRIMARY_COLOR = '#DC2626';
+
+// Responder type colors (for badges only)
 const RESPONDER_COLORS = {
   police: '#1E3A8A',
   medical: '#059669',
@@ -313,6 +317,9 @@ export default function ResponderProfileScreen({ navigation }) {
       case 'locations':
         navigation.navigate('ResponderLocations');
         break;
+      case 'hotline':
+        navigation.navigate('Hotlines');
+        break;
       case 'chat':
         navigation.navigate('ResponderChats');
         break;
@@ -321,8 +328,8 @@ export default function ResponderProfileScreen({ navigation }) {
     }
   };
 
-  // Get responder color based on type
-  const getResponderColor = () => {
+  // Get responder type color (for badges)
+  const getResponderTypeColor = () => {
     if (!profileData?.responderType) return '#1E3A8A';
     return RESPONDER_COLORS[profileData.responderType.toLowerCase()] || '#1E3A8A';
   };
@@ -333,12 +340,12 @@ export default function ResponderProfileScreen({ navigation }) {
     return RESPONDER_ICONS[profileData.responderType.toLowerCase()] || 'shield-checkmark';
   };
 
-  const responderColor = getResponderColor();
+  const responderTypeColor = getResponderTypeColor();
 
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1E3A8A" />
+        <ActivityIndicator size="large" color={PRIMARY_COLOR} />
         <Text style={styles.loadingText}>Loading profile...</Text>
       </View>
     );
@@ -347,43 +354,38 @@ export default function ResponderProfileScreen({ navigation }) {
   return (
     <View style={styles.container}>
       <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor={responderColor} />
+      <StatusBar barStyle="light-content" backgroundColor={PRIMARY_COLOR} />
 
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: responderColor }]}>
+      {/* Header - Unified with user screens */}
+      <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('ResponderHome')}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+          <Ionicons name="person" size={28} color="#FFFFFF" />
           <Text style={styles.headerTitle}>My Profile</Text>
-          {isEditing ? (
-            <TouchableOpacity onPress={handleCancelEdit} style={styles.headerButton}>
-              <Text style={styles.headerButtonText}>Cancel</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity
-              onPress={() => setIsEditing(true)}
-              style={styles.headerButton}
-            >
-              <Ionicons name="create-outline" size={22} color="#FFFFFF" />
-            </TouchableOpacity>
-          )}
         </View>
+        {isEditing ? (
+          <TouchableOpacity onPress={handleCancelEdit} style={styles.headerButton}>
+            <Text style={styles.headerButtonText}>Cancel</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            onPress={() => setIsEditing(true)}
+            style={styles.editButton}
+          >
+            <Ionicons name="pencil" size={20} color="#FFFFFF" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Header Card */}
         <View style={styles.profileCard}>
-          <View style={[styles.avatarContainer, { backgroundColor: `${responderColor}20` }]}>
-            <Ionicons name={getResponderIcon()} size={48} color={responderColor} />
+          <View style={[styles.avatarContainer, { backgroundColor: `${responderTypeColor}20` }]}>
+            <Ionicons name={getResponderIcon()} size={48} color={responderTypeColor} />
           </View>
           <Text style={styles.profileName}>
             {profileData.firstName} {profileData.lastName}
           </Text>
-          <View style={[styles.typeBadge, { backgroundColor: responderColor }]}>
+          <View style={[styles.typeBadge, { backgroundColor: responderTypeColor }]}>
             <Text style={styles.typeBadgeText}>
               {profileData.responderType || 'Responder'}
             </Text>
@@ -732,7 +734,7 @@ export default function ResponderProfileScreen({ navigation }) {
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.modalSaveButton, { backgroundColor: responderColor }]}
+                style={[styles.modalSaveButton, { backgroundColor: PRIMARY_COLOR }]}
                 onPress={handleChangePassword}
                 disabled={isChangingPassword}
               >
@@ -755,22 +757,15 @@ export default function ResponderProfileScreen({ navigation }) {
             style={styles.navItem}
             onPress={() => handleTabPress(item.id)}
           >
-            <View
-              style={[
-                styles.navIconContainer,
-                activeTab === item.id && { backgroundColor: `${responderColor}20` },
-              ]}
-            >
-              <Ionicons
-                name={activeTab === item.id ? item.icon : `${item.icon}-outline`}
-                size={24}
-                color={activeTab === item.id ? responderColor : '#6B7280'}
-              />
-            </View>
+            <Ionicons
+              name={activeTab === item.id ? item.icon : `${item.icon}-outline`}
+              size={24}
+              color={activeTab === item.id ? PRIMARY_COLOR : '#6B7280'}
+            />
             <Text
               style={[
                 styles.navLabel,
-                activeTab === item.id && { color: responderColor, fontWeight: '600' },
+                activeTab === item.id && styles.navLabelActive,
               ]}
             >
               {item.name}
@@ -801,20 +796,21 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   header: {
-    paddingTop: StatusBar.currentHeight || 44,
-    paddingBottom: 16,
-    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: '#DC2626',
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    padding: 4,
+    gap: 12,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
     color: '#FFFFFF',
   },
@@ -825,6 +821,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FFFFFF',
     fontWeight: '500',
+  },
+  editButton: {
+    padding: 8,
   },
   content: {
     flex: 1,
@@ -1022,28 +1021,30 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowRadius: 8,
+    elevation: 10,
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 8,
-  },
-  navIconContainer: {
-    padding: 8,
-    borderRadius: 12,
-    marginBottom: 4,
   },
   navLabel: {
     fontSize: 11,
     color: '#6B7280',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  navLabelActive: {
+    color: '#DC2626',
+    fontWeight: '600',
   },
 });

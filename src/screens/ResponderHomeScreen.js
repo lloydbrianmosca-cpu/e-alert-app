@@ -21,15 +21,19 @@ import { toastConfig } from '../components';
 
 const { width } = Dimensions.get('window');
 
-// Bottom navigation items for responder
+// Bottom navigation items - unified with user screens
 const NAV_ITEMS = [
   { id: 'home', name: 'Home', icon: 'home', iconFamily: 'Ionicons' },
   { id: 'locations', name: 'Locations', icon: 'location', iconFamily: 'Ionicons' },
+  { id: 'hotline', name: 'Hotlines', icon: 'call', iconFamily: 'Ionicons' },
   { id: 'chat', name: 'Chat', icon: 'chatbubbles', iconFamily: 'Ionicons' },
   { id: 'profile', name: 'Profile', icon: 'person', iconFamily: 'Ionicons' },
 ];
 
-// Responder type colors
+// Primary color - unified with user screens
+const PRIMARY_COLOR = '#DC2626';
+
+// Responder type colors (for badges only)
 const RESPONDER_COLORS = {
   police: '#1E3A8A',
   medical: '#059669',
@@ -154,6 +158,9 @@ export default function ResponderHomeScreen({ navigation }) {
       case 'locations':
         navigation.navigate('ResponderLocations');
         break;
+      case 'hotline':
+        navigation.navigate('Hotlines');
+        break;
       case 'chat':
         navigation.navigate('ResponderChats');
         break;
@@ -195,30 +202,30 @@ export default function ResponderHomeScreen({ navigation }) {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1E3A8A" />
+        <ActivityIndicator size="large" color={PRIMARY_COLOR} />
         <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
   }
 
-  const responderColor = getResponderColor();
+  const responderTypeColor = getResponderColor();
 
   return (
     <View style={styles.container}>
       <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor={responderColor} />
+      <StatusBar barStyle="light-content" backgroundColor={PRIMARY_COLOR} />
 
-      {/* Header */}
-      <View style={[styles.header, { backgroundColor: responderColor }]}>
-        <View style={styles.headerContent}>
-          <View style={styles.headerLeft}>
-            <Ionicons name={getResponderIcon()} size={28} color="#FFFFFF" />
-            <Text style={styles.headerTitle}>Responder Dashboard</Text>
-          </View>
-          <TouchableOpacity onPress={handleSignOut} style={styles.signOutButton}>
-            <Ionicons name="log-out-outline" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
+      {/* Header - Unified with user screens */}
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Text style={styles.greeting}>Hello, <Text style={styles.userName}>{responderData?.firstName || 'Responder'}</Text></Text>
         </View>
+        <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('ResponderProfile')}>
+          <View style={styles.profileImagePlaceholder}>
+            <Ionicons name="person" size={24} color="#FFFFFF" />
+          </View>
+          <View style={styles.onlineIndicator} />
+        </TouchableOpacity>
       </View>
 
       {/* Main Content */}
@@ -226,16 +233,12 @@ export default function ResponderHomeScreen({ navigation }) {
         style={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[responderColor]} />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} colors={[PRIMARY_COLOR]} />
         }
       >
-        {/* Welcome Section */}
+        {/* Responder Type Badge */}
         <View style={styles.welcomeSection}>
-          <Text style={styles.welcomeText}>Welcome back,</Text>
-          <Text style={styles.nameText}>
-            {responderData?.firstName} {responderData?.lastName}
-          </Text>
-          <View style={[styles.typeBadge, { backgroundColor: responderColor }]}>
+          <View style={[styles.typeBadge, { backgroundColor: responderTypeColor }]}>
             <Ionicons name={getResponderIcon()} size={16} color="#FFFFFF" />
             <Text style={styles.typeBadgeText}>
               {responderData?.responderType || 'Responder'}
@@ -347,7 +350,7 @@ export default function ResponderHomeScreen({ navigation }) {
                 </Text>
                 <View style={styles.emergencyAction}>
                   <Text style={styles.viewLocationText}>View Location</Text>
-                  <Ionicons name="chevron-forward" size={20} color={responderColor} />
+                  <Ionicons name="chevron-forward" size={20} color={PRIMARY_COLOR} />
                 </View>
               </TouchableOpacity>
             ))
@@ -399,22 +402,15 @@ export default function ResponderHomeScreen({ navigation }) {
             style={styles.navItem}
             onPress={() => handleTabPress(item.id)}
           >
-            <View
-              style={[
-                styles.navIconContainer,
-                activeTab === item.id && { backgroundColor: `${responderColor}20` },
-              ]}
-            >
-              <Ionicons
-                name={activeTab === item.id ? item.icon : `${item.icon}-outline`}
-                size={24}
-                color={activeTab === item.id ? responderColor : '#6B7280'}
-              />
-            </View>
+            <Ionicons
+              name={activeTab === item.id ? item.icon : `${item.icon}-outline`}
+              size={24}
+              color={activeTab === item.id ? PRIMARY_COLOR : '#6B7280'}
+            />
             <Text
               style={[
                 styles.navLabel,
-                activeTab === item.id && { color: responderColor, fontWeight: '600' },
+                activeTab === item.id && styles.navLabelActive,
               ]}
             >
               {item.name}
@@ -445,27 +441,50 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   header: {
-    paddingTop: StatusBar.currentHeight || 44,
-    paddingBottom: 16,
-    paddingHorizontal: 20,
-  },
-  headerContent: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: '#DC2626',
   },
   headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    flex: 1,
   },
-  headerTitle: {
-    fontSize: 20,
+  greeting: {
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
+  },
+  userName: {
+    fontSize: 18,
     fontWeight: '700',
     color: '#FFFFFF',
   },
-  signOutButton: {
-    padding: 8,
+  profileButton: {
+    position: 'relative',
+  },
+  profileImagePlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  onlineIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#10B981',
+    borderWidth: 2,
+    borderColor: '#DC2626',
   },
   content: {
     flex: 1,
@@ -475,16 +494,6 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 16,
   },
-  welcomeText: {
-    fontSize: 16,
-    color: '#6B7280',
-  },
-  nameText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#111827',
-    marginTop: 4,
-  },
   typeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -492,7 +501,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
-    marginTop: 12,
     gap: 6,
   },
   typeBadgeText: {
@@ -676,7 +684,7 @@ const styles = StyleSheet.create({
   viewLocationText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1E3A8A',
+    color: '#DC2626',
   },
   quickActions: {
     marginBottom: 16,
@@ -713,28 +721,30 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 8,
-    paddingHorizontal: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
+    shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowRadius: 8,
+    elevation: 10,
   },
   navItem: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 8,
-  },
-  navIconContainer: {
-    padding: 8,
-    borderRadius: 12,
-    marginBottom: 4,
   },
   navLabel: {
     fontSize: 11,
     color: '#6B7280',
+    marginTop: 4,
+    fontWeight: '500',
+  },
+  navLabelActive: {
+    color: '#DC2626',
+    fontWeight: '600',
   },
 });
