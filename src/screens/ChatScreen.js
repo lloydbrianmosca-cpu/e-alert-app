@@ -119,6 +119,7 @@ export default function ChatScreen({ navigation, route }) {
     startConversation, 
     sendMessage: sendChatMessage, 
     subscribeToCurrentMessages,
+    markAsRead,
     loading: chatLoading 
   } = useChat();
   const [activeTab, setActiveTab] = useState('chat');
@@ -130,6 +131,7 @@ export default function ChatScreen({ navigation, route }) {
   const [conversationId, setConversationId] = useState(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [hasRealResponder, setHasRealResponder] = useState(false);
   const scrollViewRef = useRef(null);
 
   // Required profile fields
@@ -201,13 +203,23 @@ export default function ChatScreen({ navigation, route }) {
     const initConversation = async () => {
       setIsLoadingMessages(true);
       try {
+        // Check if responder has a real ID (is a real responder account)
+        const isRealResponder = !!responder.id;
+        setHasRealResponder(isRealResponder);
+        
         const convId = await startConversation(responder);
-        console.log('Conversation initialized with ID:', convId);
+        console.log('Conversation initialized with ID:', convId, 'Real responder:', isRealResponder);
         if (convId) {
           setConversationId(convId);
+          
+          // Mark messages as read when entering conversation
+          await markAsRead(convId);
+          
           unsubscribe = subscribeToCurrentMessages(convId, (msgs) => {
             setMessages(msgs);
             setIsLoadingMessages(false);
+            // Mark as read when new messages arrive
+            markAsRead(convId);
           });
         } else {
           console.error('Failed to create conversation');
@@ -242,7 +254,8 @@ export default function ChatScreen({ navigation, route }) {
     setIsSending(true);
     
     try {
-      await sendChatMessage(conversationId, messageText);
+      // Pass whether there's a real responder to avoid mock replies
+      await sendChatMessage(conversationId, messageText, hasRealResponder);
     } catch (error) {
       console.error('Error sending message:', error);
       // Restore the message if sending failed
@@ -413,9 +426,10 @@ export default function ChatScreen({ navigation, route }) {
       style={styles.conversationCard}
       activeOpacity={0.7}
       onPress={() => {
-        // Navigate to individual chat with responder
+        // Navigate to individual chat with responder - include responder ID
         navigation.push('Chat', {
           responder: {
+            id: conversation.responderId, // Include the responder ID for proper conversation linking
             name: conversation.responderName,
             avatar: conversation.responderAvatar,
             building: conversation.responderBuilding,
@@ -452,9 +466,9 @@ export default function ChatScreen({ navigation, route }) {
         </Text>
       </View>
 
-      {conversation.unreadCount > 0 && (
+      {(conversation.userUnread > 0) && (
         <View style={styles.unreadBadge}>
-          <Text style={styles.unreadCount}>{conversation.unreadCount}</Text>
+          <Text style={styles.unreadCount}>{conversation.userUnread}</Text>
         </View>
       )}
     </TouchableOpacity>

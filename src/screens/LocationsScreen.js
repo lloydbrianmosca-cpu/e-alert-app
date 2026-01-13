@@ -476,6 +476,7 @@ export default function LocationsScreen({ navigation, route }) {
             style={[styles.actionButton, styles.chatButton]}
             onPress={() => navigation.navigate('Chat', {
               responder: {
+                id: responder.id, // Include responder's actual ID
                 name: responder.name,
                 avatar: responder.avatar,
                 building: responder.building,

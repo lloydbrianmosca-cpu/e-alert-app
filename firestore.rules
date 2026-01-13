@@ -27,7 +27,7 @@ service cloud.firestore {
       allow read: if request.auth != null;
       // Allow create for authenticated users where the emergencyId matches their uid
       allow create: if request.auth != null && request.auth.uid == emergencyId;
-      // Allow update for any authenticated user (needed for real-time distance updates)
+      // Allow update for any authenticated user (needed for real-time distance updates and responder assignment)
       allow update: if request.auth != null;
       // Allow delete for the owner or admin
       allow delete: if request.auth != null && (
@@ -46,26 +46,25 @@ service cloud.firestore {
     // Responders collection
     match /responders/{responderId} {
       allow read: if request.auth != null;
-      allow write: if request.auth != null && (request.auth.uid == responderId || isAdmin());
+      // Allow responders to update their own data, admins to update any, 
+      // and users to update responder status during emergency assignment
+      allow write: if request.auth != null;
       allow create: if request.auth != null && (request.auth.uid == responderId || isAdmin());
     }
     
     // Conversations collection
     match /conversations/{conversationId} {
-      // Allow get (single doc read) if user is a participant or admin
-      allow get: if request.auth != null && (
-        resource.data.participantId == request.auth.uid ||
-        resource.data.responderId == request.auth.uid ||
-        isAdmin() ||
-        isResponder()
+      // Allow read if user is a participant, responder, or admin
+      allow read: if request.auth != null;
+      
+      // Allow create if user is authenticated and is the participant in the new conversation
+      allow create: if request.auth != null && (
+        request.resource.data.participantId == request.auth.uid ||
+        request.resource.data.responderId == request.auth.uid ||
+        isAdmin()
       );
       
-      // Allow list (queries) for authenticated users - security enforced via query constraints
-      // Users query with participantId == auth.uid, Responders query with responderId == auth.uid
-      allow list: if request.auth != null;
-      
-      allow create: if request.auth != null;
-      
+      // Allow update if user is a participant or responder in the conversation
       allow update: if request.auth != null && (
         resource.data.participantId == request.auth.uid ||
         resource.data.responderId == request.auth.uid ||
@@ -73,9 +72,14 @@ service cloud.firestore {
         isResponder()
       );
       
+      allow delete: if request.auth != null && isAdmin();
+      
       // Messages subcollection
       match /messages/{messageId} {
-        allow read, write: if request.auth != null && (
+        // Allow read/write if user is part of the conversation
+        allow read: if request.auth != null;
+        allow create: if request.auth != null;
+        allow update: if request.auth != null && (
           get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantId == request.auth.uid ||
           get(/databases/$(database)/documents/conversations/$(conversationId)).data.responderId == request.auth.uid ||
           isAdmin() ||

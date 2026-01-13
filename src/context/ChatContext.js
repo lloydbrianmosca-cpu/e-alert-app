@@ -5,7 +5,8 @@ import {
   getOrCreateConversation, 
   sendMessage as sendFirebaseMessage,
   subscribeToMessages,
-  sendMockResponderReply
+  sendMockResponderReply,
+  markMessagesAsRead
 } from '../services/firestore';
 
 const ChatContext = createContext();
@@ -40,12 +41,12 @@ export const ChatProvider = ({ children }) => {
   }, [user?.uid]);
 
   // Start or join a conversation with a responder
-  const startConversation = async (responder) => {
+  const startConversation = async (responder, emergencyId = null) => {
     if (!user?.uid) return null;
     
     setLoading(true);
     try {
-      const conversationId = await getOrCreateConversation(user.uid, responder);
+      const conversationId = await getOrCreateConversation(user.uid, responder, emergencyId);
       setCurrentConversationId(conversationId);
       return conversationId;
     } catch (error) {
@@ -64,22 +65,34 @@ export const ChatProvider = ({ children }) => {
   };
 
   // Send a message
-  const sendMessage = async (conversationId, text) => {
+  const sendMessage = async (conversationId, text, hasRealResponder = false) => {
     if (!user?.uid || !conversationId || !text.trim()) return;
 
     try {
       await sendFirebaseMessage(conversationId, user.uid, text.trim(), 'user');
       
-      // Simulate responder reply after 2 seconds (since responder is mock)
-      setTimeout(async () => {
-        try {
-          await sendMockResponderReply(conversationId, 'responder');
-        } catch (error) {
-          console.error('Error sending mock reply:', error);
-        }
-      }, 2000);
+      // Only simulate responder reply if there's no real responder
+      if (!hasRealResponder) {
+        setTimeout(async () => {
+          try {
+            await sendMockResponderReply(conversationId, 'responder');
+          } catch (error) {
+            console.error('Error sending mock reply:', error);
+          }
+        }, 2000);
+      }
     } catch (error) {
       console.error('Error sending message:', error);
+    }
+  };
+
+  // Mark messages as read for user
+  const markAsRead = async (conversationId) => {
+    if (!conversationId) return;
+    try {
+      await markMessagesAsRead(conversationId, 'user');
+    } catch (error) {
+      console.error('Error marking messages as read:', error);
     }
   };
 
@@ -107,6 +120,7 @@ export const ChatProvider = ({ children }) => {
         subscribeToCurrentMessages,
         addOrUpdateConversation,
         clearConversations,
+        markAsRead,
       }}
     >
       {children}

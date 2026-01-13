@@ -127,12 +127,16 @@ export default function ResponderChatsScreen({ navigation, route }) {
               console.log('Error fetching user:', e);
             }
           }
+          
+          // Use participantName from conversation data, or fetch from user doc, or fallback
+          const userName = data.participantName || 
+            (userData ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() : null) || 
+            'Unknown User';
+            
           return {
             id: docSnap.id,
             ...data,
-            userName: userData
-              ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() || 'User'
-              : 'Unknown User',
+            userName: userName,
             userAvatar: userData?.profileImage || null,
           };
         })

@@ -30,36 +30,65 @@ const getExpirationDate = () => {
 /**
  * Create or get a conversation between user and responder
  * @param {string} userId - The user's UID
- * @param {object} responder - Responder object with name, tag, avatar, building, emergencyType
- * @param {string} responderId - Optional: The responder's UID for real responder accounts
+ * @param {object} responder - Responder object with id, name, tag, avatar, building, emergencyType
+ * @param {string} emergencyId - Optional: The emergency ID to link the conversation
  */
-export const getOrCreateConversation = async (userId, responder, responderId = null) => {
-  const conversationId = `${userId}_${responder.name.replace(/\s+/g, '_')}`;
+export const getOrCreateConversation = async (userId, responder, emergencyId = null) => {
+  // Use responder.id if available, otherwise fall back to name-based ID
+  const responderId = responder.id || responder.name?.replace(/\s+/g, '_') || 'unknown';
+  
+  // Create a unique conversation ID using both user and responder IDs
+  const conversationId = `${userId}_${responderId}`;
   const conversationRef = doc(db, 'conversations', conversationId);
   
   const conversationSnap = await getDoc(conversationRef);
   
   if (!conversationSnap.exists()) {
+    // Fetch user data for the conversation
+    let userData = null;
+    try {
+      const userDoc = await getDoc(doc(db, 'users', userId));
+      if (userDoc.exists()) {
+        userData = userDoc.data();
+      }
+    } catch (e) {
+      console.log('Error fetching user data:', e);
+    }
+
     await setDoc(conversationRef, {
       id: conversationId,
-      participantId: userId,
-      responderId: responderId, // Real responder's UID (null for mock responders)
+      participantId: userId, // User ID
+      participantName: userData ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() : 'User',
+      participantEmail: userData?.email || '',
+      responderId: responder.id || null, // Real responder's UID
       responderName: responder.name,
       responderType: responder.tag,
       responderAvatar: responder.avatar,
       responderBuilding: responder.building,
       emergencyType: responder.emergencyType,
+      emergencyId: emergencyId || userId, // Link to emergency
       createdAt: serverTimestamp(),
       lastMessage: '',
       lastMessageAt: serverTimestamp(),
-      unreadCount: 0,
+      userUnread: 0, // Unread count for user
+      responderUnread: 0, // Unread count for responder
       expiresAt: getExpirationDate(), // Auto-delete after 3 days
+      status: 'active',
     });
   } else {
     // Reset expiration when conversation is accessed
-    await updateDoc(conversationRef, {
+    // Also update responder ID if it was missing before
+    const updateData = {
       expiresAt: getExpirationDate(),
-    });
+    };
+    
+    // If responder ID is now available but wasn't before, update it
+    const existingData = conversationSnap.data();
+    if (!existingData.responderId && responder.id) {
+      updateData.responderId = responder.id;
+    }
+    
+    await updateDoc(conversationRef, updateData);
   }
   
   return conversationId;
@@ -67,6 +96,10 @@ export const getOrCreateConversation = async (userId, responder, responderId = n
 
 /**
  * Send a message in a conversation
+ * @param {string} conversationId - The conversation ID
+ * @param {string} senderId - The sender's user ID
+ * @param {string} text - The message text
+ * @param {string} senderType - 'user' or 'responder'
  */
 export const sendMessage = async (conversationId, senderId, text, senderType = 'user') => {
   const messagesRef = collection(db, 'conversations', conversationId, 'messages');
@@ -81,12 +114,26 @@ export const sendMessage = async (conversationId, senderId, text, senderType = '
   
   const docRef = await addDoc(messagesRef, messageData);
   
-  // Update last message in conversation
+  // Update last message and unread counts in conversation
   const conversationRef = doc(db, 'conversations', conversationId);
-  await updateDoc(conversationRef, {
+  const conversationSnap = await getDoc(conversationRef);
+  const conversationData = conversationSnap.data() || {};
+  
+  // Increment unread count for the OTHER party
+  const updateData = {
     lastMessage: text,
     lastMessageAt: serverTimestamp(),
-  });
+  };
+  
+  if (senderType === 'user') {
+    // User sent message, increment responder's unread count
+    updateData.responderUnread = (conversationData.responderUnread || 0) + 1;
+  } else {
+    // Responder sent message, increment user's unread count
+    updateData.userUnread = (conversationData.userUnread || 0) + 1;
+  }
+  
+  await updateDoc(conversationRef, updateData);
   
   return docRef.id;
 };
@@ -169,9 +216,60 @@ export const assignResponderToConversation = async (conversationId, responderId)
 };
 
 /**
+ * Mark messages as read for a user or responder
+ * @param {string} conversationId - The conversation ID
+ * @param {string} readerType - 'user' or 'responder'
+ */
+export const markMessagesAsRead = async (conversationId, readerType = 'user') => {
+  const conversationRef = doc(db, 'conversations', conversationId);
+  
+  const updateData = {};
+  if (readerType === 'user') {
+    updateData.userUnread = 0;
+  } else {
+    updateData.responderUnread = 0;
+  }
+  
+  await updateDoc(conversationRef, updateData);
+};
+
+/**
+ * Get a conversation by user and responder IDs
+ * @param {string} userId - The user's UID
+ * @param {string} responderId - The responder's UID
+ */
+export const getConversationByParticipants = async (userId, responderId) => {
+  const conversationId = `${userId}_${responderId}`;
+  const conversationRef = doc(db, 'conversations', conversationId);
+  const conversationSnap = await getDoc(conversationRef);
+  
+  if (conversationSnap.exists()) {
+    return {
+      id: conversationSnap.id,
+      ...conversationSnap.data(),
+    };
+  }
+  return null;
+};
+
+/**
  * Send a mock responder reply (simulates responder response)
+ * Only used for testing when no real responder is available
  */
 export const sendMockResponderReply = async (conversationId, responderName) => {
+  // Get the conversation to check if there's a real responder
+  const conversationRef = doc(db, 'conversations', conversationId);
+  const conversationSnap = await getDoc(conversationRef);
+  
+  if (conversationSnap.exists()) {
+    const data = conversationSnap.data();
+    // Only send mock reply if there's no real responder
+    if (data.responderId) {
+      console.log('Real responder exists, skipping mock reply');
+      return;
+    }
+  }
+  
   const replies = [
     'Thank you for the update. We are almost there.',
     'Please stay calm and remain where you are.',
