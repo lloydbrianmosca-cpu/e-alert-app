@@ -42,21 +42,18 @@ export const getOrCreateConversation = async (userId, responder, emergencyId = n
   const conversationId = `${userId}_${responderId}`;
   const conversationRef = doc(db, 'conversations', conversationId);
   
-  const conversationSnap = await getDoc(conversationRef);
+  // Fetch conversation, user, and responder data in parallel for speed
+  const [conversationSnap, userDoc, responderDoc] = await Promise.all([
+    getDoc(conversationRef),
+    getDoc(doc(db, 'users', userId)).catch(() => null),
+    responder.id ? getDoc(doc(db, 'responders', responder.id)).catch(() => null) : Promise.resolve(null),
+  ]);
   
   if (!conversationSnap.exists()) {
-    // Fetch user data for the conversation
-    let userData = null;
-    try {
-      const userDoc = await getDoc(doc(db, 'users', userId));
-      if (userDoc.exists()) {
-        userData = userDoc.data();
-      }
-    } catch (e) {
-      console.log('Error fetching user data:', e);
-    }
+    // Get user data
+    const userData = userDoc?.exists() ? userDoc.data() : null;
 
-    // Fetch responder data to get latest profileImage if responder has a real ID
+    // Build responder data from fetched doc or passed responder object
     let responderData = {
       name: responder.name,
       type: responder.tag,
@@ -65,72 +62,55 @@ export const getOrCreateConversation = async (userId, responder, emergencyId = n
       emergencyType: responder.emergencyType,
     };
 
-    if (responderId && responder.id) {
-      try {
-        const responderDoc = await getDoc(doc(db, 'responders', responder.id));
-        if (responderDoc.exists()) {
-          const respData = responderDoc.data();
-          responderData = {
-            name: respData.firstName ? `${respData.firstName} ${respData.lastName}`.trim() : responder.name,
-            type: respData.responderType || responder.tag,
-            avatar: respData.profileImage || responder.avatar, // Use profileImage if available
-            building: respData.stationName || responder.building,
-            emergencyType: responder.emergencyType,
-          };
-        }
-      } catch (e) {
-        console.log('Error fetching responder data:', e);
-      }
+    if (responderDoc?.exists()) {
+      const respData = responderDoc.data();
+      responderData = {
+        name: respData.firstName ? `${respData.firstName} ${respData.lastName}`.trim() : responder.name,
+        type: respData.responderType || responder.tag,
+        avatar: respData.profileImage || responder.avatar,
+        building: respData.stationName || responder.building,
+        emergencyType: responder.emergencyType,
+      };
     }
 
     await setDoc(conversationRef, {
       id: conversationId,
-      participantId: userId, // User ID
+      participantId: userId,
       participantName: userData ? `${userData.firstName || ''} ${userData.lastName || ''}`.trim() : 'User',
       participantEmail: userData?.email || '',
-      participantAvatar: userData?.profileImage || null, // Store user's profile picture
-      responderId: responder.id || null, // Real responder's UID
+      participantAvatar: userData?.profileImage || null,
+      responderId: responder.id || null,
       responderName: responderData.name,
       responderType: responderData.type,
       responderAvatar: responderData.avatar,
       responderBuilding: responderData.building,
       emergencyType: responderData.emergencyType,
-      emergencyId: emergencyId || userId, // Link to emergency
+      emergencyId: emergencyId || userId,
       createdAt: serverTimestamp(),
       lastMessage: '',
       lastMessageAt: serverTimestamp(),
-      userUnread: 0, // Unread count for user
-      responderUnread: 0, // Unread count for responder
-      expiresAt: getExpirationDate(), // Auto-delete after 3 days
+      userUnread: 0,
+      responderUnread: 0,
+      expiresAt: getExpirationDate(),
       status: 'active',
     });
   } else {
-    // Reset expiration when conversation is accessed
-    // Also update responder ID if it was missing before
-    const updateData = {
-      expiresAt: getExpirationDate(),
-    };
-    
-    // If responder ID is now available but wasn't before, update it
+    // Update expiration and responder ID if needed (do this async without blocking)
     const existingData = conversationSnap.data();
+    const updateData = { expiresAt: getExpirationDate() };
+    
     if (!existingData.responderId && responder.id) {
       updateData.responderId = responder.id;
-      
-      // Also fetch and update responder's latest profile image
-      try {
-        const responderDoc = await getDoc(doc(db, 'responders', responder.id));
-        if (responderDoc.exists()) {
-          const respData = responderDoc.data();
-          updateData.responderAvatar = respData.profileImage || existingData.responderAvatar;
-          updateData.responderName = respData.firstName ? `${respData.firstName} ${respData.lastName}`.trim() : existingData.responderName;
-          updateData.responderType = respData.responderType || existingData.responderType;
-        }
-      } catch (e) {
-        console.log('Error updating responder profile:', e);
+      if (responderDoc?.exists()) {
+        const respData = responderDoc.data();
+        updateData.responderAvatar = respData.profileImage || existingData.responderAvatar;
+        updateData.responderName = respData.firstName ? `${respData.firstName} ${respData.lastName}`.trim() : existingData.responderName;
+        updateData.responderType = respData.responderType || existingData.responderType;
       }
     }
     
-    await updateDoc(conversationRef, updateData);
+    // Don't await this - let it run in background
+    updateDoc(conversationRef, updateData).catch(e => console.log('Background update error:', e));
   }
   
   return conversationId;
@@ -207,7 +187,7 @@ export const subscribeToMessages = (conversationId, callback) => {
 
 /**
  * Subscribe to user's conversations
- * Also refreshes responder profile images from their documents
+ * Returns conversations immediately, then refreshes profile images in background
  */
 export const subscribeToConversations = (userId, callback) => {
   const conversationsRef = collection(db, 'conversations');
@@ -217,43 +197,39 @@ export const subscribeToConversations = (userId, callback) => {
     orderBy('lastMessageAt', 'desc')
   );
   
-  return onSnapshot(q, async (snapshot) => {
-    const conversations = await Promise.all(
-      snapshot.docs.map(async (docSnap) => {
-        const data = docSnap.data();
-        let responderAvatar = data.responderAvatar;
-        
-        // Fetch latest profile image from responder document if available
-        if (data.responderId) {
-          try {
-            const responderDoc = await getDoc(doc(db, 'responders', data.responderId));
-            if (responderDoc.exists()) {
-              const respData = responderDoc.data();
-              if (respData.profileImage) {
-                responderAvatar = respData.profileImage;
-                // Update conversation with latest avatar (async, don't wait)
-                updateDoc(doc(db, 'conversations', docSnap.id), {
-                  responderAvatar: respData.profileImage,
-                }).catch(() => {}); // Silent fail
-              }
-            }
-          } catch (e) {
-            // Silent fail - use cached avatar
-          }
-        }
-        
-        return {
-          id: docSnap.id,
-          ...data,
-          responderAvatar,
-          lastMessageAt: data.lastMessageAt?.toDate() || new Date(),
-          createdAt: data.createdAt?.toDate() || new Date(),
-        };
-      })
-    );
+  return onSnapshot(q, (snapshot) => {
+    // Return conversations immediately with cached avatars
+    const conversations = snapshot.docs.map((docSnap) => {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        ...data,
+        lastMessageAt: data.lastMessageAt?.toDate() || new Date(),
+        createdAt: data.createdAt?.toDate() || new Date(),
+      };
+    });
     callback(conversations);
+    
+    // Refresh profile images in background (non-blocking)
+    snapshot.docs.forEach(async (docSnap) => {
+      const data = docSnap.data();
+      if (data.responderId) {
+        try {
+          const responderDoc = await getDoc(doc(db, 'responders', data.responderId));
+          if (responderDoc.exists()) {
+            const respData = responderDoc.data();
+            if (respData.profileImage && respData.profileImage !== data.responderAvatar) {
+              updateDoc(doc(db, 'conversations', docSnap.id), {
+                responderAvatar: respData.profileImage,
+              }).catch(() => {});
+            }
+          }
+        } catch (e) {
+          // Silent fail
+        }
+      }
+    });
   }, (error) => {
-    // Ignore permission errors on sign out
     if (error.code === 'permission-denied') {
       callback([]);
       return;
@@ -265,7 +241,7 @@ export const subscribeToConversations = (userId, callback) => {
 
 /**
  * Subscribe to responder's assigned conversations (for responder accounts)
- * Also refreshes user profile images from their documents
+ * Returns conversations immediately, then refreshes profile images in background
  */
 export const subscribeToResponderConversations = (responderId, callback) => {
   const conversationsRef = collection(db, 'conversations');
@@ -275,43 +251,39 @@ export const subscribeToResponderConversations = (responderId, callback) => {
     orderBy('lastMessageAt', 'desc')
   );
   
-  return onSnapshot(q, async (snapshot) => {
-    const conversations = await Promise.all(
-      snapshot.docs.map(async (docSnap) => {
-        const data = docSnap.data();
-        let participantAvatar = data.participantAvatar;
-        
-        // Fetch latest profile image from user document if available
-        if (data.participantId) {
-          try {
-            const userDoc = await getDoc(doc(db, 'users', data.participantId));
-            if (userDoc.exists()) {
-              const userData = userDoc.data();
-              if (userData.profileImage) {
-                participantAvatar = userData.profileImage;
-                // Update conversation with latest avatar (async, don't wait)
-                updateDoc(doc(db, 'conversations', docSnap.id), {
-                  participantAvatar: userData.profileImage,
-                }).catch(() => {}); // Silent fail
-              }
-            }
-          } catch (e) {
-            // Silent fail - use cached avatar
-          }
-        }
-        
-        return {
-          id: docSnap.id,
-          ...data,
-          participantAvatar,
-          lastMessageAt: data.lastMessageAt?.toDate() || new Date(),
-          createdAt: data.createdAt?.toDate() || new Date(),
-        };
-      })
-    );
+  return onSnapshot(q, (snapshot) => {
+    // Return conversations immediately with cached avatars
+    const conversations = snapshot.docs.map((docSnap) => {
+      const data = docSnap.data();
+      return {
+        id: docSnap.id,
+        ...data,
+        lastMessageAt: data.lastMessageAt?.toDate() || new Date(),
+        createdAt: data.createdAt?.toDate() || new Date(),
+      };
+    });
     callback(conversations);
+    
+    // Refresh profile images in background (non-blocking)
+    snapshot.docs.forEach(async (docSnap) => {
+      const data = docSnap.data();
+      if (data.participantId) {
+        try {
+          const userDoc = await getDoc(doc(db, 'users', data.participantId));
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData.profileImage && userData.profileImage !== data.participantAvatar) {
+              updateDoc(doc(db, 'conversations', docSnap.id), {
+                participantAvatar: userData.profileImage,
+              }).catch(() => {});
+            }
+          }
+        } catch (e) {
+          // Silent fail
+        }
+      }
+    });
   }, (error) => {
-    // Ignore permission errors on sign out
     if (error.code === 'permission-denied') {
       callback([]);
       return;

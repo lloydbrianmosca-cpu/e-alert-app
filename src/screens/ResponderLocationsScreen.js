@@ -580,20 +580,11 @@ export default function ResponderLocationsScreen({ navigation, route }) {
       {selectedEmergency && (
         <View style={styles.emergencyDetails}>
           <View style={styles.detailsHeader}>
-            <View
-              style={[
-                styles.detailsTypeBadge,
-                { backgroundColor: EMERGENCY_COLORS[selectedEmergency.type] || '#DC2626' },
-              ]}
-            >
-              <Text style={styles.detailsTypeText}>{selectedEmergency.type?.toUpperCase()}</Text>
-            </View>
+            <Text style={styles.detailsUser}>{selectedEmergency.userName || 'Unknown User'}</Text>
             <TouchableOpacity onPress={() => setSelectedEmergency(null)}>
               <Ionicons name="close-circle" size={32} color="#9CA3AF" />
             </TouchableOpacity>
           </View>
-          
-          <Text style={styles.detailsUser}>{selectedEmergency.userName || 'Unknown User'}</Text>
           
           {/* Distance Info */}
           <View style={styles.distanceInfo}>
@@ -927,10 +918,10 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   detailsUser: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 4,
+    flex: 1,
   },
   distanceInfo: {
     flexDirection: 'row',
