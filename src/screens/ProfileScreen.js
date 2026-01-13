@@ -377,11 +377,6 @@ export default function ProfileScreen({ navigation }) {
                 <Ionicons name="person" size={60} color="#9CA3AF" />
               </View>
             )}
-            {isEditing && (
-              <TouchableOpacity style={styles.editImageButton}>
-                <Ionicons name="camera" size={20} color="#FFFFFF" />
-              </TouchableOpacity>
-            )}
           </View>
           <Text style={styles.profileName}>
             {user?.displayName || ''}

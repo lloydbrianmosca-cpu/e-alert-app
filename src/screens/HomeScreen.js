@@ -79,6 +79,7 @@ export default function HomeScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('home');
   const [showProfileOverlay, setShowProfileOverlay] = useState(false);
   const [isCheckingProfile, setIsCheckingProfile] = useState(true);
+  const [firstName, setFirstName] = useState('');
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
   const { activeEmergencyType, activeResponder, activateEmergency, clearEmergency, isSearchingResponder } = useEmergency();
   const { user } = useAuth();
@@ -103,6 +104,10 @@ export default function HomeScreen({ navigation }) {
       
       if (docSnap.exists()) {
         const data = docSnap.data();
+        
+        // Set first name from profile data or displayName
+        const userFirstName = data.firstName || user?.displayName?.split(' ')[0] || '';
+        setFirstName(userFirstName);
         
         // Check if all required fields are filled
         const isComplete = requiredFields.every(field => {
@@ -237,14 +242,12 @@ export default function HomeScreen({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.greeting}>Hello, <Text style={styles.userName}>User</Text></Text>
+          <Text style={styles.greeting}>Hello, <Text style={styles.userName}>{firstName || 'User'}</Text></Text>
         </View>
-        <TouchableOpacity style={styles.profileButton}>
-          <Image
-            source={{ uri: 'https://i.pravatar.cc/150?img=8' }}
-            style={styles.profileImage}
-          />
-          <View style={styles.onlineIndicator} />
+        <TouchableOpacity style={styles.profileButton} onPress={() => navigation.navigate('Profile')}>
+          <View style={styles.profileImagePlaceholder}>
+            <Ionicons name="person" size={24} color="#FFFFFF" />
+          </View>
         </TouchableOpacity>
       </View>
 
@@ -541,6 +544,16 @@ const styles = StyleSheet.create({
   },
   profileButton: {
     position: 'relative',
+  },
+  profileImagePlaceholder: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   profileImage: {
     width: 50,
