@@ -16,8 +16,10 @@ import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { useChat } from '../context/ChatContext';
 import { useAuth } from '../context/AuthContext';
+import { useCall } from '../context/CallContext';
 import { db } from '../services/firestore';
 import { doc, getDoc } from 'firebase/firestore';
+import Toast from 'react-native-toast-message';
 
 // Helper function for relative time (used globally)
 const getRelativeTime = (date) => {
@@ -122,6 +124,7 @@ export default function ChatScreen({ navigation, route }) {
     markAsRead,
     loading: chatLoading 
   } = useChat();
+  const { startCall } = useCall();
   const [activeTab, setActiveTab] = useState('chat');
   const [message, setMessage] = useState('');
   const [showProfileOverlay, setShowProfileOverlay] = useState(false);
@@ -271,6 +274,30 @@ export default function ChatScreen({ navigation, route }) {
     return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // Handle call to responder (in-app voice call)
+  const handleCallResponder = async () => {
+    if (!responder?.id) {
+      Toast.show({
+        type: 'error',
+        text1: 'Cannot Make Call',
+        text2: 'Responder information is not available',
+      });
+      return;
+    }
+
+    const result = await startCall(responder.id, responder.name, conversationId);
+    
+    if (result.success) {
+      navigation.navigate('VoiceCall');
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Call Failed',
+        text2: result.error || 'Unable to start call',
+      });
+    }
+  };
+
   // Render conversation view when responder is passed
   if (responder) {
     return (
@@ -299,8 +326,8 @@ export default function ChatScreen({ navigation, route }) {
             </View>
             <Text style={styles.headerBuilding}>{responder.building}</Text>
           </View>
-          <TouchableOpacity style={styles.callHeaderButton}>
-            <Ionicons name="call" size={22} color="#DC2626" />
+          <TouchableOpacity style={styles.callHeaderButton} onPress={handleCallResponder}>
+            <Ionicons name="call" size={22} color="#10B981" />
           </TouchableOpacity>
         </View>
 

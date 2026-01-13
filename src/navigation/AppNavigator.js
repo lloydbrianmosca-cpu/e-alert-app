@@ -22,7 +22,10 @@ import {
   ResponderChatsScreen,
   ResponderProfileScreen,
   ResponderEmergencyHistoryScreen,
+  // Call screen
+  VoiceCallScreen,
 } from '../screens';
+import { IncomingCallOverlay } from '../components';
 
 const Stack = createNativeStackNavigator();
 
@@ -62,7 +65,18 @@ export default function AppNavigator() {
         <Stack.Screen name="ResponderChats" component={ResponderChatsScreen} />
         <Stack.Screen name="ResponderProfile" component={ResponderProfileScreen} />
         <Stack.Screen name="ResponderEmergencyHistory" component={ResponderEmergencyHistoryScreen} />
+        
+        {/* Call Screen */}
+        <Stack.Screen 
+          name="VoiceCall" 
+          component={VoiceCallScreen} 
+          options={{ 
+            animation: 'fade',
+            gestureEnabled: false,
+          }} 
+        />
       </Stack.Navigator>
+      <IncomingCallOverlay />
     </NavigationContainer>
   );
 }

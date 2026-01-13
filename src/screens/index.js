@@ -19,3 +19,6 @@ export { default as ResponderLocationsScreen } from './ResponderLocationsScreen'
 export { default as ResponderChatsScreen } from './ResponderChatsScreen';
 export { default as ResponderProfileScreen } from './ResponderProfileScreen';
 export { default as ResponderEmergencyHistoryScreen } from './ResponderEmergencyHistoryScreen';
+
+// Call screen
+export { default as VoiceCallScreen } from './VoiceCallScreen';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -14,10 +14,12 @@ import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-ic
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useAuth } from '../context/AuthContext';
+import { useCall } from '../context/CallContext';
 import { db } from '../services/firestore';
 import { doc, getDoc, collection, query, where, onSnapshot, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '../components';
+import { getRouteDirections, formatRouteDistance, formatRouteDuration } from '../services/routing';
 
 const { width, height } = Dimensions.get('window');
 
@@ -42,6 +44,7 @@ const EMERGENCY_COLORS = {
 
 export default function ResponderLocationsScreen({ navigation, route }) {
   const { user } = useAuth();
+  const { startCall } = useCall();
   const [activeTab, setActiveTab] = useState('locations');
   const [isLoading, setIsLoading] = useState(true);
   const [userLocation, setUserLocation] = useState(null);
@@ -50,6 +53,13 @@ export default function ResponderLocationsScreen({ navigation, route }) {
   const [selectedEmergency, setSelectedEmergency] = useState(route?.params?.emergency || null);
   const [isProfileComplete, setIsProfileComplete] = useState(true);
   const mapRef = useRef(null);
+  
+  // Route navigation state
+  const [routeCoordinates, setRouteCoordinates] = useState([]);
+  const [routeDistance, setRouteDistance] = useState(null);
+  const [routeDuration, setRouteDuration] = useState(null);
+  const [isLoadingRoute, setIsLoadingRoute] = useState(false);
+  const lastRouteUpdate = useRef(null);
 
   // Check if profile is complete
   const checkProfileComplete = (data) => {
@@ -386,6 +396,71 @@ export default function ResponderLocationsScreen({ navigation, route }) {
     }
   };
 
+  // Fetch route directions when emergency is selected or location changes
+  const fetchRouteToEmergency = useCallback(async () => {
+    if (!userLocation || !selectedEmergency?.location) {
+      setRouteCoordinates([]);
+      setRouteDistance(null);
+      setRouteDuration(null);
+      return;
+    }
+
+    // Prevent too frequent updates (minimum 10 seconds between updates)
+    const now = Date.now();
+    if (lastRouteUpdate.current && now - lastRouteUpdate.current < 10000) {
+      return;
+    }
+
+    setIsLoadingRoute(true);
+    try {
+      const result = await getRouteDirections(
+        { latitude: userLocation.latitude, longitude: userLocation.longitude },
+        { latitude: selectedEmergency.location.latitude, longitude: selectedEmergency.location.longitude }
+      );
+
+      if (result && result.coordinates.length > 0) {
+        setRouteCoordinates(result.coordinates);
+        setRouteDistance(result.distance);
+        setRouteDuration(result.duration);
+        lastRouteUpdate.current = now;
+      } else {
+        // Fallback to straight line if API fails
+        setRouteCoordinates([userLocation, selectedEmergency.location]);
+        setRouteDistance(null);
+        setRouteDuration(null);
+      }
+    } catch (error) {
+      console.log('Error fetching route:', error);
+      // Fallback to straight line
+      setRouteCoordinates([userLocation, selectedEmergency.location]);
+    } finally {
+      setIsLoadingRoute(false);
+    }
+  }, [userLocation, selectedEmergency]);
+
+  // Fetch route when emergency is selected
+  useEffect(() => {
+    if (selectedEmergency && userLocation) {
+      fetchRouteToEmergency();
+    } else {
+      setRouteCoordinates([]);
+      setRouteDistance(null);
+      setRouteDuration(null);
+    }
+  }, [selectedEmergency?.id, userLocation?.latitude, userLocation?.longitude]);
+
+  // Update route every 30 seconds while emergency is selected
+  useEffect(() => {
+    if (!selectedEmergency || !userLocation) return;
+
+    const interval = setInterval(() => {
+      lastRouteUpdate.current = null; // Reset to allow update
+      fetchRouteToEmergency();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [selectedEmergency?.id, fetchRouteToEmergency]);
+
   // Handle tab navigation
   const handleTabPress = (tabId) => {
     setActiveTab(tabId);
@@ -404,6 +479,30 @@ export default function ResponderLocationsScreen({ navigation, route }) {
       case 'profile':
         navigation.navigate('ResponderProfile');
         break;
+    }
+  };
+
+  // Handle call user (in-app voice call)
+  const handleCallUser = async (userId, userName, emergencyId) => {
+    if (!userId) {
+      Toast.show({
+        type: 'error',
+        text1: 'Cannot Make Call',
+        text2: 'User information is not available',
+      });
+      return;
+    }
+
+    const result = await startCall(userId, userName, emergencyId);
+    
+    if (result.success) {
+      navigation.navigate('VoiceCall');
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Call Failed',
+        text2: result.error || 'Unable to start call',
+      });
     }
   };
 
@@ -486,13 +585,12 @@ export default function ResponderLocationsScreen({ navigation, route }) {
                   </View>
                 </Marker>
 
-                {/* Route line from responder to emergency */}
-                {userLocation && selectedEmergency?.id === emergency.id && (
+                {/* Road navigation route from responder to emergency */}
+                {userLocation && selectedEmergency?.id === emergency.id && routeCoordinates.length > 0 && (
                   <Polyline
-                    coordinates={[userLocation, emergency.location]}
+                    coordinates={routeCoordinates}
                     strokeColor={EMERGENCY_COLORS[emergency.type] || '#DC2626'}
-                    strokeWidth={4}
-                    lineDashPattern={[10, 5]}
+                    strokeWidth={5}
                   />
                 )}
               </React.Fragment>
@@ -552,6 +650,16 @@ export default function ResponderLocationsScreen({ navigation, route }) {
                   </Text>
                 </View>
                 <TouchableOpacity
+                  style={styles.callButtonSmall}
+                  onPress={() => handleCallUser(
+                    emergency.userId,
+                    emergency.userName,
+                    emergency.id
+                  )}
+                >
+                  <Ionicons name="call" size={16} color="#10B981" />
+                </TouchableOpacity>
+                <TouchableOpacity
                   style={styles.chatButton}
                   onPress={() =>
                     navigation.navigate('ResponderChats', { emergencyId: emergency.id })
@@ -586,11 +694,11 @@ export default function ResponderLocationsScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
           
-          {/* Distance Info */}
+          {/* Road Navigation Info */}
           <View style={styles.distanceInfo}>
             <MaterialIcons name="directions" size={20} color="#374151" />
             <Text style={styles.distanceText}>
-              Distance: {formatDistance(getDistanceToEmergency())}
+              Distance: {routeDistance ? formatRouteDistance(routeDistance) : formatDistance(getDistanceToEmergency())}
             </Text>
             {isCloseEnough() && (
               <View style={styles.nearbyBadge}>
@@ -598,6 +706,19 @@ export default function ResponderLocationsScreen({ navigation, route }) {
               </View>
             )}
           </View>
+          
+          {/* ETA - Estimated Time of Arrival */}
+          {routeDuration && (
+            <View style={styles.etaInfo}>
+              <MaterialIcons name="schedule" size={20} color="#059669" />
+              <Text style={styles.etaText}>
+                ETA: {formatRouteDuration(routeDuration)}
+              </Text>
+              {isLoadingRoute && (
+                <ActivityIndicator size="small" color="#059669" style={{ marginLeft: 8 }} />
+              )}
+            </View>
+          )}
           
           {/* User Contact Info */}
           {selectedEmergency.userContactNumber && (
@@ -631,10 +752,15 @@ export default function ResponderLocationsScreen({ navigation, route }) {
               <Text style={styles.detailsButtonText}>Chat</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.detailsButton, styles.detailsButtonOutline, { borderColor: PRIMARY_COLOR }]}
+              style={[styles.detailsButton, styles.detailsButtonOutline, { borderColor: '#10B981' }]}
+              onPress={() => handleCallUser(
+                selectedEmergency.userId,
+                selectedEmergency.userName,
+                selectedEmergency.id
+              )}
             >
-              <MaterialIcons name="phone" size={20} color={PRIMARY_COLOR} />
-              <Text style={[styles.detailsButtonText, { color: PRIMARY_COLOR }]}>Call</Text>
+              <MaterialIcons name="phone" size={20} color="#10B981" />
+              <Text style={[styles.detailsButtonText, { color: '#10B981' }]}>Call</Text>
             </TouchableOpacity>
           </View>
           
@@ -861,6 +987,10 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginTop: 1,
   },
+  callButtonSmall: {
+    padding: 6,
+    marginRight: 4,
+  },
   chatButton: {
     padding: 6,
   },
@@ -939,6 +1069,24 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#374151',
+    flex: 1,
+  },
+  etaInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    marginBottom: 6,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  etaText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#059669',
     flex: 1,
   },
   nearbyBadge: {

@@ -12,6 +12,11 @@
     },
     "android": {
       "package": "com.anonymous.ealertapp"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "3a88bbe8-9b18-4489-ad3b-a1f516eba63f"
+      }
     }
   }
 }

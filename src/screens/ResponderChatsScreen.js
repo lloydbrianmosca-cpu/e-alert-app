@@ -17,6 +17,7 @@ import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useChat } from '../context/ChatContext';
+import { useCall } from '../context/CallContext';
 import { db } from '../services/firestore';
 import { doc, getDoc, collection, query, where, onSnapshot, orderBy, addDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
@@ -63,6 +64,7 @@ const getRelativeTime = (date) => {
 
 export default function ResponderChatsScreen({ navigation, route }) {
   const { user } = useAuth();
+  const { startCall } = useCall();
   const [activeTab, setActiveTab] = useState('chat');
   const [isLoading, setIsLoading] = useState(true);
   const [responderData, setResponderData] = useState(null);
@@ -145,6 +147,7 @@ export default function ResponderChatsScreen({ navigation, route }) {
             ...data,
             userName: userName,
             userAvatar: userData?.profileImage || null,
+            userContactNumber: userData?.contactNumber || data.userContactNumber || null,
           };
         })
       );
@@ -287,6 +290,30 @@ export default function ResponderChatsScreen({ navigation, route }) {
     }
   };
 
+  // Handle call user (in-app voice call)
+  const handleCallUser = async (userId, userName, emergencyId) => {
+    if (!userId) {
+      Toast.show({
+        type: 'error',
+        text1: 'Cannot Make Call',
+        text2: 'User information is not available',
+      });
+      return;
+    }
+
+    const result = await startCall(userId, userName, emergencyId);
+    
+    if (result.success) {
+      navigation.navigate('VoiceCall');
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Call Failed',
+        text2: result.error || 'Unable to start call',
+      });
+    }
+  };
+
   // Render conversation list item
   const renderConversationItem = ({ item }) => (
     <TouchableOpacity
@@ -405,6 +432,16 @@ export default function ResponderChatsScreen({ navigation, route }) {
                   {selectedConversation.emergencyType?.toUpperCase()} Emergency
                 </Text>
               </View>
+              <TouchableOpacity
+                onPress={() => handleCallUser(
+                  selectedConversation.participantId,
+                  selectedConversation.userName,
+                  selectedConversation.emergencyId
+                )}
+                style={styles.callButton}
+              >
+                <Ionicons name="call" size={22} color="#10B981" />
+              </TouchableOpacity>
               <TouchableOpacity
                 onPress={() =>
                   navigation.navigate('ResponderLocations', {
@@ -631,6 +668,15 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#86868B',
     marginTop: 2,
+  },
+  callButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#D1FAE5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
   locationButton: {
     width: 40,

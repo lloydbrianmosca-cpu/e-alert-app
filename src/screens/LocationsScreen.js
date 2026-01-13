@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   StyleSheet,
   View,
@@ -17,6 +17,7 @@ import { useEmergency, calculateDistance, calculateETA, formatDistance } from '.
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
 import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { getRouteDirections, formatRouteDistance, formatRouteDuration } from '../services/routing';
 
 const { width } = Dimensions.get('window');
 
@@ -59,6 +60,13 @@ export default function LocationsScreen({ navigation, route }) {
   // Real-time ETA and distance
   const [realtimeETA, setRealtimeETA] = useState(null);
   const [realtimeDistance, setRealtimeDistance] = useState(null);
+  
+  // Road navigation route state
+  const [routeCoordinates, setRouteCoordinates] = useState([]);
+  const [routeDistance, setRouteDistance] = useState(null);
+  const [routeDuration, setRouteDuration] = useState(null);
+  const [isLoadingRoute, setIsLoadingRoute] = useState(false);
+  const lastRouteUpdate = useRef(null);
 
   // Required profile fields
   const requiredFields = [
@@ -257,6 +265,71 @@ export default function LocationsScreen({ navigation, route }) {
     }
   };
 
+  // Fetch road navigation route from responder to user
+  const fetchRouteFromResponder = useCallback(async () => {
+    if (!userLocation || !responderLocation) {
+      setRouteCoordinates([]);
+      setRouteDistance(null);
+      setRouteDuration(null);
+      return;
+    }
+
+    // Prevent too frequent updates (minimum 10 seconds between updates)
+    const now = Date.now();
+    if (lastRouteUpdate.current && now - lastRouteUpdate.current < 10000) {
+      return;
+    }
+
+    setIsLoadingRoute(true);
+    try {
+      const result = await getRouteDirections(
+        { latitude: responderLocation.latitude, longitude: responderLocation.longitude },
+        { latitude: userLocation.latitude, longitude: userLocation.longitude }
+      );
+
+      if (result && result.coordinates.length > 0) {
+        setRouteCoordinates(result.coordinates);
+        setRouteDistance(result.distance);
+        setRouteDuration(result.duration);
+        lastRouteUpdate.current = now;
+      } else {
+        // Fallback to straight line if API fails
+        setRouteCoordinates([userLocation, responderLocation]);
+        setRouteDistance(null);
+        setRouteDuration(null);
+      }
+    } catch (error) {
+      console.log('Error fetching route:', error);
+      // Fallback to straight line
+      setRouteCoordinates([userLocation, responderLocation]);
+    } finally {
+      setIsLoadingRoute(false);
+    }
+  }, [userLocation, responderLocation]);
+
+  // Fetch route when responder location changes
+  useEffect(() => {
+    if (isEmergencyActive && responderLocation && userLocation) {
+      fetchRouteFromResponder();
+    } else {
+      setRouteCoordinates([]);
+      setRouteDistance(null);
+      setRouteDuration(null);
+    }
+  }, [responderLocation?.latitude, responderLocation?.longitude, userLocation?.latitude, userLocation?.longitude, isEmergencyActive]);
+
+  // Update route every 30 seconds while emergency is active
+  useEffect(() => {
+    if (!isEmergencyActive || !responderLocation || !userLocation) return;
+
+    const interval = setInterval(() => {
+      lastRouteUpdate.current = null; // Reset to allow update
+      fetchRouteFromResponder();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isEmergencyActive, fetchRouteFromResponder]);
+
   // Fit both markers in view
   const fitAllMarkers = () => {
     if (mapRef.current && userLocation && responderLocation && isEmergencyActive) {
@@ -347,7 +420,7 @@ export default function LocationsScreen({ navigation, route }) {
                 <Marker
                   coordinate={responderLocation}
                   title={responder.name}
-                  description={`${responder.tag} - ${responder.eta} away`}
+                  description={`${responder.tag} - ${routeDuration ? formatRouteDuration(routeDuration) : responder.eta} away`}
                   anchor={{ x: 0.5, y: 1 }}
                   tracksViewChanges={true}
                 >
@@ -368,13 +441,14 @@ export default function LocationsScreen({ navigation, route }) {
                   </View>
                 </Marker>
 
-                {/* Route Line */}
-                <Polyline
-                  coordinates={[userLocation, responderLocation]}
-                  strokeColor={emergencyColor}
-                  strokeWidth={4}
-                  lineDashPattern={[10, 5]}
-                />
+                {/* Road Navigation Route Line */}
+                {routeCoordinates.length > 0 && (
+                  <Polyline
+                    coordinates={routeCoordinates}
+                    strokeColor={emergencyColor}
+                    strokeWidth={5}
+                  />
+                )}
               </>
             )}
           </MapView>
@@ -452,17 +526,22 @@ export default function LocationsScreen({ navigation, route }) {
           </View>
         </View>
 
-        {/* ETA and Distance */}
+        {/* ETA and Distance - Use road navigation data when available */}
         <View style={styles.statsContainer}>
           <View style={[styles.statBox, { backgroundColor: emergencyColor + '15' }]}>
             <Ionicons name="time" size={28} color={emergencyColor} />
-            <Text style={[styles.statValue, { color: emergencyColor }]}>{responder.eta}</Text>
+            <Text style={[styles.statValue, { color: emergencyColor }]}>
+              {routeDuration ? formatRouteDuration(routeDuration) : responder.eta}
+            </Text>
             <Text style={styles.statLabel}>Estimated Time</Text>
+            {isLoadingRoute && <ActivityIndicator size="small" color={emergencyColor} style={{ marginTop: 4 }} />}
           </View>
           <View style={[styles.statBox, { backgroundColor: emergencyColor + '15' }]}>
             <Ionicons name="navigate" size={28} color={emergencyColor} />
-            <Text style={[styles.statValue, { color: emergencyColor }]}>{responder.distance}</Text>
-            <Text style={styles.statLabel}>Distance Away</Text>
+            <Text style={[styles.statValue, { color: emergencyColor }]}>
+              {routeDistance ? formatRouteDistance(routeDistance) : responder.distance}
+            </Text>
+            <Text style={styles.statLabel}>Road Distance</Text>
           </View>
         </View>
 
