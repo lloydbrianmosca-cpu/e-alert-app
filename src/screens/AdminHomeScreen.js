@@ -69,6 +69,7 @@ export default function AdminHomeScreen({ navigation }) {
 
   const [activeEmergencies, setActiveEmergencies] = useState(mockEmergencies);
   const [totalUsers, setTotalUsers] = useState(0);
+  const [pendingVerifications, setPendingVerifications] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -141,6 +142,41 @@ export default function AdminHomeScreen({ navigation }) {
       }
     };
     fetchUserCount();
+  }, []);
+
+  // Fetch pending ID verifications
+  useEffect(() => {
+    const fetchPendingVerifications = async () => {
+      try {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, orderBy('updatedAt', 'desc'));
+        
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const pending = [];
+          snapshot.forEach((doc) => {
+            const userData = doc.data();
+            if (userData.validIDImage && userData.verificationStatus === 'pending') {
+              pending.push({
+                id: doc.id,
+                ...userData,
+              });
+            }
+          });
+          setPendingVerifications(pending);
+        });
+
+        return unsubscribe;
+      } catch (error) {
+        console.log('Error fetching pending verifications:', error);
+      }
+    };
+
+    const unsubscribe = fetchPendingVerifications();
+    return () => {
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
 
   const onRefresh = async () => {
@@ -270,7 +306,53 @@ export default function AdminHomeScreen({ navigation }) {
             <Text style={styles.statNumber}>{totalUsers}</Text>
             <Text style={styles.statLabel}>Total Users</Text>
           </View>
+          <View style={[styles.statCard, { backgroundColor: '#F59E0B' }]}>
+            <Ionicons name="document" size={32} color="#FFFFFF" />
+            <Text style={styles.statNumber}>{pendingVerifications.length}</Text>
+            <Text style={styles.statLabel}>Pending Verifications</Text>
+          </View>
         </View>
+
+        {/* Pending Verifications Section */}
+        {pendingVerifications.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Pending ID Verifications</Text>
+            
+            <View style={styles.verificationsContainer}>
+              {pendingVerifications.slice(0, 5).map((user, index) => (
+                <View key={`${user.id}-${index}`} style={styles.verificationCard}>
+                  <View style={styles.verificationHeader}>
+                    <View style={styles.userInitials}>
+                      <Text style={styles.initialsText}>
+                        {(user.firstName?.[0] || 'U') + (user.lastName?.[0] || 'U')}
+                      </Text>
+                    </View>
+                    <View style={styles.userInfo}>
+                      <Text style={styles.userName}>
+                        {user.firstName} {user.lastName}
+                      </Text>
+                      <Text style={styles.userEmail}>{user.email}</Text>
+                    </View>
+                    <View style={styles.pendingBadgeAdmin}>
+                      <Ionicons name="time" size={14} color="#F59E0B" />
+                      <Text style={styles.pendingText}>PENDING</Text>
+                    </View>
+                  </View>
+                  <View style={styles.verificationActions}>
+                    <TouchableOpacity style={[styles.verifyButton, styles.approveButton]}>
+                      <Ionicons name="checkmark-circle" size={18} color="#FFFFFF" />
+                      <Text style={styles.verifyButtonText}>Approve</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.verifyButton, styles.rejectButton]}>
+                      <Ionicons name="close-circle" size={18} color="#FFFFFF" />
+                      <Text style={styles.verifyButtonText}>Reject</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Active Emergencies Section */}
         <View style={styles.section}>
@@ -581,6 +663,91 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+  },
+  verificationsContainer: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  verificationCard: {
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  verificationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  userInitials: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#FEF3C7',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  initialsText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#F59E0B',
+  },
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  userEmail: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+  },
+  pendingBadgeAdmin: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 20,
+  },
+  pendingText: {
+    fontSize: 11,
+    color: '#F59E0B',
+    fontWeight: '600',
+  },
+  verificationActions: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  verifyButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  approveButton: {
+    backgroundColor: '#10B981',
+  },
+  rejectButton: {
+    backgroundColor: '#EF4444',
+  },
+  verifyButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   seeAllButton: {
     flexDirection: 'row',

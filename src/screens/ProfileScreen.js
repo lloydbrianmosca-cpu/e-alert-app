@@ -31,6 +31,8 @@ import {
   pickImageFromLibrary,
   takePhoto,
   updateProfileImage,
+  uploadValidID,
+  deleteValidID,
 } from '../services/storage';
 
 // Bottom navigation items
@@ -57,6 +59,8 @@ export default function ProfileScreen({ navigation }) {
     email: user?.email || '',
     contactNumber: '',
     profileImage: null,
+    validIDImage: null,
+    verificationStatus: 'pending', // 'pending', 'verified', 'rejected'
     // Address fields
     address: '',
     region: '',
@@ -88,6 +92,8 @@ export default function ProfileScreen({ navigation }) {
             province: data.province || '',
             city: data.city || '',
             profileImage: data.profileImage || null,
+            validIDImage: data.validIDImage || null,
+            verificationStatus: data.verificationStatus || 'pending',
           }));
           // Set dropdown options based on saved data
           if (data.region) {
@@ -105,7 +111,9 @@ export default function ProfileScreen({ navigation }) {
   const [editData, setEditData] = useState(profileData);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
+  const [showIDModal, setShowIDModal] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingID, setIsUploadingID] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -179,6 +187,7 @@ export default function ProfileScreen({ navigation }) {
           region: editData.region,
           province: editData.province,
           city: editData.city,
+          verificationStatus: editData.verificationStatus || 'pending',
         };
         
         // Handle profile image upload if it's a new local image
@@ -225,6 +234,45 @@ export default function ProfileScreen({ navigation }) {
           }
         } else if (editData.profileImage) {
           updateData.profileImage = editData.profileImage;
+        }
+
+        // Handle valid ID upload if it's a new local image
+        if (editData.validIDImage && editData.validIDImage !== profileData.validIDImage) {
+          console.log('Uploading valid ID...');
+          
+          // Check if it's a local URI
+          const isLocalUri = editData.validIDImage.startsWith('file://') || 
+                            !editData.validIDImage.startsWith('http');
+          
+          if (isLocalUri) {
+            try {
+              const idAsset = editData._idImageAsset || { uri: editData.validIDImage };
+              const idDownloadURL = await uploadValidID(user.uid, idAsset);
+              console.log('Valid ID uploaded:', idDownloadURL);
+              
+              // Delete old ID if it exists
+              if (profileData.validIDImage) {
+                await deleteValidID(profileData.validIDImage);
+              }
+              
+              updateData.validIDImage = idDownloadURL;
+              updateData.verificationStatus = 'pending'; // Reset to pending
+            } catch (uploadError) {
+              console.log('Error uploading valid ID:', uploadError);
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Failed to upload valid ID',
+              });
+              setIsUploadingImage(false);
+              setIsEditing(true);
+              return;
+            }
+          } else {
+            updateData.validIDImage = editData.validIDImage;
+          }
+        } else if (editData.validIDImage) {
+          updateData.validIDImage = editData.validIDImage;
         }
 
         await setDoc(doc(db, 'users', user.uid), updateData, { merge: true });
@@ -314,6 +362,58 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
+  const handlePickIDImage = async () => {
+    try {
+      setIsUploadingID(true);
+      const image = await pickImageFromLibrary();
+      
+      if (image) {
+        // Store both the URI and the full image asset
+        setEditData(prev => ({
+          ...prev,
+          validIDImage: image.uri,
+          _idImageAsset: image,
+          verificationStatus: 'pending', // Reset to pending when new ID uploaded
+        }));
+        setShowIDModal(false);
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to pick ID image',
+      });
+    } finally {
+      setIsUploadingID(false);
+    }
+  };
+
+  const handleTakeIDPhoto = async () => {
+    try {
+      setIsUploadingID(true);
+      const image = await takePhoto();
+      
+      if (image) {
+        // Store both the URI and the full image asset
+        setEditData(prev => ({
+          ...prev,
+          validIDImage: image.uri,
+          _idImageAsset: image,
+          verificationStatus: 'pending', // Reset to pending when new ID uploaded
+        }));
+        setShowIDModal(false);
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to take ID photo',
+      });
+    } finally {
+      setIsUploadingID(false);
+    }
+  };
+
   const handleChangePassword = () => {
     setShowPasswordModal(true);
   };
@@ -350,7 +450,7 @@ export default function ProfileScreen({ navigation }) {
   };
 
   const handleUploadID = () => {
-    Alert.alert('Upload ID', 'Open document picker to upload ID for verification');
+    setShowIDModal(true);
   };
 
   const handleLogout = () => {
@@ -522,7 +622,22 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.profileName}>
             {user?.displayName || ''}
           </Text>
-          <Text style={styles.profileRole}>User</Text>
+          <View style={styles.profileRoleContainer}>
+            <Text style={styles.profileRole}>User</Text>
+            {profileData.verificationStatus === 'verified' && (
+              <View style={styles.verifiedBadge}>
+                <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                <Text style={styles.verifiedBadgeText}>Verified</Text>
+              </View>
+            )}
+            {(profileData.verificationStatus === 'pending' && profileData.validIDImage) || 
+             (isEditing && editData.validIDImage && !editData.validIDImage.startsWith('http')) ? (
+              <View style={styles.pendingBadge}>
+                <Ionicons name="time" size={16} color="#F59E0B" />
+                <Text style={styles.pendingBadgeText}>Pending Verification</Text>
+              </View>
+            ) : null}
+          </View>
         </View>
 
         {/* Account Setup Alert */}
@@ -733,8 +848,23 @@ export default function ProfileScreen({ navigation }) {
         statusBarTranslucent={true}
         onRequestClose={() => setShowImageModal(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.imageModalContent}>
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowImageModal(false)}
+        >
+          <TouchableOpacity 
+            style={styles.imageModalContent}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={() => setShowImageModal(false)}
+            >
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+
             <View style={styles.modalHeader}>
               <Ionicons name="image" size={32} color="#DC2626" />
               <Text style={styles.modalTitle}>Select Profile Picture</Text>
@@ -764,8 +894,92 @@ export default function ProfileScreen({ navigation }) {
             >
               <Text style={styles.modalCancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-          </View>
-        </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Valid ID Upload Modal */}
+      <Modal
+        visible={showIDModal}
+        transparent={true}
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={() => setShowIDModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowIDModal(false)}
+        >
+          <TouchableOpacity 
+            style={styles.imageModalContent}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <TouchableOpacity 
+              style={styles.modalCloseButton}
+              onPress={() => setShowIDModal(false)}
+            >
+              <Ionicons name="close" size={24} color="#6B7280" />
+            </TouchableOpacity>
+
+            <View style={styles.modalHeader}>
+              <Ionicons name="document" size={32} color="#DC2626" />
+              <Text style={styles.modalTitle}>Upload Valid ID</Text>
+              <Text style={styles.modalSubtitle}>Choose a clear photo of your valid ID</Text>
+            </View>
+
+            {editData.validIDImage && !editData.validIDImage.startsWith('http') ? (
+              <>
+                <View style={styles.idPreview}>
+                  <Image
+                    source={{ uri: editData.validIDImage }}
+                    style={styles.idPreviewImage}
+                  />
+                  <View style={styles.idPreviewTextContainer}>
+                    <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                    <Text style={styles.idPreviewText}>ID Selected!</Text>
+                  </View>
+                  <Text style={styles.idInstructionText}>⚠️ Scroll down and tap "Save Changes" to upload</Text>
+                </View>
+
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.doneButton]}
+                  onPress={() => setShowIDModal(false)}
+                >
+                  <Text style={styles.doneButtonText}>Got it</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <>
+                <TouchableOpacity 
+                  style={styles.imageOption}
+                  onPress={handleTakeIDPhoto}
+                  disabled={isUploadingID}
+                >
+                  <Ionicons name="camera" size={28} color="#DC2626" />
+                  <Text style={styles.imageOptionText}>Take Photo</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity 
+                  style={styles.imageOption}
+                  onPress={handlePickIDImage}
+                  disabled={isUploadingID}
+                >
+                  <Ionicons name="images" size={28} color="#DC2626" />
+                  <Text style={styles.imageOptionText}>Choose from Library</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.modalButton, styles.modalCancelButton]}
+                  onPress={() => setShowIDModal(false)}
+                >
+                  <Text style={styles.modalCancelButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
       </Modal>
 
       <Toast config={toastConfig} topOffset={60} />
@@ -897,10 +1111,43 @@ const styles = StyleSheet.create({
     color: '#1F2937',
     marginBottom: 4,
   },
+  profileRoleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
   profileRole: {
     fontSize: 14,
     color: '#6B7280',
     fontWeight: '500',
+  },
+  verifiedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: '#D1FAE5',
+    borderRadius: 20,
+  },
+  verifiedBadgeText: {
+    fontSize: 12,
+    color: '#10B981',
+    fontWeight: '600',
+  },
+  pendingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: '#FEF3C7',
+    borderRadius: 20,
+  },
+  pendingBadgeText: {
+    fontSize: 12,
+    color: '#F59E0B',
+    fontWeight: '600',
   },
   accountSetupSection: {
     marginTop: 20,
@@ -1229,6 +1476,62 @@ const styles = StyleSheet.create({
   },
   modalSaveButtonText: {
     fontSize: 15,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  modalSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+    marginTop: 8,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  idPreview: {
+    marginVertical: 16,
+    alignItems: 'center',
+  },
+  idPreviewImage: {
+    width: 250,
+    height: 150,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  idPreviewTextContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 12,
+  },
+  idPreviewText: {
+    fontSize: 16,
+    color: '#10B981',
+    fontWeight: '700',
+  },
+  idInstructionText: {
+    fontSize: 14,
+    color: '#F59E0B',
+    fontWeight: '600',
+    marginTop: 8,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
+  doneButton: {
+    backgroundColor: '#10B981',
+    width: '100%',
+  },
+  doneButtonText: {
+    fontSize: 16,
     fontWeight: '700',
     color: '#FFFFFF',
   },

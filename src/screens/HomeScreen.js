@@ -17,7 +17,7 @@ import { Ionicons, MaterialIcons, FontAwesome5, MaterialCommunityIcons, Feather 
 import { useEmergency } from '../context/EmergencyContext';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 const { width } = Dimensions.get('window');
 const BOX_SIZE = (width - 60) / 2;
@@ -81,6 +81,8 @@ export default function HomeScreen({ navigation }) {
   const [isCheckingProfile, setIsCheckingProfile] = useState(true);
   const [firstName, setFirstName] = useState('');
   const [profileImage, setProfileImage] = useState(null);
+  const [activeEmergency, setActiveEmergency] = useState(null);
+  const [showCompletionSummary, setShowCompletionSummary] = useState(false);
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
   const { activeEmergencyType, activeResponder, activateEmergency, clearEmergency, isSearchingResponder } = useEmergency();
   const { user } = useAuth();
@@ -147,6 +149,31 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
       checkProfileComplete();
+      
+      // Set up real-time listener for active emergency
+      if (user?.uid) {
+        const emergencyRef = doc(db, 'emergencies', user.uid);
+        const unsubscribeEmergency = onSnapshot(emergencyRef, (docSnap) => {
+          if (docSnap.exists()) {
+            const emergencyData = docSnap.data();
+            setActiveEmergency(emergencyData);
+            
+            // Show completion summary if emergency is completed
+            if (emergencyData.status === 'completed') {
+              setShowCompletionSummary(true);
+            }
+          } else {
+            setActiveEmergency(null);
+            setShowCompletionSummary(false);
+          }
+        }, (error) => {
+          console.log('Error listening to emergency:', error);
+        });
+        
+        return () => {
+          unsubscribeEmergency();
+        };
+      }
     });
     return unsubscribe;
   }, [navigation, user]);
@@ -462,6 +489,66 @@ export default function HomeScreen({ navigation }) {
           </>
         )}
       </ScrollView>
+
+      {/* Emergency Completion Summary Modal */}
+      <Modal
+        visible={showCompletionSummary && activeEmergency?.status === 'completed'}
+        transparent={true}
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={() => {
+          setShowCompletionSummary(false);
+          clearEmergency();
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.completionModal}>
+            <View style={styles.completionHeader}>
+              <Ionicons name="checkmark-circle" size={60} color="#10B981" />
+              <Text style={styles.completionTitle}>Emergency Completed</Text>
+            </View>
+
+            <View style={styles.completionDetails}>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Type:</Text>
+                <Text style={styles.detailValue}>
+                  {activeEmergency?.emergencyType?.toUpperCase()}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Responder:</Text>
+                <Text style={styles.detailValue}>
+                  {activeEmergency?.responderName || 'N/A'}
+                </Text>
+              </View>
+              <View style={styles.detailRow}>
+                <Text style={styles.detailLabel}>Duration:</Text>
+                <Text style={styles.detailValue}>
+                  {activeEmergency?.duration || 'N/A'}
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.completionActions}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={() => {
+                  setShowCompletionSummary(false);
+                  clearEmergency();
+                }}
+              >
+                <Text style={styles.modalButtonText}>Back to Home</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={() => navigation.navigate('EmergencyHistory')}
+              >
+                <Text style={styles.modalButtonSecondaryText}>View History</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
@@ -1073,5 +1160,83 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     lineHeight: 20,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  completionModal: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '85%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  completionHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  completionTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#10B981',
+    marginTop: 12,
+  },
+  completionDetails: {
+    width: '100%',
+    marginBottom: 24,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: '#6B7280',
+    fontWeight: '600',
+  },
+  detailValue: {
+    fontSize: 14,
+    color: '#1F2937',
+    fontWeight: '700',
+  },
+  completionActions: {
+    width: '100%',
+    gap: 12,
+  },
+  modalButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalButtonPrimary: {
+    backgroundColor: '#DC2626',
+  },
+  modalButtonSecondary: {
+    backgroundColor: '#F3F4F6',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  modalButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  modalButtonSecondaryText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#1F2937',
   },
 });

@@ -16,7 +16,7 @@ import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
-import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, onSnapshot } from 'firebase/firestore';
 
 const { width } = Dimensions.get('window');
 const DRAWER_WIDTH = width * 0.55;
@@ -41,9 +41,14 @@ export default function EmergencyHistoryScreen({ navigation }) {
   const drawerAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const { user, logout } = useAuth();
 
-  // Fetch emergency history from Firestore
+  // Fetch emergency history from Firestore with real-time listener
   useEffect(() => {
-    fetchEmergencyHistory();
+    const unsubscribe = fetchEmergencyHistory();
+    return () => {
+      if (unsubscribe && typeof unsubscribe === 'function') {
+        unsubscribe();
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -54,22 +59,28 @@ export default function EmergencyHistoryScreen({ navigation }) {
     try {
       setIsLoading(true);
       const historyRef = collection(db, 'emergencyHistory');
-      const snapshot = await getDocs(historyRef);
-      const historyData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date(),
-        resolvedAt: doc.data().resolvedAt?.toDate() || new Date(),
-      }));
+      const q = query(historyRef, orderBy('createdAt', 'desc'));
       
-      // Sort by createdAt (newest first)
-      historyData.sort((a, b) => b.createdAt - a.createdAt);
+      // Set up real-time listener for emergency updates
+      const unsubscribe = onSnapshot(q, (snapshot) => {
+        const historyData = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data(),
+          createdAt: doc.data().createdAt?.toDate() || new Date(),
+          resolvedAt: doc.data().resolvedAt?.toDate() || new Date(),
+        }));
+        
+        setEmergencies(historyData);
+        setFilteredEmergencies(historyData);
+        setIsLoading(false);
+      }, (error) => {
+        console.log('Error listening to emergency history:', error);
+        setIsLoading(false);
+      });
       
-      setEmergencies(historyData);
-      setFilteredEmergencies(historyData);
+      return unsubscribe;
     } catch (error) {
-      console.log('Error fetching emergency history:', error);
-    } finally {
+      console.log('Error setting up emergency history listener:', error);
       setIsLoading(false);
     }
   };
