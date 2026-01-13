@@ -56,6 +56,7 @@ export default function ResponderHomeScreen({ navigation }) {
   const [responderData, setResponderData] = useState(null);
   const [isAvailable, setIsAvailable] = useState(false);
   const [assignedEmergencies, setAssignedEmergencies] = useState([]);
+  const [emergencyHistory, setEmergencyHistory] = useState([]);
   const [isProfileComplete, setIsProfileComplete] = useState(true);
   const [currentLocation, setCurrentLocation] = useState(null);
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
@@ -133,6 +134,42 @@ export default function ResponderHomeScreen({ navigation }) {
         return;
       }
       console.log('Error listening to emergencies:', error);
+    });
+
+    return () => {
+      unsubscribe();
+    };
+  }, [user?.uid]);
+
+  // Listen for emergency history
+  useEffect(() => {
+    if (!user?.uid) {
+      setEmergencyHistory([]);
+      return;
+    }
+
+    const q = query(
+      collection(db, 'emergencyHistory'),
+      where('completedBy', '==', user.uid),
+      orderBy('completedAt', 'desc'),
+      limit(10)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const history = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setEmergencyHistory(history);
+      setStats((prev) => ({
+        ...prev,
+        totalResponded: history.length,
+      }));
+    }, (error) => {
+      if (error.code === 'permission-denied') {
+        return;
+      }
+      console.log('Error listening to emergency history:', error);
     });
 
     return () => {
@@ -473,90 +510,62 @@ export default function ResponderHomeScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Active Assignments Section */}
+        {/* Emergency History Section */}
         <View style={styles.assignmentsSection}>
-          <Text style={styles.sectionTitle}>Active Assignments</Text>
-          {assignedEmergencies.length === 0 ? (
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Emergency History</Text>
+            {emergencyHistory.length > 3 && (
+              <TouchableOpacity
+                onPress={() => navigation.navigate('EmergencyHistory')}
+              >
+                <Text style={styles.seeAllText}>See All</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {emergencyHistory.length === 0 ? (
             <View style={styles.emptyState}>
-              <MaterialCommunityIcons name="clipboard-check-outline" size={64} color="#D1D5DB" />
-              <Text style={styles.emptyText}>No active assignments</Text>
+              <MaterialCommunityIcons name="history" size={64} color="#D1D5DB" />
+              <Text style={styles.emptyText}>No emergency history</Text>
               <Text style={styles.emptySubtext}>
-                {isAvailable
-                  ? 'You will be notified when a new emergency is assigned'
-                  : 'Set your status to Available to receive assignments'}
+                Completed emergencies will appear here
               </Text>
             </View>
           ) : (
-            assignedEmergencies.map((emergency) => (
-              <TouchableOpacity
+            emergencyHistory.slice(0, 3).map((emergency) => (
+              <View
                 key={emergency.id}
-                style={styles.emergencyCard}
-                onPress={() => navigation.navigate('ResponderLocations', { emergency })}
+                style={styles.historyCard}
               >
                 <View style={styles.emergencyHeader}>
                   <View
                     style={[
                       styles.emergencyTypeBadge,
-                      { backgroundColor: RESPONDER_COLORS[emergency.type] || '#1E3A8A' },
+                      { backgroundColor: RESPONDER_COLORS[emergency.emergencyType || emergency.type] || '#1E3A8A' },
                     ]}
                   >
                     <Text style={styles.emergencyTypeText}>
-                      {emergency.type?.toUpperCase()}
+                      {(emergency.emergencyType || emergency.type)?.toUpperCase()}
                     </Text>
                   </View>
-                  <Text style={styles.emergencyTime}>
-                    {emergency.createdAt
-                      ? new Date(emergency.createdAt.toDate?.() || emergency.createdAt).toLocaleTimeString()
-                      : 'N/A'}
-                  </Text>
+                  <View style={styles.completedBadge}>
+                    <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+                    <Text style={styles.completedText}>Completed</Text>
+                  </View>
                 </View>
                 <Text style={styles.emergencyUser}>
-                  From: {emergency.userName || 'Unknown User'}
+                  User: {emergency.userName || 'Unknown User'}
                 </Text>
-                <Text style={styles.emergencyLocation} numberOfLines={2}>
-                  📍 {emergency.address || 'Location not available'}
+                <Text style={styles.emergencyLocation} numberOfLines={1}>
+                  📍 {emergency.userAddress || emergency.address || 'Location not available'}
                 </Text>
-                <View style={styles.emergencyAction}>
-                  <Text style={styles.viewLocationText}>View Location</Text>
-                  <Ionicons name="chevron-forward" size={20} color={PRIMARY_COLOR} />
-                </View>
-              </TouchableOpacity>
+                <Text style={styles.historyTime}>
+                  {emergency.completedAt
+                    ? new Date(emergency.completedAt.toDate?.() || emergency.completedAt).toLocaleString()
+                    : 'N/A'}
+                </Text>
+              </View>
             ))
           )}
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.quickActions}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <View style={styles.actionsGrid}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('ResponderLocations')}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: '#EBF5FF' }]}>
-                <Ionicons name="map" size={24} color="#1E3A8A" />
-              </View>
-              <Text style={styles.actionText}>View Map</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('ResponderChats')}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: '#ECFDF5' }]}>
-                <Ionicons name="chatbubbles" size={24} color="#059669" />
-              </View>
-              <Text style={styles.actionText}>Messages</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('ResponderProfile')}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: '#FEF3C7' }]}>
-                <Ionicons name="person" size={24} color="#D97706" />
-              </View>
-              <Text style={styles.actionText}>My Profile</Text>
-            </TouchableOpacity>
-          </View>
         </View>
 
         <View style={{ height: 100 }} />
@@ -807,11 +816,21 @@ const styles = StyleSheet.create({
   assignmentsSection: {
     marginBottom: 16,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#111827',
-    marginBottom: 12,
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: PRIMARY_COLOR,
   },
   emptyState: {
     backgroundColor: '#FFFFFF',
@@ -877,7 +896,7 @@ const styles = StyleSheet.create({
   emergencyLocation: {
     fontSize: 13,
     color: '#6B7280',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   emergencyAction: {
     flexDirection: 'row',
@@ -892,37 +911,33 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#DC2626',
   },
-  quickActions: {
-    marginBottom: 16,
-  },
-  actionsGrid: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionButton: {
-    flex: 1,
+  historyCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 12,
     padding: 16,
-    alignItems: 'center',
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 2,
+    borderLeftWidth: 4,
+    borderLeftColor: '#10B981',
   },
-  actionIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
+  completedBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    gap: 4,
   },
-  actionText: {
+  completedText: {
     fontSize: 12,
-    color: '#374151',
-    fontWeight: '500',
+    color: '#10B981',
+    fontWeight: '600',
+  },
+  historyTime: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 4,
   },
   bottomNav: {
     flexDirection: 'row',

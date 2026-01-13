@@ -29,18 +29,27 @@ service cloud.firestore {
       allow create: if request.auth != null && request.auth.uid == emergencyId;
       // Allow update for any authenticated user (needed for real-time distance updates and responder assignment)
       allow update: if request.auth != null;
-      // Allow delete for the owner or admin
+      // Allow delete for the owner, assigned responder, or admin
       allow delete: if request.auth != null && (
         request.auth.uid == emergencyId || 
-        isAdmin()
+        resource.data.assignedResponderId == request.auth.uid ||
+        isAdmin() ||
+        isResponder()
       );
     }
     
     // Emergency History collection
     match /emergencyHistory/{historyId} {
-      allow read: if request.auth != null && (isAdmin() || isResponder());
-      allow write: if request.auth != null && isAdmin();
-      allow create: if request.auth != null;
+      // Allow read for admins, responders (their own completed), and users (their own emergencies)
+      allow read: if request.auth != null && (
+        isAdmin() || 
+        isResponder() ||
+        resource.data.userId == request.auth.uid
+      );
+      // Allow create for responders completing emergencies
+      allow create: if request.auth != null && (isResponder() || isAdmin());
+      // Allow update/delete only for admins
+      allow update, delete: if request.auth != null && isAdmin();
     }
     
     // Responders collection
