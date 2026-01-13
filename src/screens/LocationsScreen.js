@@ -16,7 +16,7 @@ import * as Location from 'expo-location';
 import { useEmergency } from '../context/EmergencyContext';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 const { width } = Dimensions.get('window');
 
@@ -36,10 +36,20 @@ const EMERGENCY_COLORS = {
   flood: '#0369A1',
 };
 
+// Responder icons based on type
+const RESPONDER_ICONS = {
+  police: 'local-police',
+  medical: 'medical-services',
+  fireman: 'fire-truck',
+  fire: 'fire-truck',
+  flood: 'flood',
+};
+
 export default function LocationsScreen({ navigation, route }) {
   const [activeTab, setActiveTab] = useState('locations');
-  const { activeEmergencyType, clearEmergency } = useEmergency();
+  const { activeEmergencyType, activeResponder, clearEmergency, userLocation: emergencyUserLocation, isSearchingResponder } = useEmergency();
   const [userLocation, setUserLocation] = useState(null);
+  const [responderLocation, setResponderLocation] = useState(null);
   const [loading, setLoading] = useState(true);
   const mapRef = useRef(null);
   const [showProfileOverlay, setShowProfileOverlay] = useState(false);
@@ -119,6 +129,17 @@ export default function LocationsScreen({ navigation, route }) {
   useEffect(() => {
     (async () => {
       try {
+        // Use emergency user location if available
+        if (emergencyUserLocation) {
+          setUserLocation({
+            ...emergencyUserLocation,
+            latitudeDelta: 0.01,
+            longitudeDelta: 0.01,
+          });
+          setLoading(false);
+          return;
+        }
+
         let { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
           console.log('Permission to access location was denied');
@@ -141,18 +162,46 @@ export default function LocationsScreen({ navigation, route }) {
         setLoading(false);
       }
     })();
-  }, []);
+  }, [emergencyUserLocation]);
 
-  // Calculate responder location (offset from user location)
-  const getResponderLocation = () => {
-    if (!userLocation) return null;
-    return {
-      latitude: userLocation.latitude + 0.008,
-      longitude: userLocation.longitude + 0.005,
-    };
-  };
+  // Update responder location from activeResponder
+  useEffect(() => {
+    if (activeResponder?.location) {
+      setResponderLocation({
+        latitude: activeResponder.location.latitude,
+        longitude: activeResponder.location.longitude,
+      });
+    } else if (activeResponder && userLocation) {
+      // If no location data, estimate based on distance
+      // Place responder marker at an offset from user
+      const estimatedDistance = activeResponder.distanceKm || 2;
+      const latOffset = estimatedDistance * 0.009; // Roughly 1km = 0.009 degrees latitude
+      const lonOffset = estimatedDistance * 0.009;
+      setResponderLocation({
+        latitude: userLocation.latitude + latOffset,
+        longitude: userLocation.longitude + lonOffset / 2,
+      });
+    }
+  }, [activeResponder, userLocation]);
 
-  const responderLocation = getResponderLocation();
+  // Listen for responder location updates in real-time
+  useEffect(() => {
+    if (!activeResponder?.id) return;
+
+    const unsubscribe = onSnapshot(doc(db, 'responders', activeResponder.id), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        if (data.location) {
+          setResponderLocation({
+            latitude: data.location.latitude,
+            longitude: data.location.longitude,
+          });
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, [activeResponder?.id]);
 
   // Center map on user location
   const centerOnUser = () => {
@@ -179,64 +228,23 @@ export default function LocationsScreen({ navigation, route }) {
   };
 
   useEffect(() => {
-    if (!loading && isEmergencyActive) {
+    if (!loading && isEmergencyActive && responderLocation) {
       setTimeout(fitAllMarkers, 500);
     }
-  }, [loading, isEmergencyActive]);
-  
-  // Mock responder data based on emergency type
-  const responderData = {
-    police: {
-      name: 'Officer Juan Cruz',
-      building: 'Pasay City Police Station',
-      hotline: '(02) 8551-2507',
-      badge: 'PNP-2451',
-      avatar: 'https://i.pravatar.cc/150?img=12',
-      vehicle: 'Patrol Car 7',
-      eta: '3 mins',
-      distance: '1.2 km',
-      icon: 'local-police',
-      tag: 'Police',
-    },
-    medical: {
-      name: 'Dr. Maria Santos',
-      building: 'Pasay General Hospital',
-      hotline: '(02) 8831-5241',
-      badge: 'DOH-8892',
-      avatar: 'https://i.pravatar.cc/150?img=45',
-      vehicle: 'Ambulance Unit 3',
-      eta: '5 mins',
-      distance: '2.4 km',
-      icon: 'medical-services',
-      tag: 'Medical',
-    },
-    fire: {
-      name: 'Firefighter Mike Reyes',
-      building: 'Pasay City Fire Station',
-      hotline: '(02) 8831-0099',
-      badge: 'BFP-3341',
-      avatar: 'https://i.pravatar.cc/150?img=33',
-      vehicle: 'Fire Truck 5',
-      eta: '4 mins',
-      distance: '1.8 km',
-      icon: 'fire-truck',
-      tag: 'Fire',
-    },
-    flood: {
-      name: 'Rescue Officer Anna Lee',
-      building: 'NDRRMC Rescue Center',
-      hotline: '(02) 8911-5061',
-      badge: 'NDRRMC-5512',
-      avatar: 'https://i.pravatar.cc/150?img=28',
-      vehicle: 'Rescue Boat 2',
-      eta: '6 mins',
-      distance: '3.1 km',
-      icon: 'flood',
-      tag: 'Rescue',
-    },
+  }, [loading, isEmergencyActive, responderLocation]);
+
+  // Get responder display info
+  const responder = activeResponder || {
+    name: 'Searching...',
+    building: 'Finding nearest responder',
+    hotline: 'N/A',
+    eta: '--',
+    distance: '--',
+    icon: RESPONDER_ICONS[emergencyType] || 'local-police',
+    tag: emergencyType?.charAt(0).toUpperCase() + emergencyType?.slice(1),
+    avatar: 'https://ui-avatars.com/api/?name=Responder&background=random',
   };
 
-  const responder = responderData[emergencyType];
   const emergencyColor = EMERGENCY_COLORS[emergencyType];
 
   return (
@@ -292,14 +300,23 @@ export default function LocationsScreen({ navigation, route }) {
                 <Marker
                   coordinate={responderLocation}
                   title={responder.name}
-                  description={responder.vehicle}
-                  anchor={{ x: 0.5, y: 0.5 }}
+                  description={`${responder.tag} - ${responder.eta} away`}
+                  anchor={{ x: 0.5, y: 1 }}
                   tracksViewChanges={true}
                 >
-                  <View style={styles.responderMarker}>
-                    <View style={[styles.responderMarkerOuter, { backgroundColor: emergencyColor + '30' }]} />
-                    <View style={[styles.responderMarkerInner, { backgroundColor: emergencyColor }]}>
-                      <Ionicons name="car" size={18} color="#FFFFFF" />
+                  <View style={styles.responderMarkerContainer}>
+                    {/* Name Label */}
+                    <View style={[styles.responderNameLabel, { backgroundColor: emergencyColor }]}>
+                      <Text style={styles.responderNameText} numberOfLines={1}>
+                        {responder.name}
+                      </Text>
+                    </View>
+                    {/* Marker Icon */}
+                    <View style={styles.responderMarker}>
+                      <View style={[styles.responderMarkerOuter, { backgroundColor: emergencyColor + '30' }]} />
+                      <View style={[styles.responderMarkerInner, { backgroundColor: emergencyColor }]}>
+                        <Ionicons name="car" size={18} color="#FFFFFF" />
+                      </View>
                     </View>
                   </View>
                 </Marker>
@@ -609,6 +626,27 @@ const styles = StyleSheet.create({
     height: 70,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  responderMarkerContainer: {
+    alignItems: 'center',
+  },
+  responderNameLabel: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    marginBottom: 4,
+    maxWidth: 150,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  responderNameText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textAlign: 'center',
   },
   responderMarkerOuter: {
     position: 'absolute',

@@ -80,7 +80,7 @@ export default function HomeScreen({ navigation }) {
   const [showProfileOverlay, setShowProfileOverlay] = useState(false);
   const [isCheckingProfile, setIsCheckingProfile] = useState(true);
   const pulseAnim = React.useRef(new Animated.Value(1)).current;
-  const { activeEmergencyType, activeResponder, activateEmergency, clearEmergency } = useEmergency();
+  const { activeEmergencyType, activeResponder, activateEmergency, clearEmergency, isSearchingResponder } = useEmergency();
   const { user } = useAuth();
 
   // Required profile fields
@@ -185,7 +185,7 @@ export default function HomeScreen({ navigation }) {
     setSosCount(0);
   };
 
-  const handleSOSPress = () => {
+  const handleSOSPress = async () => {
     const newCount = sosCount + 1;
     setSosCount(newCount);
     
@@ -196,14 +196,20 @@ export default function HomeScreen({ navigation }) {
     const selected = EMERGENCY_TYPES.find(t => t.id === selectedType);
     setSosPressed(true);
     
-    // Simulate SOS activation and redirect to Locations
-    setTimeout(() => {
+    // Activate emergency and find responder
+    try {
+      const result = await activateEmergency(selectedType);
+      
+      setTimeout(() => {
+        setSosPressed(false);
+        setSosCount(0);
+        navigation.navigate('Locations', { emergencyType: selectedType });
+      }, 1500);
+    } catch (error) {
+      console.log('Error activating emergency:', error);
       setSosPressed(false);
       setSosCount(0);
-      // Persist active emergency globally
-      activateEmergency(selectedType);
-      navigation.navigate('Locations', { emergencyType: selectedType });
-    }, 1500);
+    }
   };
 
   const renderIcon = (item, size = 32) => {
@@ -304,50 +310,64 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
 
             {/* Show Active Emergency Card OR SOS Button */}
-            {activeEmergencyType && activeResponder ? (
+            {activeEmergencyType ? (
               <>
                 {/* Active Emergency Status Card */}
                 <View style={styles.activeEmergencyCard}>
                   <View style={styles.activeEmergencyHeader}>
                     <View style={styles.activeStatusBadge}>
                       <View style={styles.activeStatusDot} />
-                      <Text style={styles.activeStatusText}>ACTIVE EMERGENCY</Text>
+                      <Text style={styles.activeStatusText}>
+                        {isSearchingResponder ? 'SEARCHING RESPONDER...' : 'ACTIVE EMERGENCY'}
+                      </Text>
                     </View>
                   </View>
                   
-                  <View style={styles.responderInfoSection}>
-                    <Image
-                      source={{ uri: activeResponder.avatar }}
-                      style={styles.responderAvatar}
-                    />
-                    <View style={styles.responderDetails}>
-                      <Text style={styles.responderName}>{activeResponder.name}</Text>
-                      <Text style={styles.responderTag}>{activeResponder.tag} Responder</Text>
-                    </View>
-                  </View>
+                  {activeResponder ? (
+                    <>
+                      <View style={styles.responderInfoSection}>
+                        <Image
+                          source={{ uri: activeResponder.avatar }}
+                          style={styles.responderAvatar}
+                        />
+                        <View style={styles.responderDetails}>
+                          <Text style={styles.responderName}>{activeResponder.name}</Text>
+                          <Text style={styles.responderTag}>{activeResponder.tag} Responder</Text>
+                        </View>
+                      </View>
 
-                  <View style={styles.responderInfoRows}>
-                    <View style={styles.responderInfoRow}>
-                      <Ionicons name="business" size={18} color="#6B7280" />
-                      <Text style={styles.responderInfoLabel}>Location:</Text>
-                      <Text style={styles.responderInfoValue}>{activeResponder.building}</Text>
+                      <View style={styles.responderInfoRows}>
+                        <View style={styles.responderInfoRow}>
+                          <Ionicons name="business" size={18} color="#6B7280" />
+                          <Text style={styles.responderInfoLabel}>Station:</Text>
+                          <Text style={styles.responderInfoValue}>{activeResponder.building}</Text>
+                        </View>
+                        <View style={styles.responderInfoRow}>
+                          <Ionicons name="call" size={18} color="#6B7280" />
+                          <Text style={styles.responderInfoLabel}>Hotline:</Text>
+                          <Text style={styles.responderInfoValue}>{activeResponder.hotline}</Text>
+                        </View>
+                        <View style={styles.responderInfoRow}>
+                          <Ionicons name="time" size={18} color="#6B7280" />
+                          <Text style={styles.responderInfoLabel}>ETA:</Text>
+                          <Text style={[styles.responderInfoValue, styles.etaValue]}>{activeResponder.eta}</Text>
+                        </View>
+                        <View style={styles.responderInfoRow}>
+                          <Ionicons name="navigate" size={18} color="#6B7280" />
+                          <Text style={styles.responderInfoLabel}>Distance:</Text>
+                          <Text style={styles.responderInfoValue}>{activeResponder.distance}</Text>
+                        </View>
+                      </View>
+                    </>
+                  ) : (
+                    <View style={styles.noResponderSection}>
+                      <Ionicons name="search" size={48} color="#DC2626" />
+                      <Text style={styles.noResponderTitle}>Finding Nearest Responder</Text>
+                      <Text style={styles.noResponderSubtitle}>
+                        No available responders found yet. Please wait or try again.
+                      </Text>
                     </View>
-                    <View style={styles.responderInfoRow}>
-                      <Ionicons name="call" size={18} color="#6B7280" />
-                      <Text style={styles.responderInfoLabel}>Hotline:</Text>
-                      <Text style={styles.responderInfoValue}>{activeResponder.hotline}</Text>
-                    </View>
-                    <View style={styles.responderInfoRow}>
-                      <Ionicons name="time" size={18} color="#6B7280" />
-                      <Text style={styles.responderInfoLabel}>ETA:</Text>
-                      <Text style={[styles.responderInfoValue, styles.etaValue]}>{activeResponder.eta}</Text>
-                    </View>
-                    <View style={styles.responderInfoRow}>
-                      <Ionicons name="navigate" size={18} color="#6B7280" />
-                      <Text style={styles.responderInfoLabel}>Distance:</Text>
-                      <Text style={styles.responderInfoValue}>{activeResponder.distance}</Text>
-                    </View>
-                  </View>
+                  )}
 
                   <View style={styles.emergencyActionButtons}>
                     <TouchableOpacity
@@ -1007,5 +1027,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#DC2626',
+  },
+  noResponderSection: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  noResponderTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginTop: 12,
+  },
+  noResponderSubtitle: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginTop: 8,
+    lineHeight: 20,
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   View,
@@ -16,6 +16,7 @@ import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-ic
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
 import { doc, getDoc, updateDoc, collection, query, where, onSnapshot, orderBy, limit } from 'firebase/firestore';
+import * as Location from 'expo-location';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '../components';
 
@@ -56,6 +57,9 @@ export default function ResponderHomeScreen({ navigation }) {
   const [isAvailable, setIsAvailable] = useState(false);
   const [assignedEmergencies, setAssignedEmergencies] = useState([]);
   const [isProfileComplete, setIsProfileComplete] = useState(true);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
+  const locationSubscription = useRef(null);
   const [stats, setStats] = useState({
     totalResponded: 0,
     pendingAssignments: 0,
@@ -140,8 +144,24 @@ export default function ResponderHomeScreen({ navigation }) {
 
     try {
       const docRef = doc(db, 'responders', user.uid);
+      
+      // If becoming available, also update location
+      let locationData = {};
+      if (value) {
+        const location = await updateCurrentLocation();
+        if (location) {
+          locationData = { location };
+        }
+        // Start location tracking when available
+        startLocationTracking();
+      } else {
+        // Stop location tracking when unavailable
+        stopLocationTracking();
+      }
+      
       await updateDoc(docRef, {
         isAvailable: value,
+        ...locationData,
         updatedAt: new Date().toISOString(),
       });
       setIsAvailable(value);
@@ -159,6 +179,112 @@ export default function ResponderHomeScreen({ navigation }) {
       });
     }
   };
+
+  // Get and update current location
+  const updateCurrentLocation = async () => {
+    if (!user?.uid) return null;
+
+    try {
+      setIsUpdatingLocation(true);
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Toast.show({
+          type: 'error',
+          text1: 'Location Permission',
+          text2: 'Please enable location to be visible to users',
+        });
+        return null;
+      }
+
+      let location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const locationData = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+        updatedAt: new Date().toISOString(),
+      };
+
+      setCurrentLocation(locationData);
+
+      // Update location in Firebase
+      const docRef = doc(db, 'responders', user.uid);
+      await updateDoc(docRef, {
+        location: locationData,
+      });
+
+      return locationData;
+    } catch (error) {
+      console.log('Error updating location:', error);
+      return null;
+    } finally {
+      setIsUpdatingLocation(false);
+    }
+  };
+
+  // Start continuous location tracking
+  const startLocationTracking = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+
+      // Update location every 30 seconds
+      locationSubscription.current = await Location.watchPositionAsync(
+        {
+          accuracy: Location.Accuracy.High,
+          timeInterval: 30000, // 30 seconds
+          distanceInterval: 50, // or 50 meters
+        },
+        async (location) => {
+          if (!user?.uid) return;
+
+          const locationData = {
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
+            updatedAt: new Date().toISOString(),
+          };
+
+          setCurrentLocation(locationData);
+
+          // Update in Firebase
+          try {
+            const docRef = doc(db, 'responders', user.uid);
+            await updateDoc(docRef, {
+              location: locationData,
+            });
+          } catch (error) {
+            console.log('Error updating location in tracking:', error);
+          }
+        }
+      );
+    } catch (error) {
+      console.log('Error starting location tracking:', error);
+    }
+  };
+
+  // Stop location tracking
+  const stopLocationTracking = () => {
+    if (locationSubscription.current) {
+      locationSubscription.current.remove();
+      locationSubscription.current = null;
+    }
+  };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      stopLocationTracking();
+    };
+  }, []);
+
+  // Start tracking if already available
+  useEffect(() => {
+    if (isAvailable && user?.uid) {
+      updateCurrentLocation();
+      startLocationTracking();
+    }
+  }, [isAvailable, user]);
 
   // Handle tab navigation
   const handleTabPress = (tabId) => {
