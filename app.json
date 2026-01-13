@@ -10,6 +10,8 @@
       "supportsTabletMode": true,
       "bundleIdentifier": "com.anonymous.e-alert-app"
     },
-    "android": {}
+    "android": {
+      "package": "com.anonymous.ealertapp"
+    }
   }
 }
