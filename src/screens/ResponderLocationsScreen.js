@@ -7,6 +7,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -14,7 +15,7 @@ import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
-import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, onSnapshot, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '../components';
 
@@ -55,6 +56,108 @@ export default function ResponderLocationsScreen({ navigation, route }) {
     if (!data) return false;
     const requiredFields = ['firstName', 'lastName', 'contactNumber', 'stationName', 'hotlineNumber'];
     return requiredFields.every(field => data[field] && data[field].trim() !== '');
+  };
+
+  // Calculate distance between two coordinates in meters using Haversine formula
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371e3; // Earth's radius in meters
+    const φ1 = (lat1 * Math.PI) / 180;
+    const φ2 = (lat2 * Math.PI) / 180;
+    const Δφ = ((lat2 - lat1) * Math.PI) / 180;
+    const Δλ = ((lon2 - lon1) * Math.PI) / 180;
+
+    const a =
+      Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+      Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance in meters
+  };
+
+  // Get distance to selected emergency
+  const getDistanceToEmergency = () => {
+    if (!userLocation || !selectedEmergency?.location) return null;
+    const distance = calculateDistance(
+      userLocation.latitude,
+      userLocation.longitude,
+      selectedEmergency.location.latitude,
+      selectedEmergency.location.longitude
+    );
+    return distance;
+  };
+
+  // Check if responder is close enough to complete emergency (within 100 meters)
+  const isCloseEnough = () => {
+    const distance = getDistanceToEmergency();
+    return distance !== null && distance <= 100; // 100 meters threshold
+  };
+
+  // Format distance for display
+  const formatDistance = (meters) => {
+    if (meters === null) return 'Unknown';
+    if (meters < 1000) {
+      return `${Math.round(meters)} m`;
+    }
+    return `${(meters / 1000).toFixed(2)} km`;
+  };
+
+  // Complete emergency
+  const handleCompleteEmergency = async () => {
+    if (!selectedEmergency) return;
+
+    const distance = getDistanceToEmergency();
+    const closeEnough = isCloseEnough();
+
+    if (!closeEnough) {
+      Alert.alert(
+        'Too Far Away',
+        `You must be within 100 meters of the emergency location to mark it as done. You are currently ${formatDistance(distance)} away.`,
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Complete Emergency',
+      'Are you sure you want to mark this emergency as completed?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Complete',
+          style: 'default',
+          onPress: async () => {
+            try {
+              // Save to emergency history
+              await addDoc(collection(db, 'emergencyHistory'), {
+                ...selectedEmergency,
+                completedAt: serverTimestamp(),
+                completedBy: user.uid,
+                responderName: responderData ? `${responderData.firstName} ${responderData.lastName}` : 'Unknown',
+                status: 'completed',
+              });
+
+              // Delete from active emergencies
+              await deleteDoc(doc(db, 'activeEmergencies', selectedEmergency.id));
+
+              Toast.show({
+                type: 'success',
+                text1: 'Emergency Completed',
+                text2: 'The emergency has been marked as done.',
+              });
+
+              setSelectedEmergency(null);
+            } catch (error) {
+              console.log('Error completing emergency:', error);
+              Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Failed to complete emergency. Please try again.',
+              });
+            }
+          },
+        },
+      ]
+    );
   };
 
   // Default location (Pasay City, Philippines)
@@ -117,6 +220,9 @@ export default function ResponderLocationsScreen({ navigation, route }) {
         const updated = emergencies.find((e) => e.id === selectedEmergency.id);
         if (updated) {
           setSelectedEmergency(updated);
+        } else {
+          // Emergency was completed/removed, clear selection
+          setSelectedEmergency(null);
         }
       }
       
@@ -127,6 +233,11 @@ export default function ResponderLocationsScreen({ navigation, route }) {
           setSelectedEmergency(emergency);
           navigateToEmergency(emergency);
         }
+      }
+      // Auto-select the first emergency if none selected and there's only one
+      else if (!selectedEmergency && emergencies.length === 1) {
+        setSelectedEmergency(emergencies[0]);
+        navigateToEmergency(emergencies[0]);
       }
     }, (error) => {
       // Ignore permission errors on sign out
@@ -463,10 +574,24 @@ export default function ResponderLocationsScreen({ navigation, route }) {
               <Text style={styles.detailsTypeText}>{selectedEmergency.type?.toUpperCase()}</Text>
             </View>
             <TouchableOpacity onPress={() => setSelectedEmergency(null)}>
-              <Ionicons name="close-circle" size={28} color="#9CA3AF" />
+              <Ionicons name="close-circle" size={32} color="#9CA3AF" />
             </TouchableOpacity>
           </View>
+          
           <Text style={styles.detailsUser}>{selectedEmergency.userName || 'Unknown User'}</Text>
+          
+          {/* Distance Info */}
+          <View style={styles.distanceInfo}>
+            <MaterialIcons name="directions" size={20} color="#374151" />
+            <Text style={styles.distanceText}>
+              Distance: {formatDistance(getDistanceToEmergency())}
+            </Text>
+            {isCloseEnough() && (
+              <View style={styles.nearbyBadge}>
+                <Text style={styles.nearbyText}>NEARBY</Text>
+              </View>
+            )}
+          </View>
           
           {/* User Contact Info */}
           {selectedEmergency.userContactNumber && (
@@ -496,16 +621,38 @@ export default function ResponderLocationsScreen({ navigation, route }) {
                 navigation.navigate('ResponderChats', { emergencyId: selectedEmergency.id })
               }
             >
-              <Ionicons name="chatbubble" size={18} color="#FFFFFF" />
+              <Ionicons name="chatbubble" size={20} color="#FFFFFF" />
               <Text style={styles.detailsButtonText}>Chat</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.detailsButton, styles.detailsButtonOutline, { borderColor: PRIMARY_COLOR }]}
             >
-              <MaterialIcons name="phone" size={18} color={PRIMARY_COLOR} />
+              <MaterialIcons name="phone" size={20} color={PRIMARY_COLOR} />
               <Text style={[styles.detailsButtonText, { color: PRIMARY_COLOR }]}>Call</Text>
             </TouchableOpacity>
           </View>
+          
+          {/* Emergency Done Button */}
+          <TouchableOpacity
+            style={[
+              styles.emergencyDoneButton,
+              !isCloseEnough() && styles.emergencyDoneButtonDisabled,
+            ]}
+            onPress={handleCompleteEmergency}
+            disabled={!isCloseEnough()}
+          >
+            <MaterialIcons 
+              name="check-circle" 
+              size={24} 
+              color={isCloseEnough() ? '#FFFFFF' : '#9CA3AF'} 
+            />
+            <Text style={[
+              styles.emergencyDoneButtonText,
+              !isCloseEnough() && styles.emergencyDoneButtonTextDisabled,
+            ]}>
+              {isCloseEnough() ? 'Emergency Done' : `Get closer (${formatDistance(getDistanceToEmergency())} away)`}
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -761,30 +908,59 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   detailsTypeBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    borderRadius: 14,
   },
   detailsTypeText: {
     color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   detailsUser: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#111827',
-    marginBottom: 4,
+    marginBottom: 8,
+  },
+  distanceInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    marginBottom: 12,
+    gap: 8,
+  },
+  distanceText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+    flex: 1,
+  },
+  nearbyBadge: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  nearbyText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
   detailsContact: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#374151',
-    marginBottom: 4,
+    marginBottom: 6,
+    fontWeight: '500',
   },
   detailsAddress: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#6B7280',
-    marginBottom: 8,
+    marginBottom: 10,
   },
   emergencyContactInfo: {
     backgroundColor: '#FEF2F2',
@@ -806,13 +982,14 @@ const styles = StyleSheet.create({
   detailsActions: {
     flexDirection: 'row',
     gap: 12,
+    marginBottom: 12,
   },
   detailsButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderRadius: 12,
     gap: 8,
   },
@@ -821,9 +998,37 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   detailsButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  emergencyDoneButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#059669',
+    paddingVertical: 16,
+    borderRadius: 12,
+    gap: 10,
+    shadowColor: '#059669',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  emergencyDoneButtonDisabled: {
+    backgroundColor: '#E5E7EB',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  emergencyDoneButtonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  emergencyDoneButtonTextDisabled: {
+    color: '#9CA3AF',
+    fontSize: 14,
   },
   bottomNav: {
     flexDirection: 'row',

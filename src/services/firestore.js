@@ -12,6 +12,7 @@ import {
   setDoc,
   getDoc,
   updateDoc,
+  deleteDoc,
   Timestamp
 } from 'firebase/firestore';
 import { app } from './firebase';
