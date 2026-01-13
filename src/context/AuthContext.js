@@ -25,12 +25,21 @@ export function AuthProvider({ children }) {
   // Fetch user role from Firestore
   const fetchUserRole = async (uid) => {
     try {
+      // First check the users collection
       const userDoc = await getDoc(doc(db, 'users', uid));
       if (userDoc.exists()) {
         const role = userDoc.data().role || 'user';
         setUserRole(role);
         return role;
       }
+      
+      // If not found in users, check responders collection
+      const responderDoc = await getDoc(doc(db, 'responders', uid));
+      if (responderDoc.exists()) {
+        setUserRole('responder');
+        return 'responder';
+      }
+      
       setUserRole('user');
       return 'user';
     } catch (error) {
@@ -101,20 +110,21 @@ export function AuthProvider({ children }) {
     try {
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       
+      // Fetch user role first
+      const role = await fetchUserRole(userCredential.user.uid);
+      
       // Check if email is verified
       if (!userCredential.user.emailVerified) {
-        // Sign out the unverified user
-        await signOut(auth);
+        // Don't sign out - keep user signed in so we can resend verification email
         return { 
           success: false, 
           error: 'Please verify your email before signing in. Check your inbox or spam folder.',
           needsVerification: true,
-          email: email
+          email: email,
+          role: role,
+          user: userCredential.user
         };
       }
-      
-      // Fetch user role
-      const role = await fetchUserRole(userCredential.user.uid);
       
       return { success: true, user: userCredential.user, role: role };
     } catch (error) {

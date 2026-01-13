@@ -26,7 +26,12 @@ export default function SignInScreen({ navigation }) {
   const [resetEmail, setResetEmail] = React.useState('');
   const [isResetting, setIsResetting] = React.useState(false);
   const [emailSent, setEmailSent] = React.useState(false);
-  const { signIn, resetPassword } = useAuth();
+  // Verification modal states
+  const [showVerificationModal, setShowVerificationModal] = React.useState(false);
+  const [verificationEmail, setVerificationEmail] = React.useState('');
+  const [isVerifying, setIsVerifying] = React.useState(false);
+  const [isResendingVerification, setIsResendingVerification] = React.useState(false);
+  const { signIn, resetPassword, sendVerificationEmail, checkEmailVerified, logout } = useAuth();
 
   const handleSignIn = async () => {
     if (!email) {
@@ -60,9 +65,39 @@ export default function SignInScreen({ navigation }) {
       // Navigate based on user role
       if (result.role === 'admin') {
         navigation.replace('AdminHome');
+      } else if (result.role === 'responder') {
+        navigation.replace('ResponderHome');
       } else {
         navigation.replace('Home');
       }
+    } else if (result.needsVerification && result.role === 'responder') {
+      // Show verification modal for unverified responders only
+      setVerificationEmail(result.email);
+      setShowVerificationModal(true);
+      
+      // Automatically send verification email
+      const emailResult = await sendVerificationEmail();
+      if (emailResult.success) {
+        Toast.show({
+          type: 'info',
+          text1: 'Verification Email Sent',
+          text2: 'Please check your inbox and verify your email',
+        });
+      } else {
+        Toast.show({
+          type: 'info',
+          text1: 'Email Verification Required',
+          text2: 'Please verify your email to continue',
+        });
+      }
+    } else if (result.needsVerification) {
+      // For non-responder unverified users, sign out and show error message
+      await logout();
+      Toast.show({
+        type: 'error',
+        text1: 'Email Not Verified',
+        text2: 'Please verify your email before signing in. Check your inbox.',
+      });
     } else {
       Toast.show({
         type: 'error',
@@ -112,6 +147,56 @@ export default function SignInScreen({ navigation }) {
     setShowForgotModal(false);
     setResetEmail('');
     setEmailSent(false);
+  };
+
+  // Verification modal handlers
+  const handleVerifyEmail = async () => {
+    setIsVerifying(true);
+    const result = await checkEmailVerified();
+    setIsVerifying(false);
+
+    if (result.success && result.verified) {
+      setShowVerificationModal(false);
+      Toast.show({
+        type: 'success',
+        text1: 'Email Verified!',
+        text2: 'You can now sign in',
+      });
+      // Sign out and let user sign in again
+      await logout();
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Not Verified Yet',
+        text2: 'Please click the link in your email first',
+      });
+    }
+  };
+
+  const handleResendVerification = async () => {
+    setIsResendingVerification(true);
+    const result = await sendVerificationEmail();
+    setIsResendingVerification(false);
+
+    if (result.success) {
+      Toast.show({
+        type: 'success',
+        text1: 'Email Sent',
+        text2: 'Verification email has been resent',
+      });
+    } else {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: result.error || 'Failed to resend email',
+      });
+    }
+  };
+
+  const handleCloseVerificationModal = async () => {
+    await logout();
+    setShowVerificationModal(false);
+    setVerificationEmail('');
   };
 
   return (
@@ -263,6 +348,65 @@ export default function SignInScreen({ navigation }) {
                   </TouchableOpacity>
                 </>
               )}
+            </View>
+          </View>
+          <Toast config={toastConfig} topOffset={60} />
+        </View>
+      </Modal>
+
+      {/* Email Verification Modal */}
+      <Modal
+        visible={showVerificationModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseVerificationModal}
+        statusBarTranslucent={true}
+      >
+        <View style={{ flex: 1 }}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <TouchableOpacity style={styles.closeButton} onPress={handleCloseVerificationModal}>
+                <Feather name="x" size={24} color="#6B7280" />
+              </TouchableOpacity>
+
+              <View style={styles.modalIconContainer}>
+                <Feather name="mail" size={48} color="#DC2626" />
+              </View>
+
+              <Text style={styles.modalTitle}>Verify Your Email</Text>
+              <Text style={styles.modalSubtitle}>
+                We've sent a verification link to{'\n'}
+                <Text style={styles.emailText}>{verificationEmail}</Text>
+              </Text>
+
+              <Text style={styles.instructionText}>
+                Click the link in your email, then tap the button below to continue.{'\n'}
+                <Text style={styles.spamNote}>Check your spam folder if you don't see it.</Text>
+              </Text>
+
+              <TouchableOpacity
+                style={styles.verifyButton}
+                onPress={handleVerifyEmail}
+                disabled={isVerifying}
+              >
+                {isVerifying ? (
+                  <ActivityIndicator color="#FFFFFF" />
+                ) : (
+                  <>
+                    <Feather name="check-circle" size={20} color="#FFFFFF" style={styles.buttonIcon} />
+                    <Text style={styles.verifyButtonText}>I've Verified My Email</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <View style={styles.resendVerificationContainer}>
+                <Text style={styles.resendText}>Didn't receive the email? </Text>
+                <TouchableOpacity onPress={handleResendVerification} disabled={isResendingVerification}>
+                  <Text style={styles.resendLink}>
+                    {isResendingVerification ? 'Sending...' : 'Resend'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
           <Toast config={toastConfig} topOffset={60} />
@@ -425,5 +569,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#DC2626',
     fontWeight: '600',
+  },
+  // Verification modal styles
+  verifyButton: {
+    backgroundColor: '#DC2626',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 12,
+    width: '100%',
+    marginBottom: 20,
+  },
+  verifyButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  resendVerificationContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  resendText: {
+    fontSize: 14,
+    color: '#6B7280',
   },
 });

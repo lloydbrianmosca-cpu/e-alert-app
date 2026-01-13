@@ -18,7 +18,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
 import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, updateProfile, sendEmailVerification } from 'firebase/auth';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '../components';
 
@@ -183,10 +183,18 @@ export default function ResponderSignUpScreen({ navigation }) {
         updatedAt: serverTimestamp(),
       });
 
+      // Send verification email to the responder
+      try {
+        await sendEmailVerification(newUser);
+      } catch (emailError) {
+        console.log('Email verification error:', emailError);
+      }
+
       Toast.show({
         type: 'success',
         text1: 'Responder Registered!',
-        text2: `${firstName} ${lastName} (${RESPONDER_TYPES.find(t => t.id === responderType)?.label})`,
+        text2: `Verification email sent to ${email}`,
+        visibilityTime: 4000,
       });
 
       // Clear form

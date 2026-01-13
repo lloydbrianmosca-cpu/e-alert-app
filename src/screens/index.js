@@ -12,3 +12,9 @@ export { default as UserLogsScreen } from './UserLogsScreen';
 export { default as EmergencyHistoryScreen } from './EmergencyHistoryScreen';
 export { default as RealtimeMonitoringScreen } from './RealtimeMonitoringScreen';
 export { default as ResponderManagementScreen } from './ResponderManagementScreen';
+
+// Responder screens
+export { default as ResponderHomeScreen } from './ResponderHomeScreen';
+export { default as ResponderLocationsScreen } from './ResponderLocationsScreen';
+export { default as ResponderChatsScreen } from './ResponderChatsScreen';
+export { default as ResponderProfileScreen } from './ResponderProfileScreen';

@@ -16,6 +16,11 @@ import {
   EmergencyHistoryScreen,
   RealtimeMonitoringScreen,
   ResponderManagementScreen,
+  // Responder screens
+  ResponderHomeScreen,
+  ResponderLocationsScreen,
+  ResponderChatsScreen,
+  ResponderProfileScreen,
 } from '../screens';
 
 const Stack = createNativeStackNavigator();
@@ -30,20 +35,31 @@ export default function AppNavigator() {
           animation: 'slide_from_right',
         }}
       >
+        {/* Auth Screens */}
         <Stack.Screen name="SignIn" component={SignInScreen} />
         <Stack.Screen name="SignUp" component={SignUpScreen} />
         <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
+        
+        {/* User Screens */}
         <Stack.Screen name="Home" component={HomeScreen} />
+        <Stack.Screen name="Chat" component={ChatScreen} />
+        <Stack.Screen name="Locations" component={LocationsScreen} />
+        <Stack.Screen name="Profile" component={ProfileScreen} />
+        <Stack.Screen name="Hotlines" component={HotlinesScreen} />
+        
+        {/* Admin Screens */}
         <Stack.Screen name="AdminHome" component={AdminHomeScreen} />
         <Stack.Screen name="ResponderSignUp" component={ResponderSignUpScreen} />
         <Stack.Screen name="UserLogs" component={UserLogsScreen} />
         <Stack.Screen name="EmergencyHistory" component={EmergencyHistoryScreen} />
         <Stack.Screen name="RealtimeMonitoring" component={RealtimeMonitoringScreen} />
         <Stack.Screen name="ResponderManagement" component={ResponderManagementScreen} />
-        <Stack.Screen name="Chat" component={ChatScreen} />
-        <Stack.Screen name="Locations" component={LocationsScreen} />
-        <Stack.Screen name="Profile" component={ProfileScreen} />
-        <Stack.Screen name="Hotlines" component={HotlinesScreen} />
+        
+        {/* Responder Screens */}
+        <Stack.Screen name="ResponderHome" component={ResponderHomeScreen} />
+        <Stack.Screen name="ResponderLocations" component={ResponderLocationsScreen} />
+        <Stack.Screen name="ResponderChats" component={ResponderChatsScreen} />
+        <Stack.Screen name="ResponderProfile" component={ResponderProfileScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );
