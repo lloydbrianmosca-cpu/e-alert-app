@@ -55,7 +55,7 @@ const RESPONDER_ICONS = {
 };
 
 export default function ResponderProfileScreen({ navigation }) {
-  const { user, signOut } = useAuth();
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('profile');
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -295,7 +295,7 @@ export default function ResponderProfileScreen({ navigation }) {
         style: 'destructive',
         onPress: async () => {
           try {
-            await signOut();
+            await logout();
             navigation.reset({
               index: 0,
               routes: [{ name: 'SignIn' }],
