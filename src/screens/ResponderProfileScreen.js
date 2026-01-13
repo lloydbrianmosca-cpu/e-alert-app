@@ -61,6 +61,7 @@ export default function ResponderProfileScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
   const [profileData, setProfileData] = useState({
     firstName: '',
     lastName: '',
@@ -68,11 +69,13 @@ export default function ResponderProfileScreen({ navigation }) {
     contactNumber: '',
     responderType: '',
     badgeNumber: '',
-    station: '',
-    address: '',
+    stationName: '',
+    stationAddress: '',
+    hotlineNumber: '',
     region: '',
     province: '',
     city: '',
+    isAvailable: true,
   });
   const [editData, setEditData] = useState({});
   const [showPasswordModal, setShowPasswordModal] = useState(false);
@@ -107,11 +110,13 @@ export default function ResponderProfileScreen({ navigation }) {
           contactNumber: data.contactNumber || '',
           responderType: data.responderType || '',
           badgeNumber: data.badgeNumber || '',
-          station: data.station || '',
-          address: data.address || '',
+          stationName: data.stationName || data.station || '',
+          stationAddress: data.stationAddress || data.address || '',
+          hotlineNumber: data.hotlineNumber || '',
           region: data.region || '',
           province: data.province || '',
           city: data.city || '',
+          isAvailable: data.isAvailable !== undefined ? data.isAvailable : true,
         };
         setProfileData(profile);
         setEditData(profile);
@@ -385,14 +390,81 @@ export default function ResponderProfileScreen({ navigation }) {
           <Text style={styles.profileName}>
             {profileData.firstName} {profileData.lastName}
           </Text>
-          <View style={[styles.typeBadge, { backgroundColor: responderTypeColor }]}>
-            <Text style={styles.typeBadgeText}>
-              {profileData.responderType || 'Responder'}
-            </Text>
-          </View>
+          <Text style={styles.profileSubtitle}>Responder</Text>
           {profileData.badgeNumber && (
             <Text style={styles.badgeNumber}>Badge: {profileData.badgeNumber}</Text>
           )}
+        </View>
+
+        {/* Status & Responder Type Section */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Status & Type</Text>
+
+          {/* Availability Toggle */}
+          <View style={styles.statusRow}>
+            <View style={styles.statusInfo}>
+              <Ionicons 
+                name={profileData.isAvailable ? 'checkmark-circle' : 'close-circle'} 
+                size={24} 
+                color={profileData.isAvailable ? '#10B981' : '#EF4444'} 
+              />
+              <View style={styles.statusTextContainer}>
+                <Text style={styles.statusLabel}>Availability Status</Text>
+                <Text style={[styles.statusValue, { color: profileData.isAvailable ? '#10B981' : '#EF4444' }]}>
+                  {profileData.isAvailable ? 'Available' : 'Unavailable'}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={[styles.statusToggle, { backgroundColor: profileData.isAvailable ? '#10B981' : '#EF4444' }]}
+              onPress={async () => {
+                if (!user?.uid) return;
+                setIsTogglingStatus(true);
+                try {
+                  const newStatus = !profileData.isAvailable;
+                  const docRef = doc(db, 'responders', user.uid);
+                  await updateDoc(docRef, { isAvailable: newStatus, updatedAt: new Date().toISOString() });
+                  setProfileData(prev => ({ ...prev, isAvailable: newStatus }));
+                  setEditData(prev => ({ ...prev, isAvailable: newStatus }));
+                  Toast.show({
+                    type: 'success',
+                    text1: 'Status Updated',
+                    text2: `You are now ${newStatus ? 'Available' : 'Unavailable'}`,
+                  });
+                } catch (error) {
+                  console.log('Error updating status:', error);
+                  Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to update status' });
+                } finally {
+                  setIsTogglingStatus(false);
+                }
+              }}
+              disabled={isTogglingStatus}
+            >
+              {isTogglingStatus ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.statusToggleText}>
+                  {profileData.isAvailable ? 'Go Unavailable' : 'Go Available'}
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          {/* Responder Type (Read-only) */}
+          <View style={styles.responderTypeRow}>
+            <View style={styles.responderTypeInfo}>
+              <View style={[styles.responderTypeIcon, { backgroundColor: `${responderTypeColor}20` }]}>
+                <Ionicons name={getResponderIcon()} size={20} color={responderTypeColor} />
+              </View>
+              <View>
+                <Text style={styles.responderTypeLabel}>Responder Type</Text>
+                <Text style={styles.responderTypeValue}>
+                  {profileData.responderType ? profileData.responderType.charAt(0).toUpperCase() + profileData.responderType.slice(1) : 'Not Set'}
+                </Text>
+              </View>
+            </View>
+            <Text style={styles.responderTypeNote}>Contact admin to change</Text>
+          </View>
         </View>
 
         {/* Personal Information */}
@@ -448,20 +520,9 @@ export default function ResponderProfileScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Station Information */}
+        {/* Station/Unit Information */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Station Information</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Responder Type</Text>
-            <TextInput
-              style={[styles.input, styles.inputDisabled]}
-              value={profileData.responderType}
-              editable={false}
-              placeholder="Responder type"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
+          <Text style={styles.sectionTitle}>Station/Unit Information</Text>
 
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Badge Number</Text>
@@ -476,31 +537,32 @@ export default function ResponderProfileScreen({ navigation }) {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Station</Text>
+            <Text style={styles.inputLabel}>Station/Unit Name</Text>
             <TextInput
               style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={isEditing ? editData.station : profileData.station}
-              onChangeText={(text) => setEditData((prev) => ({ ...prev, station: text }))}
+              value={isEditing ? editData.stationName : profileData.stationName}
+              onChangeText={(text) => setEditData((prev) => ({ ...prev, stationName: text }))}
               editable={isEditing}
-              placeholder="Enter station name"
+              placeholder="e.g., Metro Fire Station 1, City General Hospital"
               placeholderTextColor="#9CA3AF"
             />
           </View>
         </View>
 
-        {/* Address Information */}
+        {/* Station Location */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Address</Text>
+          <Text style={styles.sectionTitle}>Station Location</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Street Address</Text>
+            <Text style={styles.inputLabel}>Station Address</Text>
             <TextInput
               style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={isEditing ? editData.address : profileData.address}
-              onChangeText={(text) => setEditData((prev) => ({ ...prev, address: text }))}
+              value={isEditing ? editData.stationAddress : profileData.stationAddress}
+              onChangeText={(text) => setEditData((prev) => ({ ...prev, stationAddress: text }))}
               editable={isEditing}
-              placeholder="Enter street address"
+              placeholder="Enter station/unit address"
               placeholderTextColor="#9CA3AF"
+              multiline
             />
           </View>
 
@@ -595,10 +657,28 @@ export default function ResponderProfileScreen({ navigation }) {
           )}
         </View>
 
+        {/* Hotline Information */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Hotline Information</Text>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Station Hotline Number</Text>
+            <TextInput
+              style={[styles.input, !isEditing && styles.inputDisabled]}
+              value={isEditing ? editData.hotlineNumber : profileData.hotlineNumber}
+              onChangeText={(text) => setEditData((prev) => ({ ...prev, hotlineNumber: text }))}
+              editable={isEditing}
+              placeholder="Enter station hotline number"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="phone-pad"
+            />
+          </View>
+        </View>
+
         {/* Save Button */}
         {isEditing && (
           <TouchableOpacity
-            style={[styles.saveButton, { backgroundColor: responderColor }]}
+            style={[styles.saveButton, { backgroundColor: PRIMARY_COLOR }]}
             onPress={handleSave}
             disabled={isSaving}
           >
@@ -854,23 +934,84 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  typeBadge: {
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 20,
+  profileSubtitle: {
+    fontSize: 15,
+    color: '#6B7280',
     marginBottom: 8,
-  },
-  typeBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    textTransform: 'capitalize',
   },
   badgeNumber: {
     fontSize: 14,
     color: '#6B7280',
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  statusInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  statusTextContainer: {
+    marginLeft: 12,
+  },
+  statusLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  statusValue: {
+    fontSize: 15,
+    fontWeight: '600',
+  },
+  statusToggle: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    minWidth: 110,
+    alignItems: 'center',
+  },
+  statusToggleText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  responderTypeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  responderTypeInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  responderTypeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  responderTypeLabel: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  responderTypeValue: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#111827',
+  },
+  responderTypeNote: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontStyle: 'italic',
   },
   section: {
     backgroundColor: '#FFFFFF',
