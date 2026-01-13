@@ -21,6 +21,7 @@ import {
   ResponderLocationsScreen,
   ResponderChatsScreen,
   ResponderProfileScreen,
+  ResponderEmergencyHistoryScreen,
 } from '../screens';
 
 const Stack = createNativeStackNavigator();
@@ -60,6 +61,7 @@ export default function AppNavigator() {
         <Stack.Screen name="ResponderLocations" component={ResponderLocationsScreen} />
         <Stack.Screen name="ResponderChats" component={ResponderChatsScreen} />
         <Stack.Screen name="ResponderProfile" component={ResponderProfileScreen} />
+        <Stack.Screen name="ResponderEmergencyHistory" component={ResponderEmergencyHistoryScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

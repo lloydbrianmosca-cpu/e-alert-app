@@ -25,6 +25,7 @@ const { width, height } = Dimensions.get('window');
 const NAV_ITEMS = [
   { id: 'home', name: 'Home', icon: 'home', iconFamily: 'Ionicons' },
   { id: 'locations', name: 'Locations', icon: 'location', iconFamily: 'Ionicons' },
+  { id: 'history', name: 'History', icon: 'time', iconFamily: 'Ionicons' },
   { id: 'chat', name: 'Chat', icon: 'chatbubbles', iconFamily: 'Ionicons' },
   { id: 'profile', name: 'Profile', icon: 'person', iconFamily: 'Ionicons' },
 ];
@@ -394,6 +395,9 @@ export default function ResponderLocationsScreen({ navigation, route }) {
         navigation.navigate('ResponderHome');
         break;
       case 'locations':
+        break;
+      case 'history':
+        navigation.navigate('ResponderEmergencyHistory');
         break;
       case 'chat':
         navigation.navigate('ResponderChats');

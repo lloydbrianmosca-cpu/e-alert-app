@@ -26,6 +26,7 @@ import { toastConfig } from '../components';
 const NAV_ITEMS = [
   { id: 'home', name: 'Home', icon: 'home', iconFamily: 'Ionicons' },
   { id: 'locations', name: 'Locations', icon: 'location', iconFamily: 'Ionicons' },
+  { id: 'history', name: 'History', icon: 'time', iconFamily: 'Ionicons' },
   { id: 'chat', name: 'Chat', icon: 'chatbubbles', iconFamily: 'Ionicons' },
   { id: 'profile', name: 'Profile', icon: 'person', iconFamily: 'Ionicons' },
 ];
@@ -274,6 +275,9 @@ export default function ResponderChatsScreen({ navigation, route }) {
         break;
       case 'locations':
         navigation.navigate('ResponderLocations');
+        break;
+      case 'history':
+        navigation.navigate('ResponderEmergencyHistory');
         break;
       case 'chat':
         break;
