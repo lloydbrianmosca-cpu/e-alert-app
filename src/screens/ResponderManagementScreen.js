@@ -12,12 +12,15 @@ import {
   ActivityIndicator,
   RefreshControl,
   Switch,
+  Modal,
+  Alert,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
-import { collection, getDocs, query, orderBy, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '../components';
 
@@ -43,6 +46,20 @@ export default function ResponderManagementScreen({ navigation }) {
   const [selectedFilter, setSelectedFilter] = useState('all');
   const drawerAnim = useRef(new Animated.Value(-DRAWER_WIDTH)).current;
   const { user, logout } = useAuth();
+
+  // Edit modal states
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingResponder, setEditingResponder] = useState(null);
+  const [editData, setEditData] = useState({
+    displayName: '',
+    email: '',
+    contactNumber: '',
+    responderType: '',
+    stationName: '',
+    hotlineNumber: '',
+  });
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     fetchResponders();
@@ -146,6 +163,115 @@ export default function ResponderManagementScreen({ navigation }) {
         text2: 'Could not update responder status',
       });
     }
+  };
+
+  // Open edit modal
+  const handleEditResponder = (responder) => {
+    setEditingResponder(responder);
+    setEditData({
+      displayName: responder.displayName || '',
+      email: responder.email || '',
+      contactNumber: responder.contactNumber || '',
+      responderType: responder.responderType || '',
+      stationName: responder.stationName || '',
+      hotlineNumber: responder.hotlineNumber || '',
+    });
+    setShowEditModal(true);
+  };
+
+  // Save edited responder
+  const handleSaveEdit = async () => {
+    if (!editingResponder?.id) return;
+
+    // Validate required fields
+    if (!editData.displayName?.trim() || !editData.email?.trim()) {
+      Toast.show({
+        type: 'error',
+        text1: 'Required Fields',
+        text2: 'Name and Email are required',
+      });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const responderRef = doc(db, 'responders', editingResponder.id);
+      await updateDoc(responderRef, {
+        displayName: editData.displayName.trim(),
+        email: editData.email.trim(),
+        contactNumber: editData.contactNumber?.trim() || '',
+        responderType: editData.responderType || '',
+        stationName: editData.stationName?.trim() || '',
+        hotlineNumber: editData.hotlineNumber?.trim() || '',
+        updatedAt: new Date().toISOString(),
+      });
+
+      // Update local state
+      setResponders(prev =>
+        prev.map(r =>
+          r.id === editingResponder.id
+            ? { ...r, ...editData, updatedAt: new Date().toISOString() }
+            : r
+        )
+      );
+
+      setShowEditModal(false);
+      setEditingResponder(null);
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Responder updated successfully',
+      });
+    } catch (error) {
+      console.log('Error updating responder:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Update Failed',
+        text2: 'Could not update responder',
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Delete responder
+  const handleDeleteResponder = (responder) => {
+    Alert.alert(
+      'Delete Responder',
+      `Are you sure you want to delete ${responder.displayName || 'this responder'}? This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            setIsDeleting(true);
+            try {
+              const responderRef = doc(db, 'responders', responder.id);
+              await deleteDoc(responderRef);
+
+              // Update local state
+              setResponders(prev => prev.filter(r => r.id !== responder.id));
+
+              Toast.show({
+                type: 'success',
+                text1: 'Deleted',
+                text2: 'Responder has been removed',
+              });
+            } catch (error) {
+              console.log('Error deleting responder:', error);
+              Toast.show({
+                type: 'error',
+                text1: 'Delete Failed',
+                text2: 'Could not delete responder',
+              });
+            } finally {
+              setIsDeleting(false);
+            }
+          },
+        },
+      ]
+    );
   };
 
   const getResponderTypeInfo = (type) => {
@@ -387,12 +513,152 @@ export default function ResponderManagementScreen({ navigation }) {
                       thumbColor={responder.isAvailable ? '#059669' : '#9CA3AF'}
                     />
                   </View>
+
+                  {/* Action Buttons */}
+                  <View style={styles.actionRow}>
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() => handleEditResponder(responder)}
+                    >
+                      <Ionicons name="pencil" size={18} color="#3B82F6" />
+                      <Text style={styles.editButtonText}>Edit</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => handleDeleteResponder(responder)}
+                      disabled={isDeleting}
+                    >
+                      <Ionicons name="trash" size={18} color="#DC2626" />
+                      <Text style={styles.deleteButtonText}>Delete</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               );
             })}
           </View>
         )}
       </ScrollView>
+
+      {/* Edit Modal */}
+      <Modal visible={showEditModal} transparent animationType="fade" statusBarTranslucent>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Edit Responder</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowEditModal(false);
+                  setEditingResponder(null);
+                }}
+              >
+                <Ionicons name="close" size={24} color="#6B7280" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={false}>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Display Name *</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={editData.displayName}
+                  onChangeText={(text) => setEditData(prev => ({ ...prev, displayName: text }))}
+                  placeholder="Enter name"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email *</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={editData.email}
+                  onChangeText={(text) => setEditData(prev => ({ ...prev, email: text }))}
+                  placeholder="Enter email"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Contact Number</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={editData.contactNumber}
+                  onChangeText={(text) => setEditData(prev => ({ ...prev, contactNumber: text }))}
+                  placeholder="Enter contact number"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="phone-pad"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Responder Type</Text>
+                <View style={styles.pickerContainer}>
+                  <Picker
+                    selectedValue={editData.responderType}
+                    onValueChange={(value) => setEditData(prev => ({ ...prev, responderType: value }))}
+                    style={styles.picker}
+                  >
+                    <Picker.Item label="Select Type" value="" />
+                    <Picker.Item label="Police" value="police" />
+                    <Picker.Item label="Fireman" value="fireman" />
+                    <Picker.Item label="Medical" value="medical" />
+                    <Picker.Item label="Flood Response" value="flood" />
+                  </Picker>
+                </View>
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Station Name</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={editData.stationName}
+                  onChangeText={(text) => setEditData(prev => ({ ...prev, stationName: text }))}
+                  placeholder="Enter station name"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Hotline Number</Text>
+                <TextInput
+                  style={styles.modalInput}
+                  value={editData.hotlineNumber}
+                  onChangeText={(text) => setEditData(prev => ({ ...prev, hotlineNumber: text }))}
+                  placeholder="Enter hotline number"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </ScrollView>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => {
+                  setShowEditModal(false);
+                  setEditingResponder(null);
+                }}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveButton}
+                onPress={handleSaveEdit}
+                disabled={isSaving}
+              >
+                {isSaving ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <Toast config={toastConfig} />
     </View>
   );
@@ -715,5 +981,141 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#1F2937',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#EFF6FF',
+    gap: 6,
+  },
+  editButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#3B82F6',
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#FEF2F2',
+    gap: 6,
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#DC2626',
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    width: '100%',
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1F2937',
+  },
+  modalBody: {
+    padding: 20,
+    maxHeight: 400,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  inputLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#374151',
+    marginBottom: 8,
+  },
+  modalInput: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    fontSize: 16,
+    color: '#1F2937',
+  },
+  pickerContainer: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    overflow: 'hidden',
+  },
+  picker: {
+    height: 50,
+  },
+  modalFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  cancelButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#F3F4F6',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  saveButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: '#DC2626',
+    minWidth: 120,
+    alignItems: 'center',
+  },
+  saveButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
