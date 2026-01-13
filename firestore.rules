@@ -7,6 +7,12 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
     }
     
+    // Helper function to check if user is a responder
+    function isResponder() {
+      return request.auth != null && 
+        exists(/databases/$(database)/documents/responders/$(request.auth.uid));
+    }
+    
     // Users collection - users can read/write their own data, admins can read/write all
     match /users/{userId} {
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
@@ -14,13 +20,29 @@ service cloud.firestore {
       allow create: if request.auth != null && isAdmin();
     }
     
-    // Active Emergencies collection - users can read/write their own emergency, admins can read all
-    match /activeEmergencies/{odcId} {
-      allow read: if request.auth != null && (request.auth.uid == odcId || isAdmin());
-      allow write: if request.auth != null && (request.auth.uid == odcId || isAdmin());
+    // Active Emergencies collection
+    match /activeEmergencies/{emergencyId} {
+      allow read: if request.auth != null && (
+        request.auth.uid == emergencyId || 
+        isAdmin() || 
+        (isResponder() && resource.data.assignedResponder == request.auth.uid)
+      );
+      allow write: if request.auth != null && (
+        request.auth.uid == emergencyId || 
+        isAdmin() ||
+        (isResponder() && resource.data.assignedResponder == request.auth.uid)
+      );
+      allow create: if request.auth != null;
     }
     
-    // Responders collection - responders can read/write their own data, admins can read/write all
+    // Emergency History collection
+    match /emergencyHistory/{historyId} {
+      allow read: if request.auth != null && (isAdmin() || isResponder());
+      allow write: if request.auth != null && isAdmin();
+      allow create: if request.auth != null;
+    }
+    
+    // Responders collection
     match /responders/{responderId} {
       allow read: if request.auth != null;
       allow write: if request.auth != null && (request.auth.uid == responderId || isAdmin());
@@ -29,29 +51,28 @@ service cloud.firestore {
     
     // Conversations collection
     match /conversations/{conversationId} {
-      // Users can read conversations they're part of, responders can read assigned conversations
       allow read: if request.auth != null && (
-        conversationId.matches(request.auth.uid + '_.*') ||
-        resource.data.participantId == request.auth.uid ||
-        resource.data.responderId == request.auth.uid
+        resource.data.userId == request.auth.uid ||
+        resource.data.responderId == request.auth.uid ||
+        isAdmin()
       );
       
-      // Users can create conversations
-      allow create: if request.auth != null && 
-        conversationId.matches(request.auth.uid + '_.*') &&
-        request.resource.data.participantId == request.auth.uid;
+      allow list: if request.auth != null && isResponder();
       
-      // Both participants and responders can update
+      allow create: if request.auth != null;
+      
       allow update: if request.auth != null && (
-        conversationId.matches(request.auth.uid + '_.*') ||
-        resource.data.responderId == request.auth.uid
+        resource.data.userId == request.auth.uid ||
+        resource.data.responderId == request.auth.uid ||
+        isAdmin()
       );
       
-      // Messages subcollection - participants and responders can read/write
+      // Messages subcollection
       match /messages/{messageId} {
         allow read, write: if request.auth != null && (
-          conversationId.matches(request.auth.uid + '_.*') ||
-          get(/databases/$(database)/documents/conversations/$(conversationId)).data.responderId == request.auth.uid
+          get(/databases/$(database)/documents/conversations/$(conversationId)).data.userId == request.auth.uid ||
+          get(/databases/$(database)/documents/conversations/$(conversationId)).data.responderId == request.auth.uid ||
+          isAdmin()
         );
       }
     }
