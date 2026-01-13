@@ -425,13 +425,10 @@ export default function ResponderLocationsScreen({ navigation, route }) {
       {/* Header - Unified with user screens */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <TouchableOpacity
-            onPress={() => navigation.navigate('ResponderHome')}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Location Tracking</Text>
+          <View style={styles.headerLeft}>
+            <Ionicons name="location" size={24} color="#FFFFFF" />
+            <Text style={styles.headerTitle}>Location Tracking</Text>
+          </View>
           <TouchableOpacity onPress={fitAllMarkers} style={styles.fitButton}>
             <MaterialIcons name="zoom-out-map" size={24} color="#FFFFFF" />
           </TouchableOpacity>
@@ -755,8 +752,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  backButton: {
-    padding: 4,
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   headerTitle: {
     fontSize: 18,

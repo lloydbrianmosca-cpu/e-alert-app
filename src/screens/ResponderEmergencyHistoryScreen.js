@@ -203,11 +203,10 @@ export default function ResponderEmergencyHistoryScreen({ navigation }) {
 
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={24} color="#FFFFFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Emergency History</Text>
-        <View style={styles.headerRight} />
+        <View style={styles.headerContent}>
+          <Ionicons name="time" size={24} color="#FFFFFF" />
+          <Text style={styles.headerTitle}>Emergency History</Text>
+        </View>
       </View>
 
       {/* Search Bar */}
@@ -417,16 +416,15 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     backgroundColor: PRIMARY_COLOR,
   },
-  backButton: {
-    padding: 8,
+  headerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
   },
   headerTitle: {
     fontSize: 20,
     fontWeight: '700',
     color: '#FFFFFF',
-  },
-  headerRight: {
-    width: 44,
   },
   searchContainer: {
     padding: 16,
