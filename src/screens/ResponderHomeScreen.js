@@ -55,11 +55,19 @@ export default function ResponderHomeScreen({ navigation }) {
   const [responderData, setResponderData] = useState(null);
   const [isAvailable, setIsAvailable] = useState(false);
   const [assignedEmergencies, setAssignedEmergencies] = useState([]);
+  const [isProfileComplete, setIsProfileComplete] = useState(true);
   const [stats, setStats] = useState({
     totalResponded: 0,
     pendingAssignments: 0,
     completedToday: 0,
   });
+
+  // Check if profile is complete
+  const checkProfileComplete = (data) => {
+    if (!data) return false;
+    const requiredFields = ['firstName', 'lastName', 'contactNumber', 'stationName', 'hotlineNumber'];
+    return requiredFields.every(field => data[field] && data[field].trim() !== '');
+  };
 
   // Fetch responder profile data
   const fetchResponderData = async () => {
@@ -73,6 +81,10 @@ export default function ResponderHomeScreen({ navigation }) {
         const data = docSnap.data();
         setResponderData(data);
         setIsAvailable(data.status === 'available');
+        
+        // Check profile completeness
+        const profileComplete = checkProfileComplete(data);
+        setIsProfileComplete(profileComplete);
       }
     } catch (error) {
       console.log('Error fetching responder data:', error);
@@ -415,6 +427,29 @@ export default function ResponderHomeScreen({ navigation }) {
         ))}
       </View>
 
+      {/* Profile Incomplete Overlay */}
+      {!isProfileComplete && !isLoading && (
+        <View style={styles.overlayContainer}>
+          <View style={styles.overlayContent}>
+            <View style={styles.overlayIconContainer}>
+              <Ionicons name="person-circle" size={80} color={PRIMARY_COLOR} />
+            </View>
+            <Text style={styles.overlayTitle}>Complete Your Profile</Text>
+            <Text style={styles.overlaySubtitle}>
+              Please complete your profile information (name, contact number, station name, and hotline) before accessing the app.
+            </Text>
+            <TouchableOpacity
+              style={styles.overlayButton}
+              onPress={() => navigation.navigate('ResponderProfile')}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="person" size={20} color="#FFFFFF" />
+              <Text style={styles.overlayButtonText}>Go to Profile</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
       <Toast config={toastConfig} />
     </View>
   );
@@ -742,5 +777,69 @@ const styles = StyleSheet.create({
   navLabelActive: {
     color: '#DC2626',
     fontWeight: '600',
+  },
+  // Profile Incomplete Overlay Styles
+  overlayContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 30,
+    zIndex: 1000,
+  },
+  overlayContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 24,
+    padding: 30,
+    alignItems: 'center',
+    width: '100%',
+    maxWidth: 340,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  overlayIconContainer: {
+    marginBottom: 20,
+  },
+  overlayTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1F2937',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  overlaySubtitle: {
+    fontSize: 15,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  overlayButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DC2626',
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 14,
+    gap: 10,
+    width: '100%',
+    shadowColor: '#DC2626',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  overlayButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
 });
