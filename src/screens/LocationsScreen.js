@@ -13,10 +13,10 @@ import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { useEmergency } from '../context/EmergencyContext';
+import { useEmergency, calculateDistance, calculateETA, formatDistance } from '../context/EmergencyContext';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 
 const { width } = Dimensions.get('window');
 
@@ -55,6 +55,10 @@ export default function LocationsScreen({ navigation, route }) {
   const [showProfileOverlay, setShowProfileOverlay] = useState(false);
   const [isCheckingProfile, setIsCheckingProfile] = useState(true);
   const { user } = useAuth();
+  
+  // Real-time ETA and distance
+  const [realtimeETA, setRealtimeETA] = useState(null);
+  const [realtimeDistance, setRealtimeDistance] = useState(null);
 
   // Required profile fields
   const requiredFields = [
@@ -164,13 +168,17 @@ export default function LocationsScreen({ navigation, route }) {
     })();
   }, [emergencyUserLocation]);
 
-  // Update responder location from activeResponder
+  // Update responder location from activeResponder and initialize ETA/distance
   useEffect(() => {
     if (activeResponder?.location) {
       setResponderLocation({
         latitude: activeResponder.location.latitude,
         longitude: activeResponder.location.longitude,
       });
+      
+      // Initialize real-time values from activeResponder
+      if (activeResponder.eta) setRealtimeETA(activeResponder.eta);
+      if (activeResponder.distance) setRealtimeDistance(activeResponder.distance);
     } else if (activeResponder && userLocation) {
       // If no location data, estimate based on distance
       // Place responder marker at an offset from user
@@ -181,27 +189,62 @@ export default function LocationsScreen({ navigation, route }) {
         latitude: userLocation.latitude + latOffset,
         longitude: userLocation.longitude + lonOffset / 2,
       });
+      
+      // Initialize from stored values
+      if (activeResponder.eta) setRealtimeETA(activeResponder.eta);
+      if (activeResponder.distance) setRealtimeDistance(activeResponder.distance);
     }
   }, [activeResponder, userLocation]);
 
-  // Listen for responder location updates in real-time
+  // Listen for responder location updates in real-time and calculate ETA/distance
   useEffect(() => {
     if (!activeResponder?.id) return;
 
-    const unsubscribe = onSnapshot(doc(db, 'responders', activeResponder.id), (docSnap) => {
+    const unsubscribe = onSnapshot(doc(db, 'responders', activeResponder.id), async (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data();
         if (data.location) {
-          setResponderLocation({
+          const newResponderLocation = {
             latitude: data.location.latitude,
             longitude: data.location.longitude,
-          });
+          };
+          setResponderLocation(newResponderLocation);
+          
+          // Calculate real-time distance and ETA if we have user location
+          if (userLocation) {
+            const distanceKm = calculateDistance(
+              userLocation.latitude,
+              userLocation.longitude,
+              newResponderLocation.latitude,
+              newResponderLocation.longitude
+            );
+            setRealtimeDistance(formatDistance(distanceKm));
+            setRealtimeETA(calculateETA(distanceKm));
+            
+            // Update emergency document with real-time distance (only if emergency is active)
+            if (user?.uid && isEmergencyActive) {
+              try {
+                // Check if emergency document exists first
+                const emergencyRef = doc(db, 'activeEmergencies', user.uid);
+                const emergencySnap = await getDoc(emergencyRef);
+                if (emergencySnap.exists()) {
+                  await updateDoc(emergencyRef, {
+                    responderDistance: distanceKm,
+                    responderLocation: newResponderLocation,
+                    lastUpdated: new Date().toISOString(),
+                  });
+                }
+              } catch (error) {
+                console.log('Error updating emergency distance:', error);
+              }
+            }
+          }
         }
       }
     });
 
     return () => unsubscribe();
-  }, [activeResponder?.id]);
+  }, [activeResponder?.id, userLocation, user?.uid, isEmergencyActive]);
 
   // Center map on user location
   const centerOnUser = () => {
@@ -233,8 +276,12 @@ export default function LocationsScreen({ navigation, route }) {
     }
   }, [loading, isEmergencyActive, responderLocation]);
 
-  // Get responder display info
-  const responder = activeResponder || {
+  // Get responder display info - use real-time ETA/distance when available
+  const responder = activeResponder ? {
+    ...activeResponder,
+    eta: realtimeETA || activeResponder.eta,
+    distance: realtimeDistance || activeResponder.distance,
+  } : {
     name: 'Searching...',
     building: 'Finding nearest responder',
     hotline: 'N/A',

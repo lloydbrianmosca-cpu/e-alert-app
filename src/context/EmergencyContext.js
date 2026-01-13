@@ -306,6 +306,19 @@ export function EmergencyProvider({ children }) {
     setActiveEmergencyType(type);
 
     try {
+      // First, ensure user exists in users collection
+      const userRef = doc(db, 'users', user.uid);
+      const userDoc = await getDoc(userRef);
+      if (!userDoc.exists()) {
+        // Create user document if it doesn't exist
+        await setDoc(userRef, {
+          email: user.email || '',
+          displayName: user.displayName || '',
+          createdAt: new Date().toISOString(),
+        }, { merge: true });
+        console.log('Created user document');
+      }
+
       // Get user's current location
       const coords = await getUserLocation();
       
@@ -316,7 +329,12 @@ export function EmergencyProvider({ children }) {
       }
 
       // Find nearest available responder
-      const nearestResponder = await findNearestResponder(type, coords);
+      let nearestResponder = null;
+      try {
+        nearestResponder = await findNearestResponder(type, coords);
+      } catch (responderError) {
+        console.log('Error finding responder (continuing without):', responderError);
+      }
       
       let responderData = null;
       let assignedResponderId = null;
@@ -325,18 +343,11 @@ export function EmergencyProvider({ children }) {
         responderData = formatResponderData(nearestResponder, type, nearestResponder.distance);
         assignedResponderId = nearestResponder.id;
         setActiveResponder(responderData);
-
-        // Mark responder as busy (unavailable)
-        await updateDoc(doc(db, 'responders', nearestResponder.id), {
-          isAvailable: false,
-          currentEmergencyId: user.uid,
-          updatedAt: new Date().toISOString(),
-        });
       } else {
         console.log('No available responders found');
       }
 
-      // Save emergency to Firestore
+      // Save emergency to Firestore FIRST
       const emergencyRef = doc(db, 'activeEmergencies', user.uid);
       const dataToSave = {
         emergencyType: type,
@@ -353,6 +364,21 @@ export function EmergencyProvider({ children }) {
 
       await setDoc(emergencyRef, dataToSave);
       console.log('Emergency saved to database successfully');
+
+      // THEN mark responder as busy (after emergency is saved)
+      if (nearestResponder) {
+        try {
+          await updateDoc(doc(db, 'responders', nearestResponder.id), {
+            isAvailable: false,
+            currentEmergencyId: user.uid,
+            updatedAt: new Date().toISOString(),
+          });
+          console.log('Responder marked as busy');
+        } catch (responderUpdateError) {
+          console.log('Error updating responder status:', responderUpdateError);
+          // Don't fail the whole operation if this fails
+        }
+      }
 
       setIsSearchingResponder(false);
       return { 
@@ -424,5 +450,8 @@ export function EmergencyProvider({ children }) {
 export function useEmergency() {
   return useContext(EmergencyContext);
 }
+
+// Export utility functions for use in other components
+export { calculateDistance, calculateETA, formatDistance };
 
 export default EmergencyContext;
