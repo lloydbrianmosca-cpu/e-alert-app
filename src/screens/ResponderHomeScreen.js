@@ -163,9 +163,19 @@ export default function ResponderHomeScreen({ navigation }) {
         ...doc.data(),
       }));
       setEmergencyHistory(history);
+      
+      // Calculate completed today (resets at 12AM)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const completedTodayCount = history.filter((emergency) => {
+        const completedAt = emergency.completedAt?.toDate?.() || new Date(emergency.completedAt);
+        return completedAt >= today;
+      }).length;
+      
       setStats((prev) => ({
         ...prev,
         totalResponded: history.length,
+        completedToday: completedTodayCount,
       }));
     }, (error) => {
       // Ignore permission errors on sign out and index errors
@@ -505,15 +515,15 @@ export default function ResponderHomeScreen({ navigation }) {
 
         {/* Stats Cards */}
         <View style={styles.statsContainer}>
-          <View style={[styles.statCard, { borderLeftColor: '#10B981' }]}>
+          <View style={styles.statCard}>
             <MaterialCommunityIcons name="check-circle" size={32} color="#10B981" />
             <Text style={styles.statNumber}>{stats.completedToday}</Text>
             <Text style={styles.statLabel}>Completed Today</Text>
           </View>
-          <View style={[styles.statCard, { borderLeftColor: '#F59E0B' }]}>
-            <MaterialCommunityIcons name="clock-alert" size={32} color="#F59E0B" />
-            <Text style={styles.statNumber}>{stats.pendingAssignments}</Text>
-            <Text style={styles.statLabel}>Active Assignments</Text>
+          <View style={styles.statCard}>
+            <MaterialCommunityIcons name="history" size={32} color="#3B82F6" />
+            <Text style={styles.statNumber}>{stats.totalResponded}</Text>
+            <Text style={styles.statLabel}>Total History</Text>
           </View>
         </View>
 
@@ -798,15 +808,14 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     alignItems: 'center',
-    borderLeftWidth: 4,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   statNumber: {
     fontSize: 28,
@@ -920,16 +929,14 @@ const styles = StyleSheet.create({
   },
   historyCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 2,
-    borderLeftWidth: 4,
-    borderLeftColor: '#10B981',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   completedBadge: {
     flexDirection: 'row',
