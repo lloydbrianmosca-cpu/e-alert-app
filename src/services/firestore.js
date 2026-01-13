@@ -152,6 +152,14 @@ export const subscribeToMessages = (conversationId, callback) => {
       timestamp: doc.data().timestamp?.toDate() || new Date(),
     }));
     callback(messages);
+  }, (error) => {
+    // Ignore permission errors on sign out
+    if (error.code === 'permission-denied') {
+      callback([]);
+      return;
+    }
+    console.error('Error subscribing to messages:', error);
+    callback([]);
   });
 };
 
@@ -175,6 +183,11 @@ export const subscribeToConversations = (userId, callback) => {
     }));
     callback(conversations);
   }, (error) => {
+    // Ignore permission errors on sign out
+    if (error.code === 'permission-denied') {
+      callback([]);
+      return;
+    }
     console.error('Error subscribing to conversations:', error);
     callback([]);
   });
@@ -200,6 +213,11 @@ export const subscribeToResponderConversations = (responderId, callback) => {
     }));
     callback(conversations);
   }, (error) => {
+    // Ignore permission errors on sign out
+    if (error.code === 'permission-denied') {
+      callback([]);
+      return;
+    }
     console.error('Error subscribing to responder conversations:', error);
     callback([]);
   });

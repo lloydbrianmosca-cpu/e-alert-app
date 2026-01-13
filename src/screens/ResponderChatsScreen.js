@@ -103,7 +103,13 @@ export default function ResponderChatsScreen({ navigation, route }) {
 
   // Listen for conversations
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!user?.uid) {
+      setConversations([]);
+      setSelectedConversation(null);
+      setMessages([]);
+      setIsLoading(false);
+      return;
+    }
 
     const q = query(
       collection(db, 'conversations'),
@@ -152,16 +158,25 @@ export default function ResponderChatsScreen({ navigation, route }) {
         }
       }
     }, (error) => {
+      // Ignore permission errors on sign out
+      if (error.code === 'permission-denied') {
+        return;
+      }
       console.log('Error subscribing to conversations:', error);
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [user, route?.params?.emergencyId]);
+    return () => {
+      unsubscribe();
+    };
+  }, [user?.uid, route?.params?.emergencyId]);
 
   // Listen for messages in selected conversation
   useEffect(() => {
-    if (!selectedConversation?.id) return;
+    if (!selectedConversation?.id || !user?.uid) {
+      setMessages([]);
+      return;
+    }
 
     const q = query(
       collection(db, 'conversations', selectedConversation.id, 'messages'),
@@ -182,10 +197,18 @@ export default function ResponderChatsScreen({ navigation, route }) {
 
       // Mark messages as read
       markMessagesAsRead();
+    }, (error) => {
+      // Ignore permission errors on sign out
+      if (error.code === 'permission-denied') {
+        return;
+      }
+      console.log('Error listening to messages:', error);
     });
 
-    return () => unsubscribe();
-  }, [selectedConversation]);
+    return () => {
+      unsubscribe();
+    };
+  }, [selectedConversation?.id, user?.uid]);
 
   useEffect(() => {
     fetchResponderData();

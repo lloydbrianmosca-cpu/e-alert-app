@@ -105,7 +105,10 @@ export default function ResponderHomeScreen({ navigation }) {
 
   // Listen for assigned emergencies
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!user?.uid) {
+      setAssignedEmergencies([]);
+      return;
+    }
 
     const q = query(
       collection(db, 'activeEmergencies'),
@@ -125,11 +128,17 @@ export default function ResponderHomeScreen({ navigation }) {
         pendingAssignments: emergencies.length,
       }));
     }, (error) => {
+      // Ignore permission errors on sign out
+      if (error.code === 'permission-denied') {
+        return;
+      }
       console.log('Error listening to emergencies:', error);
     });
 
-    return () => unsubscribe();
-  }, [user]);
+    return () => {
+      unsubscribe();
+    };
+  }, [user?.uid]);
 
   useEffect(() => {
     fetchResponderData();
