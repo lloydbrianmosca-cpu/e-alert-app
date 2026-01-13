@@ -67,7 +67,6 @@ export default function ResponderProfileScreen({ navigation }) {
     email: '',
     contactNumber: '',
     responderType: '',
-    badgeNumber: '',
     stationName: '',
     stationAddress: '',
     hotlineNumber: '',
@@ -108,7 +107,6 @@ export default function ResponderProfileScreen({ navigation }) {
           email: data.email || user?.email || '',
           contactNumber: data.contactNumber || '',
           responderType: data.responderType || '',
-          badgeNumber: data.badgeNumber || '',
           stationName: data.stationName || data.station || '',
           stationAddress: data.stationAddress || data.address || '',
           hotlineNumber: data.hotlineNumber || '',
@@ -387,9 +385,6 @@ export default function ResponderProfileScreen({ navigation }) {
             {profileData.firstName} {profileData.lastName}
           </Text>
           <Text style={styles.profileSubtitle}>Responder</Text>
-          {profileData.badgeNumber && (
-            <Text style={styles.badgeNumber}>Badge: {profileData.badgeNumber}</Text>
-          )}
         </View>
 
         {/* Status & Responder Type Section */}
@@ -521,18 +516,6 @@ export default function ResponderProfileScreen({ navigation }) {
           <Text style={styles.sectionTitle}>Station/Unit Information</Text>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Badge Number</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={isEditing ? editData.badgeNumber : profileData.badgeNumber}
-              onChangeText={(text) => setEditData((prev) => ({ ...prev, badgeNumber: text }))}
-              editable={isEditing}
-              placeholder="Enter badge number"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Station/Unit Name</Text>
             <TextInput
               style={[styles.input, !isEditing && styles.inputDisabled]}
@@ -541,6 +524,19 @@ export default function ResponderProfileScreen({ navigation }) {
               editable={isEditing}
               placeholder="e.g., Metro Fire Station 1, City General Hospital"
               placeholderTextColor="#9CA3AF"
+            />
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.inputLabel}>Station Hotline Number</Text>
+            <TextInput
+              style={[styles.input, !isEditing && styles.inputDisabled]}
+              value={isEditing ? editData.hotlineNumber : profileData.hotlineNumber}
+              onChangeText={(text) => setEditData((prev) => ({ ...prev, hotlineNumber: text }))}
+              editable={isEditing}
+              placeholder="Enter station hotline number"
+              placeholderTextColor="#9CA3AF"
+              keyboardType="phone-pad"
             />
           </View>
         </View>
@@ -653,24 +649,6 @@ export default function ResponderProfileScreen({ navigation }) {
           )}
         </View>
 
-        {/* Hotline Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Hotline Information</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Station Hotline Number</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={isEditing ? editData.hotlineNumber : profileData.hotlineNumber}
-              onChangeText={(text) => setEditData((prev) => ({ ...prev, hotlineNumber: text }))}
-              editable={isEditing}
-              placeholder="Enter station hotline number"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="phone-pad"
-            />
-          </View>
-        </View>
-
         {/* Save Button */}
         {isEditing && (
           <TouchableOpacity
@@ -708,7 +686,7 @@ export default function ResponderProfileScreen({ navigation }) {
           </View>
         )}
 
-        <View style={{ height: 100 }} />
+        <View style={{ height: 20 }} />
       </ScrollView>
 
       {/* Password Change Modal */}
