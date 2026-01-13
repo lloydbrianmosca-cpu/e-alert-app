@@ -294,9 +294,9 @@ export default function EmergencyHistoryScreen({ navigation }) {
           </View>
         ) : (
           <View style={styles.emergenciesContainer}>
-            {filteredEmergencies.map((emergency) => (
+            {filteredEmergencies.map((emergency, index) => (
               <View 
-                key={emergency.id} 
+                key={`history-${emergency.id}-${index}`} 
                 style={[
                   styles.emergencyCard,
                   { borderLeftColor: getEmergencyColor(emergency.emergencyType) }

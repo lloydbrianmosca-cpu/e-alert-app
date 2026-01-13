@@ -266,11 +266,11 @@ export default function RealtimeMonitoringScreen({ navigation }) {
           </View>
         ) : (
           <View style={styles.emergenciesContainer}>
-            {activeEmergencies.map((emergency) => {
+            {activeEmergencies.map((emergency, index) => {
               const statusInfo = getStatusInfo(emergency.status);
               return (
                 <View 
-                  key={emergency.id} 
+                  key={`emergency-${emergency.id}-${index}`} 
                   style={[
                     styles.emergencyCard,
                     { borderLeftColor: getEmergencyColor(emergency.emergencyType) }

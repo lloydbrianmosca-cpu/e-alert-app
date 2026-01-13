@@ -288,9 +288,9 @@ export default function AdminHomeScreen({ navigation }) {
             </View>
           ) : (
             <View style={styles.emergenciesContainer}>
-              {activeEmergencies.slice(0, 3).map((emergency) => (
+              {activeEmergencies.slice(0, 3).map((emergency, index) => (
                 <View 
-                  key={emergency.id} 
+                  key={`emergency-${emergency.id}-${index}`} 
                   style={[
                     styles.emergencyCard,
                     { borderLeftColor: getEmergencyColor(emergency.emergencyType) }

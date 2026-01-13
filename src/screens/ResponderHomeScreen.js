@@ -534,9 +534,9 @@ export default function ResponderHomeScreen({ navigation }) {
               </Text>
             </View>
           ) : (
-            emergencyHistory.slice(0, 3).map((emergency) => (
+            emergencyHistory.slice(0, 3).map((emergency, index) => (
               <View
-                key={emergency.id}
+                key={`history-${emergency.id}-${index}`}
                 style={styles.historyCard}
               >
                 <View style={styles.emergencyHeader}>
