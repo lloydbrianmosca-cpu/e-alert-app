@@ -20,11 +20,10 @@ export default function FormInput({
   return (
     <View style={styles.inputContainer}>
       <View style={styles.inputWrapper}>
-        <IconComponent name={icon} size={20} color="#6B7280" style={styles.inputIcon} />
         <TextInput
           style={styles.input}
           placeholder={placeholder}
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor="#86868B"
           value={value}
           onChangeText={onChangeText}
           secureTextEntry={secureTextEntry}
@@ -33,7 +32,7 @@ export default function FormInput({
         />
         {showPasswordToggle && (
           <TouchableOpacity onPress={onTogglePassword} style={styles.eyeButton}>
-            <Feather name={isPasswordVisible ? 'eye-off' : 'eye'} size={20} color="#6B7280" />
+            <Feather name={isPasswordVisible ? 'eye-off' : 'eye'} size={18} color="#86868B" />
           </TouchableOpacity>
         )}
       </View>
@@ -48,22 +47,18 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 16,
-    borderWidth: 1.5,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#F5F5F7',
+    borderRadius: 12,
     paddingHorizontal: 16,
-  },
-  inputIcon: {
-    marginRight: 12,
+    height: 50,
   },
   input: {
     flex: 1,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: '#1F2937',
+    fontSize: 17,
+    color: '#1D1D1F',
+    letterSpacing: -0.4,
   },
   eyeButton: {
-    padding: 8,
+    padding: 4,
   },
 });

@@ -10,9 +10,11 @@ import {
   ScrollView,
   Modal,
   ActivityIndicator,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { AuthHeader, FormInput, PrimaryButton, toastConfig } from '../components';
 import { useAuth } from '../context/AuthContext';
 import Toast from 'react-native-toast-message';
@@ -32,6 +34,33 @@ export default function SignInScreen({ navigation }) {
   const [isVerifying, setIsVerifying] = React.useState(false);
   const [isResendingVerification, setIsResendingVerification] = React.useState(false);
   const { signIn, resetPassword, sendVerificationEmail, checkEmailVerified, logout } = useAuth();
+
+  // Animation values
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(30)).current;
+
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const handleSocialLogin = (provider) => {
+    Toast.show({
+      type: 'info',
+      text1: 'Coming Soon',
+      text2: `${provider} sign in will be available soon`,
+    });
+  };
 
   const handleSignIn = async () => {
     if (!email) {
@@ -201,8 +230,8 @@ export default function SignInScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor="#B91C1C" />
+      <ExpoStatusBar style="dark" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
       
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -215,13 +244,21 @@ export default function SignInScreen({ navigation }) {
           <AuthHeader />
 
           {/* Form Card */}
-          <View style={styles.formCard}>
-            <Text style={styles.welcomeText}>Welcome Back</Text>
-            <Text style={styles.welcomeSubtext}>Sign in to continue</Text>
+          <Animated.View 
+            style={[
+              styles.formCard,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
+            <Text style={styles.welcomeText}>Sign In</Text>
+            <Text style={styles.subtitleText}>Welcome back. Enter your credentials to continue.</Text>
 
             <FormInput
               icon="email"
-              placeholder="Email address"
+              placeholder="Email"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -241,24 +278,56 @@ export default function SignInScreen({ navigation }) {
             />
 
             <TouchableOpacity style={styles.forgotButton} onPress={handleForgotPassword}>
-              <Text style={styles.forgotPassword}>Forgot Password?</Text>
+              <Text style={styles.forgotPassword}>Forgot password?</Text>
             </TouchableOpacity>
 
             <PrimaryButton
-              title="Sign In"
+              title="Continue"
               loadingText="Signing In..."
               onPress={handleSignIn}
               isLoading={isLoading}
             />
-          </View>
+
+            {/* Divider */}
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or continue with</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Social Login Buttons */}
+            <View style={styles.socialContainer}>
+              <TouchableOpacity 
+                style={styles.socialButton}
+                onPress={() => handleSocialLogin('Apple')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="logo-apple" size={22} color="#000000" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.socialButton}
+                onPress={() => handleSocialLogin('Google')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="logo-google" size={20} color="#EA4335" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.socialButton}
+                onPress={() => handleSocialLogin('Facebook')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="logo-facebook" size={22} color="#1877F2" />
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              New to E-Alert?{' '}
-            </Text>
+            <Text style={styles.footerText}>Don't have an account? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('SignUp')}>
-              <Text style={styles.signUpLink}>Create Account</Text>
+              <Text style={styles.signUpLink}>Create one</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -280,7 +349,7 @@ export default function SignInScreen({ navigation }) {
               </TouchableOpacity>
 
               <View style={styles.modalIconContainer}>
-                <Feather name={emailSent ? "check-circle" : "lock"} size={48} color="#DC2626" />
+                <Feather name={emailSent ? "check-circle" : "lock"} size={28} color="#0071E3" />
               </View>
 
               {!emailSent ? (
@@ -370,7 +439,7 @@ export default function SignInScreen({ navigation }) {
               </TouchableOpacity>
 
               <View style={styles.modalIconContainer}>
-                <Feather name="mail" size={48} color="#DC2626" />
+                <Feather name="mail" size={28} color="#0071E3" />
               </View>
 
               <Text style={styles.modalTitle}>Verify Your Email</Text>
@@ -419,7 +488,7 @@ export default function SignInScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
   },
   keyboardView: {
     flex: 1,
@@ -429,27 +498,21 @@ const styles = StyleSheet.create({
   },
   formCard: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginTop: -50,
-    borderRadius: 24,
     paddingHorizontal: 24,
-    paddingVertical: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 8,
+    paddingTop: 0,
   },
   welcomeText: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#1F2937',
-    marginBottom: 4,
+    color: '#1D1D1F',
+    marginBottom: 8,
+    letterSpacing: -0.5,
   },
-  welcomeSubtext: {
+  subtitleText: {
     fontSize: 15,
-    color: '#6B7280',
+    color: '#86868B',
     marginBottom: 28,
+    lineHeight: 22,
   },
   forgotButton: {
     alignSelf: 'flex-end',
@@ -457,142 +520,171 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   forgotPassword: {
-    fontSize: 14,
-    color: '#DC2626',
-    fontWeight: '600',
+    fontSize: 15,
+    color: '#0071E3',
+    fontWeight: '400',
+  },
+  // Divider styles
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 28,
+    marginBottom: 24,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E5EA',
+  },
+  dividerText: {
+    fontSize: 13,
+    color: '#86868B',
+    marginHorizontal: 16,
+    fontWeight: '400',
+  },
+  // Social login styles
+  socialContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
+  },
+  socialButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F7',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 24,
+    paddingVertical: 32,
     alignItems: 'center',
   },
   footerText: {
     fontSize: 15,
-    color: '#6B7280',
+    color: '#86868B',
   },
   signUpLink: {
-    color: '#DC2626',
-    fontWeight: '700',
+    color: '#0071E3',
+    fontWeight: '400',
     fontSize: 15,
   },
   // Modal Styles
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 32,
+    borderRadius: 14,
+    padding: 24,
     width: '85%',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
   },
   closeButton: {
     position: 'absolute',
-    top: 16,
-    right: 16,
+    top: 12,
+    right: 12,
     padding: 4,
   },
   modalIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#FEE2E2',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#F5F5F7',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1F2937',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1D1D1F',
     marginBottom: 8,
+    letterSpacing: -0.4,
   },
   modalSubtitle: {
     fontSize: 15,
-    color: '#6B7280',
+    color: '#86868B',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 20,
   },
   emailText: {
-    color: '#DC2626',
-    fontWeight: '600',
+    color: '#1D1D1F',
+    fontWeight: '500',
   },
   modalInputContainer: {
     width: '100%',
     marginBottom: 8,
   },
   instructionText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 13,
+    color: '#86868B',
     textAlign: 'center',
-    marginBottom: 24,
-    paddingHorizontal: 10,
-    lineHeight: 20,
+    marginBottom: 20,
+    paddingHorizontal: 8,
+    lineHeight: 18,
   },
   spamNote: {
-    color: '#9CA3AF',
-    fontStyle: 'italic',
+    color: '#AEAEB2',
   },
   resetButton: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#0071E3',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    height: 50,
+    paddingHorizontal: 24,
     borderRadius: 12,
     width: '100%',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   buttonIcon: {
     marginRight: 8,
   },
   resetButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: -0.4,
   },
   resendContainer: {
     padding: 8,
   },
   resendLink: {
-    fontSize: 14,
-    color: '#DC2626',
-    fontWeight: '600',
+    fontSize: 15,
+    color: '#0071E3',
+    fontWeight: '400',
   },
   // Verification modal styles
   verifyButton: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#0071E3',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    height: 50,
+    paddingHorizontal: 24,
     borderRadius: 12,
     width: '100%',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   verifyButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: -0.4,
   },
   resendVerificationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   resendText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 15,
+    color: '#86868B',
   },
 });

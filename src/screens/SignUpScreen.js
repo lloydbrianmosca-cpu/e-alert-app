@@ -11,9 +11,10 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  Animated,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
-import { Feather } from '@expo/vector-icons';
+import { Feather, Ionicons } from '@expo/vector-icons';
 import { AuthHeader, FormInput, PrimaryButton, toastConfig } from '../components';
 import { useAuth } from '../context/AuthContext';
 import Toast from 'react-native-toast-message';
@@ -35,6 +36,33 @@ export default function SignUpScreen({ navigation }) {
   const { signUp, sendVerificationEmail, checkEmailVerified, logout } = useAuth();
   
   const otpInputRefs = React.useRef([]);
+
+  // Animation values
+  const fadeAnim = React.useRef(new Animated.Value(0)).current;
+  const slideAnim = React.useRef(new Animated.Value(30)).current;
+
+  React.useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const handleSocialSignUp = (provider) => {
+    Toast.show({
+      type: 'info',
+      text1: 'Coming Soon',
+      text2: `${provider} sign up will be available soon`,
+    });
+  };
 
   const handleOtpChange = (value, index) => {
     if (value.length > 1) {
@@ -213,8 +241,17 @@ export default function SignUpScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <ExpoStatusBar style="light" />
-      <StatusBar barStyle="light-content" backgroundColor="#B91C1C" />
+      <ExpoStatusBar style="dark" />
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      
+      {/* Back Button */}
+      <TouchableOpacity 
+        style={styles.backButton} 
+        onPress={() => navigation.goBack()}
+        activeOpacity={0.7}
+      >
+        <Feather name="chevron-left" size={28} color="#1D1D1F" />
+      </TouchableOpacity>
       
       <KeyboardAvoidingView 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -227,31 +264,79 @@ export default function SignUpScreen({ navigation }) {
           <AuthHeader />
 
           {/* Form Card */}
-          <View style={styles.formCard}>
+          <Animated.View 
+            style={[
+              styles.formCard,
+              {
+                opacity: fadeAnim,
+                transform: [{ translateY: slideAnim }],
+              },
+            ]}
+          >
             <Text style={styles.welcomeText}>Create Account</Text>
-            <Text style={styles.welcomeSubtext}>Sign up to get started</Text>
+            <Text style={styles.subtitleText}>Join E-Alert to stay connected with emergency services.</Text>
 
-            <FormInput
-              icon="user"
-              iconFamily="Feather"
-              placeholder="First Name"
-              value={firstName}
-              onChangeText={setFirstName}
-              autoCapitalize="words"
-            />
+            {/* Social Sign Up Buttons */}
+            <View style={styles.socialContainer}>
+              <TouchableOpacity 
+                style={styles.socialButton}
+                onPress={() => handleSocialSignUp('Apple')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="logo-apple" size={22} color="#000000" />
+              </TouchableOpacity>
 
-            <FormInput
-              icon="user"
-              iconFamily="Feather"
-              placeholder="Last Name"
-              value={lastName}
-              onChangeText={setLastName}
-              autoCapitalize="words"
-            />
+              <TouchableOpacity 
+                style={styles.socialButton}
+                onPress={() => handleSocialSignUp('Google')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="logo-google" size={20} color="#EA4335" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.socialButton}
+                onPress={() => handleSocialSignUp('Facebook')}
+                activeOpacity={0.7}
+              >
+                <Ionicons name="logo-facebook" size={22} color="#1877F2" />
+              </TouchableOpacity>
+            </View>
+
+            {/* Divider */}
+            <View style={styles.dividerContainer}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>or sign up with email</Text>
+              <View style={styles.dividerLine} />
+            </View>
+
+            {/* Name Row */}
+            <View style={styles.nameRow}>
+              <View style={styles.nameInputWrapper}>
+                <FormInput
+                  icon="user"
+                  iconFamily="Feather"
+                  placeholder="First Name"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                  autoCapitalize="words"
+                />
+              </View>
+              <View style={styles.nameInputWrapper}>
+                <FormInput
+                  icon="user"
+                  iconFamily="Feather"
+                  placeholder="Last Name"
+                  value={lastName}
+                  onChangeText={setLastName}
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
 
             <FormInput
               icon="email"
-              placeholder="Email address"
+              placeholder="Email"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -279,6 +364,30 @@ export default function SignUpScreen({ navigation }) {
               onTogglePassword={() => setSecureEntry(!secureEntry)}
             />
 
+            {/* Password Requirements */}
+            <View style={styles.passwordRequirements}>
+              <View style={styles.requirementRow}>
+                <Feather 
+                  name={password.length >= 6 ? "check-circle" : "circle"} 
+                  size={14} 
+                  color={password.length >= 6 ? "#34C759" : "#AEAEB2"} 
+                />
+                <Text style={[styles.requirementText, password.length >= 6 && styles.requirementMet]}>
+                  At least 6 characters
+                </Text>
+              </View>
+              <View style={styles.requirementRow}>
+                <Feather 
+                  name={/[A-Z]/.test(password) ? "check-circle" : "circle"} 
+                  size={14} 
+                  color={/[A-Z]/.test(password) ? "#34C759" : "#AEAEB2"} 
+                />
+                <Text style={[styles.requirementText, /[A-Z]/.test(password) && styles.requirementMet]}>
+                  One uppercase letter
+                </Text>
+              </View>
+            </View>
+
             <FormInput
               icon="lock"
               iconFamily="Feather"
@@ -291,9 +400,26 @@ export default function SignUpScreen({ navigation }) {
               onTogglePassword={() => setSecureConfirmEntry(!secureConfirmEntry)}
             />
 
+            {/* Password Match Indicator */}
+            {confirmPassword.length > 0 && (
+              <View style={styles.matchIndicator}>
+                <Feather 
+                  name={password === confirmPassword ? "check-circle" : "x-circle"} 
+                  size={14} 
+                  color={password === confirmPassword ? "#34C759" : "#FF3B30"} 
+                />
+                <Text style={[
+                  styles.matchText, 
+                  { color: password === confirmPassword ? "#34C759" : "#FF3B30" }
+                ]}>
+                  {password === confirmPassword ? "Passwords match" : "Passwords don't match"}
+                </Text>
+              </View>
+            )}
+
             <View style={styles.termsContainer}>
               <Text style={styles.termsText}>
-                By signing up, you agree to our{' '}
+                By creating an account, you agree to our{' '}
                 <Text style={styles.termsLink}>Terms of Service</Text>
                 {' '}and{' '}
                 <Text style={styles.termsLink}>Privacy Policy</Text>
@@ -306,7 +432,7 @@ export default function SignUpScreen({ navigation }) {
               onPress={handleSignUp}
               isLoading={isLoading}
             />
-          </View>
+          </Animated.View>
 
           {/* Footer */}
           <View style={styles.footer}>
@@ -336,7 +462,7 @@ export default function SignUpScreen({ navigation }) {
               </TouchableOpacity>
 
               <View style={styles.modalIconContainer}>
-                <Feather name="mail" size={48} color="#DC2626" />
+                <Feather name="mail" size={28} color="#0071E3" />
               </View>
 
               <Text style={styles.modalTitle}>Verify Your Email</Text>
@@ -385,7 +511,19 @@ export default function SignUpScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFFFFF',
+  },
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 56 : 16,
+    left: 16,
+    zIndex: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F7',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   keyboardView: {
     flex: 1,
@@ -395,150 +533,212 @@ const styles = StyleSheet.create({
   },
   formCard: {
     backgroundColor: '#FFFFFF',
-    marginHorizontal: 20,
-    marginTop: -50,
-    borderRadius: 24,
     paddingHorizontal: 24,
-    paddingVertical: 32,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 8,
+    paddingTop: 0,
   },
   welcomeText: {
-    fontSize: 26,
+    fontSize: 28,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#1D1D1F',
+    marginBottom: 8,
+    letterSpacing: -0.5,
+  },
+  subtitleText: {
+    fontSize: 15,
+    color: '#86868B',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  // Social login styles
+  socialContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 16,
     marginBottom: 4,
   },
-  welcomeSubtext: {
-    fontSize: 15,
-    color: '#6B7280',
-    marginBottom: 28,
+  socialButton: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: '#F5F5F7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  // Divider styles
+  dividerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 20,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E5EA',
+  },
+  dividerText: {
+    fontSize: 13,
+    color: '#86868B',
+    marginHorizontal: 16,
+    fontWeight: '400',
+  },
+  // Name row styles
+  nameRow: {
+    flexDirection: 'row',
+    gap: 12,
+  },
+  nameInputWrapper: {
+    flex: 1,
+  },
+  // Password requirements
+  passwordRequirements: {
+    marginTop: -8,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  requirementRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  requirementText: {
+    fontSize: 12,
+    color: '#AEAEB2',
+    marginLeft: 8,
+  },
+  requirementMet: {
+    color: '#34C759',
+  },
+  // Password match indicator
+  matchIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: -8,
+    marginBottom: 12,
+    paddingHorizontal: 4,
+  },
+  matchText: {
+    fontSize: 12,
+    marginLeft: 8,
   },
   termsContainer: {
-    marginBottom: 24,
+    marginBottom: 20,
     marginTop: 8,
   },
   termsText: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#86868B',
     textAlign: 'center',
     lineHeight: 20,
   },
   termsLink: {
-    color: '#DC2626',
-    fontWeight: '600',
+    color: '#0071E3',
+    fontWeight: '400',
   },
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 24,
+    paddingVertical: 32,
     alignItems: 'center',
   },
   footerText: {
     fontSize: 15,
-    color: '#6B7280',
+    color: '#86868B',
   },
   signInLink: {
-    color: '#DC2626',
-    fontWeight: '700',
+    color: '#0071E3',
+    fontWeight: '400',
     fontSize: 15,
   },
   // Modal Styles
   modalOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
-    padding: 32,
+    borderRadius: 14,
+    padding: 24,
     width: '85%',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 20,
-    elevation: 10,
   },
   closeButton: {
     position: 'absolute',
-    top: 16,
-    right: 16,
+    top: 12,
+    right: 12,
     padding: 4,
   },
   modalIconContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#FEE2E2',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#F5F5F7',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   modalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1F2937',
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1D1D1F',
     marginBottom: 8,
+    letterSpacing: -0.4,
   },
   modalSubtitle: {
     fontSize: 15,
-    color: '#6B7280',
+    color: '#86868B',
     textAlign: 'center',
     lineHeight: 22,
     marginBottom: 16,
   },
   emailText: {
-    color: '#DC2626',
-    fontWeight: '600',
+    color: '#1D1D1F',
+    fontWeight: '500',
   },
   instructionText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 13,
+    color: '#86868B',
     textAlign: 'center',
-    marginBottom: 24,
-    paddingHorizontal: 10,
-    lineHeight: 20,
+    marginBottom: 20,
+    paddingHorizontal: 8,
+    lineHeight: 18,
   },
   spamNote: {
-    color: '#9CA3AF',
-    fontStyle: 'italic',
+    color: '#AEAEB2',
   },
   verifyButton: {
-    backgroundColor: '#DC2626',
+    backgroundColor: '#0071E3',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 16,
-    paddingHorizontal: 32,
+    height: 50,
+    paddingHorizontal: 24,
     borderRadius: 12,
     width: '100%',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   buttonIcon: {
     marginRight: 8,
   },
   verifyButtonText: {
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 17,
+    fontWeight: '600',
+    letterSpacing: -0.4,
   },
   resendContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   resendText: {
-    fontSize: 14,
-    color: '#6B7280',
+    fontSize: 15,
+    color: '#86868B',
   },
   resendLink: {
-    fontSize: 14,
-    color: '#DC2626',
-    fontWeight: '600',
+    fontSize: 15,
+    color: '#0071E3',
+    fontWeight: '400',
   },
 });
