@@ -860,7 +860,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 50,
+    paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 20,
     backgroundColor: '#DC2626',
@@ -1143,7 +1143,8 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 35,
     paddingHorizontal: 10,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',

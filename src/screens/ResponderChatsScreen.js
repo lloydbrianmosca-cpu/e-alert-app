@@ -597,7 +597,7 @@ const styles = StyleSheet.create({
     color: '#6B7280',
   },
   header: {
-    paddingTop: 50,
+    paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 16,
     backgroundColor: '#DC2626',
@@ -865,7 +865,8 @@ const styles = StyleSheet.create({
   bottomNav: {
     flexDirection: 'row',
     backgroundColor: '#FFFFFF',
-    paddingVertical: 10,
+    paddingTop: 10,
+    paddingBottom: 35,
     paddingHorizontal: 10,
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
