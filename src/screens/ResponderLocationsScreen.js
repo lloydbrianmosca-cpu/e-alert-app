@@ -128,16 +128,24 @@ export default function ResponderLocationsScreen({ navigation, route }) {
           onPress: async () => {
             try {
               // Save to emergency history
-              await addDoc(collection(db, 'emergencyHistory'), {
+              const historyData = {
                 ...selectedEmergency,
+                // Add user ID for user history queries
+                userId: selectedEmergency.userId || selectedEmergency.id,
                 completedAt: serverTimestamp(),
                 completedBy: user.uid,
                 responderName: responderData ? `${responderData.firstName} ${responderData.lastName}` : 'Unknown',
                 status: 'completed',
-              });
+              };
+              
+              console.log('Saving emergency history:', historyData);
+              
+              const historyRef = await addDoc(collection(db, 'emergencyHistory'), historyData);
+              console.log('Emergency history saved with ID:', historyRef.id);
 
               // Delete from active emergencies
               await deleteDoc(doc(db, 'activeEmergencies', selectedEmergency.id));
+              console.log('Active emergency deleted:', selectedEmergency.id);
 
               Toast.show({
                 type: 'success',
@@ -148,10 +156,12 @@ export default function ResponderLocationsScreen({ navigation, route }) {
               setSelectedEmergency(null);
             } catch (error) {
               console.log('Error completing emergency:', error);
+              console.log('Error code:', error.code);
+              console.log('Error message:', error.message);
               Toast.show({
                 type: 'error',
                 text1: 'Error',
-                text2: 'Failed to complete emergency. Please try again.',
+                text2: error.message || 'Failed to complete emergency. Please try again.',
               });
             }
           },
@@ -202,7 +212,7 @@ export default function ResponderLocationsScreen({ navigation, route }) {
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const emergencies = snapshot.docs.map((doc) => {
+      const emergenciesRaw = snapshot.docs.map((doc) => {
         const data = doc.data();
         return {
           id: doc.id,
@@ -213,6 +223,10 @@ export default function ResponderLocationsScreen({ navigation, route }) {
           type: data.emergencyType || 'emergency',
         };
       });
+      // Deduplicate by id
+      const emergencies = emergenciesRaw.filter(
+        (emergency, index, self) => index === self.findIndex((e) => e.id === emergency.id)
+      );
       setAssignedEmergencies(emergencies);
       
       // If we have an emergency from params, update it with latest data
@@ -240,8 +254,9 @@ export default function ResponderLocationsScreen({ navigation, route }) {
         navigateToEmergency(emergencies[0]);
       }
     }, (error) => {
-      // Ignore permission errors on sign out
-      if (error.code === 'permission-denied') {
+      // Ignore permission errors on sign out and index building errors
+      if (error.code === 'permission-denied' || error.code === 'failed-precondition') {
+        setAssignedEmergencies([]);
         return;
       }
       console.log('Error listening to emergencies:', error);
@@ -447,8 +462,8 @@ export default function ResponderLocationsScreen({ navigation, route }) {
           {/* Emergency markers */}
           {assignedEmergencies
             .filter((e) => e.location?.latitude && e.location?.longitude)
-            .map((emergency) => (
-              <React.Fragment key={emergency.id}>
+            .map((emergency, index) => (
+              <React.Fragment key={`marker-${emergency.id}-${index}`}>
                 <Marker
                   coordinate={emergency.location}
                   title={emergency.userName || 'User in Emergency'}
@@ -515,9 +530,9 @@ export default function ResponderLocationsScreen({ navigation, route }) {
         {assignedEmergencies.length > 0 && (
           <View style={styles.emergencyList}>
             <Text style={styles.listTitle}>Active Emergencies ({assignedEmergencies.length})</Text>
-            {assignedEmergencies.map((emergency) => (
+            {assignedEmergencies.map((emergency, index) => (
               <TouchableOpacity
-                key={emergency.id}
+                key={`list-${emergency.id}-${index}`}
                 style={[
                   styles.emergencyItem,
                   selectedEmergency?.id === emergency.id && styles.emergencyItemSelected,

@@ -129,8 +129,9 @@ export default function ResponderHomeScreen({ navigation }) {
         pendingAssignments: emergencies.length,
       }));
     }, (error) => {
-      // Ignore permission errors on sign out
-      if (error.code === 'permission-denied') {
+      // Ignore permission errors on sign out and index building errors
+      if (error.code === 'permission-denied' || error.code === 'failed-precondition') {
+        setAssignedEmergencies([]);
         return;
       }
       console.log('Error listening to emergencies:', error);
@@ -166,7 +167,9 @@ export default function ResponderHomeScreen({ navigation }) {
         totalResponded: history.length,
       }));
     }, (error) => {
-      if (error.code === 'permission-denied') {
+      // Ignore permission errors on sign out and index errors
+      if (error.code === 'permission-denied' || error.code === 'failed-precondition') {
+        setEmergencyHistory([]);
         return;
       }
       console.log('Error listening to emergency history:', error);

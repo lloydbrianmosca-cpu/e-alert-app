@@ -96,6 +96,7 @@ export function EmergencyProvider({ children }) {
   const [isSearchingResponder, setIsSearchingResponder] = useState(false);
   const [userLocation, setUserLocation] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [responderSearchUnsubscribe, setResponderSearchUnsubscribe] = useState(null);
 
   // Listen to auth state changes
   useEffect(() => {
@@ -104,6 +105,15 @@ export function EmergencyProvider({ children }) {
     });
     return unsubscribe;
   }, []);
+
+  // Cleanup responder search listener on unmount
+  useEffect(() => {
+    return () => {
+      if (responderSearchUnsubscribe) {
+        responderSearchUnsubscribe();
+      }
+    };
+  }, [responderSearchUnsubscribe]);
 
   // Get user's current location
   const getUserLocation = async () => {
@@ -131,7 +141,128 @@ export function EmergencyProvider({ children }) {
   };
 
   /**
-   * Find the nearest available responder of a specific type
+   * Find the nearest available responder from a snapshot of responders
+   */
+  const findNearestResponderFromSnapshot = (snapshot, userCoords) => {
+    if (snapshot.empty) {
+      return null;
+    }
+
+    let nearestResponder = null;
+    let shortestDistance = Infinity;
+
+    snapshot.docs.forEach((doc) => {
+      const data = doc.data();
+      
+      // Check if responder has location data
+      if (data.location?.latitude && data.location?.longitude) {
+        const distance = calculateDistance(
+          userCoords.latitude,
+          userCoords.longitude,
+          data.location.latitude,
+          data.location.longitude
+        );
+
+        if (distance < shortestDistance) {
+          shortestDistance = distance;
+          nearestResponder = {
+            id: doc.id,
+            ...data,
+            distance: shortestDistance,
+          };
+        }
+      } else {
+        // If responder doesn't have location, still consider them but with a default distance
+        if (!nearestResponder) {
+          nearestResponder = {
+            id: doc.id,
+            ...data,
+            distance: 5, // Default 5km if no location
+          };
+          shortestDistance = 5;
+        }
+      }
+    });
+
+    return nearestResponder;
+  };
+
+  /**
+   * Start real-time search for available responders
+   */
+  const startResponderSearch = (emergencyType, userCoords, userId) => {
+    const responderType = EMERGENCY_TO_RESPONDER_TYPE[emergencyType];
+    
+    // Stop any existing search
+    if (responderSearchUnsubscribe) {
+      responderSearchUnsubscribe();
+    }
+
+    const respondersRef = collection(db, 'responders');
+    const q = query(
+      respondersRef,
+      where('responderType', '==', responderType),
+      where('isAvailable', '==', true)
+    );
+
+    console.log('Starting real-time responder search for type:', responderType);
+
+    const unsubscribe = onSnapshot(q, async (snapshot) => {
+      console.log('Responder search snapshot received, count:', snapshot.docs.length);
+      
+      const nearestResponder = findNearestResponderFromSnapshot(snapshot, userCoords);
+      
+      if (nearestResponder) {
+        console.log('Found available responder:', nearestResponder.id);
+        
+        // Stop searching
+        unsubscribe();
+        setResponderSearchUnsubscribe(null);
+        
+        try {
+          // Format responder data
+          const responderData = formatResponderData(nearestResponder, emergencyType, nearestResponder.distance);
+          
+          // Update the emergency with the assigned responder
+          const emergencyRef = doc(db, 'activeEmergencies', userId);
+          await updateDoc(emergencyRef, {
+            assignedResponderId: nearestResponder.id,
+            responderDistance: nearestResponder.distance,
+            responder: responderData,
+            updatedAt: serverTimestamp(),
+          });
+          
+          // Mark responder as busy
+          await updateDoc(doc(db, 'responders', nearestResponder.id), {
+            isAvailable: false,
+            currentEmergencyId: userId,
+            updatedAt: new Date().toISOString(),
+          });
+          
+          console.log('Responder assigned successfully');
+          setActiveResponder(responderData);
+          setIsSearchingResponder(false);
+        } catch (error) {
+          console.log('Error assigning responder:', error);
+          // Continue searching if assignment failed
+          setResponderSearchUnsubscribe(() => unsubscribe);
+        }
+      } else {
+        console.log('No available responders yet, continuing to search...');
+      }
+    }, (error) => {
+      if (error.code === 'permission-denied') {
+        return;
+      }
+      console.log('Error in responder search:', error);
+    });
+
+    setResponderSearchUnsubscribe(() => unsubscribe);
+    return unsubscribe;
+  };
+
+  /**
+   * Find the nearest available responder of a specific type (one-time query)
    */
   const findNearestResponder = async (emergencyType, userCoords) => {
     const responderType = EMERGENCY_TO_RESPONDER_TYPE[emergencyType];
@@ -232,6 +363,11 @@ export function EmergencyProvider({ children }) {
         setActiveResponder(null);
         setActiveEmergencyId(null);
         setIsLoadingEmergency(false);
+        // Stop any ongoing search
+        if (responderSearchUnsubscribe) {
+          responderSearchUnsubscribe();
+          setResponderSearchUnsubscribe(null);
+        }
         return;
       }
 
@@ -251,6 +387,9 @@ export function EmergencyProvider({ children }) {
 
             // If there's an assigned responder, fetch their current data
             if (data.assignedResponderId) {
+              // Stop searching if we found a responder
+              setIsSearchingResponder(false);
+              
               const responderDoc = await getDoc(doc(db, 'responders', data.assignedResponderId));
               if (responderDoc.exists()) {
                 const responderData = responderDoc.data();
@@ -276,12 +415,31 @@ export function EmergencyProvider({ children }) {
             } else if (data.responder) {
               // Use stored responder data as fallback
               setActiveResponder(data.responder);
+              setIsSearchingResponder(false);
+            } else {
+              // No responder assigned yet - start/continue real-time search
+              console.log('No responder assigned, starting real-time search');
+              setActiveResponder(null);
+              setIsSearchingResponder(true);
+              
+              // Start real-time search if we have location
+              if (data.userLocation && data.emergencyType) {
+                startResponderSearch(data.emergencyType, data.userLocation, currentUser.uid);
+              }
             }
           } else {
             setActiveEmergencyType(null);
             setActiveResponder(null);
             setActiveEmergencyId(null);
+            setIsSearchingResponder(false);
           }
+          setIsLoadingEmergency(false);
+        }, (error) => {
+          if (error.code === 'permission-denied') {
+            setIsLoadingEmergency(false);
+            return;
+          }
+          console.log('Error in emergency listener:', error);
           setIsLoadingEmergency(false);
         });
 
@@ -333,25 +491,6 @@ export function EmergencyProvider({ children }) {
         return { success: false, error: 'Could not get location' };
       }
 
-      // Find nearest available responder
-      let nearestResponder = null;
-      try {
-        nearestResponder = await findNearestResponder(type, coords);
-      } catch (responderError) {
-        console.log('Error finding responder (continuing without):', responderError);
-      }
-      
-      let responderData = null;
-      let assignedResponderId = null;
-
-      if (nearestResponder) {
-        responderData = formatResponderData(nearestResponder, type, nearestResponder.distance);
-        assignedResponderId = nearestResponder.id;
-        setActiveResponder(responderData);
-      } else {
-        console.log('No available responders found');
-      }
-
       // Build user's full name from profile or displayName
       const userFullName = userProfileData.firstName && userProfileData.lastName
         ? `${userProfileData.firstName} ${userProfileData.lastName}`
@@ -362,7 +501,7 @@ export function EmergencyProvider({ children }) {
         ? `${userProfileData.address}, ${userProfileData.city || ''}, ${userProfileData.province || ''}`
         : '';
 
-      // Save emergency to Firestore FIRST
+      // Save emergency to Firestore FIRST (without responder - will be assigned via real-time search)
       const emergencyRef = doc(db, 'activeEmergencies', user.uid);
       const dataToSave = {
         emergencyType: type,
@@ -373,37 +512,26 @@ export function EmergencyProvider({ children }) {
         userAddress: userAddress,
         emergencyContactName: userProfileData.emergencyContactName || '',
         emergencyContactNumber: userProfileData.emergencyContactNumber || '',
-        status: 'active',
+        status: 'searching', // Start as searching
         createdAt: serverTimestamp(),
         userLocation: coords,
-        assignedResponderId: assignedResponderId,
-        responderDistance: nearestResponder?.distance || null,
-        responder: responderData,
+        assignedResponderId: null, // Will be assigned via real-time search
+        responderDistance: null,
+        responder: null,
       };
 
       await setDoc(emergencyRef, dataToSave);
-      console.log('Emergency saved to database successfully');
+      console.log('Emergency saved to database, starting real-time responder search');
 
-      // THEN mark responder as busy (after emergency is saved)
-      if (nearestResponder) {
-        try {
-          await updateDoc(doc(db, 'responders', nearestResponder.id), {
-            isAvailable: false,
-            currentEmergencyId: user.uid,
-            updatedAt: new Date().toISOString(),
-          });
-          console.log('Responder marked as busy');
-        } catch (responderUpdateError) {
-          console.log('Error updating responder status:', responderUpdateError);
-          // Don't fail the whole operation if this fails
-        }
-      }
+      // Start real-time search for available responders
+      // This will continue searching until a responder becomes available
+      startResponderSearch(type, coords, user.uid);
 
-      setIsSearchingResponder(false);
       return { 
         success: true, 
-        responder: responderData,
-        hasResponder: !!nearestResponder,
+        responder: null,
+        hasResponder: false,
+        searching: true,
       };
     } catch (error) {
       console.log('Error activating emergency:', error);
@@ -414,6 +542,12 @@ export function EmergencyProvider({ children }) {
 
   const clearEmergency = async () => {
     const user = auth.currentUser;
+    
+    // Stop any ongoing responder search
+    if (responderSearchUnsubscribe) {
+      responderSearchUnsubscribe();
+      setResponderSearchUnsubscribe(null);
+    }
     
     // If there's an assigned responder, mark them as available again
     if (activeResponder?.id) {

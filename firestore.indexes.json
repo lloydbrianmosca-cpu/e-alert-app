@@ -23,6 +23,22 @@
         { "fieldPath": "assignedResponder", "order": "ASCENDING" },
         { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "activeEmergencies",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "assignedResponderId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "emergencyHistory",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "completedBy", "order": "ASCENDING" },
+        { "fieldPath": "completedAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
