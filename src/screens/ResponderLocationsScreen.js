@@ -35,7 +35,6 @@ const PRIMARY_COLOR = '#DC2626';
 
 // Emergency type colors
 const EMERGENCY_COLORS = {
-  police: '#1E3A8A',
   medical: '#059669',
   fire: '#DC2626',
   flood: '#0369A1',

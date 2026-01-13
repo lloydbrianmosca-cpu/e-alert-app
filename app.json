@@ -3,9 +3,12 @@
     "name": "e-alert-app",
     "slug": "e-alert-app",
     "version": "1.0.0",
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
-      "supportsTabletMode": true
+      "supportsTabletMode": true,
+      "bundleIdentifier": "com.anonymous.e-alert-app"
     },
     "android": {}
   }

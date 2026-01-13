@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useEffect } from 'react';
 import { db } from '../services/firestore';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import {
   StyleSheet,
@@ -27,6 +27,11 @@ import {
   getProvincesByRegion,
   getCitiesByProvince,
 } from '../constants/addressData';
+import {
+  pickImageFromLibrary,
+  takePhoto,
+  updateProfileImage,
+} from '../services/storage';
 
 // Bottom navigation items
 const NAV_ITEMS = [
@@ -99,6 +104,8 @@ export default function ProfileScreen({ navigation }) {
   }, [user]);
   const [editData, setEditData] = useState(profileData);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -152,7 +159,7 @@ export default function ProfileScreen({ navigation }) {
     // Save contact number and emergency contact info to Firestore
     if (user?.uid) {
       try {
-        await setDoc(doc(db, 'users', user.uid), {
+        const updateData = {
           firstName: editData.firstName,
           lastName: editData.lastName,
           email: editData.email,
@@ -164,8 +171,14 @@ export default function ProfileScreen({ navigation }) {
           region: editData.region,
           province: editData.province,
           city: editData.city,
+        };
+        
+        // Add profileImage if it exists
+        if (editData.profileImage) {
+          updateData.profileImage = editData.profileImage;
+        }
 
-        }, { merge: true });
+        await setDoc(doc(db, 'users', user.uid), updateData, { merge: true });
         Toast.show({
           type: 'success',
           text1: 'Success',
@@ -184,6 +197,54 @@ export default function ProfileScreen({ navigation }) {
   const handleCancel = () => {
     setEditData(profileData);
     setIsEditing(false);
+  };
+
+  const handlePickImage = async () => {
+    try {
+      setIsUploadingImage(true);
+      const image = await pickImageFromLibrary();
+      
+      if (image) {
+        // Create a local URI preview
+        setEditData(prev => ({
+          ...prev,
+          profileImage: image.uri,
+        }));
+        setShowImageModal(false);
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to pick image',
+      });
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      setIsUploadingImage(true);
+      const image = await takePhoto();
+      
+      if (image) {
+        // Create a local URI preview
+        setEditData(prev => ({
+          ...prev,
+          profileImage: image.uri,
+        }));
+        setShowImageModal(false);
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to take photo',
+      });
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   const handleChangePassword = () => {
@@ -367,15 +428,28 @@ export default function ProfileScreen({ navigation }) {
         {/* Profile Picture Section */}
         <View style={styles.profilePictureSection}>
           <View style={styles.profileImageContainer}>
-            {profileData.profileImage ? (
+            {(isEditing ? editData.profileImage : profileData.profileImage) ? (
               <Image
-                source={{ uri: profileData.profileImage }}
+                source={{ uri: isEditing ? editData.profileImage : profileData.profileImage }}
                 style={styles.profileImage}
               />
             ) : (
               <View style={[styles.profileImage, styles.defaultProfileIcon]}>
                 <Ionicons name="person" size={60} color="#9CA3AF" />
               </View>
+            )}
+            {isEditing && (
+              <TouchableOpacity 
+                style={styles.editImageButton}
+                onPress={() => setShowImageModal(true)}
+                disabled={isUploadingImage}
+              >
+                {isUploadingImage ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="camera" size={20} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
             )}
           </View>
           <Text style={styles.profileName}>
@@ -580,6 +654,49 @@ export default function ProfileScreen({ navigation }) {
                 <Text style={styles.modalSaveButtonText}>Change Password</Text>
               </TouchableOpacity>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Image Selection Modal */}
+      <Modal
+        visible={showImageModal}
+        transparent={true}
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={() => setShowImageModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.imageModalContent}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="image" size={32} color="#DC2626" />
+              <Text style={styles.modalTitle}>Select Profile Picture</Text>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.imageOption}
+              onPress={handleTakePhoto}
+              disabled={isUploadingImage}
+            >
+              <Ionicons name="camera" size={28} color="#DC2626" />
+              <Text style={styles.imageOptionText}>Take Photo</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.imageOption}
+              onPress={handlePickImage}
+              disabled={isUploadingImage}
+            >
+              <Ionicons name="images" size={28} color="#DC2626" />
+              <Text style={styles.imageOptionText}>Choose from Library</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.modalButton, styles.modalCancelButton]}
+              onPress={() => setShowImageModal(false)}
+            >
+              <Text style={styles.modalCancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -954,6 +1071,35 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 20,
     elevation: 10,
+  },
+  imageModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 20,
+    padding: 24,
+    width: '85%',
+    maxWidth: 350,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  imageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  imageOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginLeft: 16,
   },
   modalHeader: {
     alignItems: 'center',

@@ -8,6 +8,9 @@ import {
   ScrollView,
   TextInput,
   FlatList,
+  Linking,
+  Platform,
+  Alert,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
@@ -275,6 +278,35 @@ export default function HotlinesScreen({ navigation }) {
     }
   };
 
+  const handleCallPress = (phoneNumber) => {
+    // Format phone number for dial - remove spaces and special characters
+    const cleanNumber = phoneNumber.replace(/\s+/g, '').replace(/[()]/g, '');
+    const phoneUrl = `tel:${cleanNumber}`;
+    
+    // Check if the device can handle tel: scheme
+    Linking.canOpenURL(phoneUrl)
+      .then(supported => {
+        if (supported) {
+          Linking.openURL(phoneUrl);
+        } else {
+          // If tel: scheme is not supported (rare), show an alert
+          Alert.alert(
+            'Cannot Make Call',
+            'Your device does not support making phone calls.',
+            [{ text: 'OK' }]
+          );
+        }
+      })
+      .catch((err) => {
+        console.log('Error checking phone app availability:', err);
+        Alert.alert(
+          'Error',
+          'Unable to open phone app. Please try again.',
+          [{ text: 'OK' }]
+        );
+      });
+  };
+
   const renderHotlineCard = ({ item }) => (
     <TouchableOpacity
       style={styles.hotlineCard}
@@ -311,7 +343,10 @@ export default function HotlinesScreen({ navigation }) {
         <Text style={[styles.hotlineNumber, { color: getAgencyColor(item.type) }]}>
           {item.number}
         </Text>
-        <TouchableOpacity style={styles.callButton}>
+        <TouchableOpacity 
+          style={styles.callButton}
+          onPress={() => handleCallPress(item.number)}
+        >
           <Ionicons name="call" size={20} color="#FFFFFF" />
         </TouchableOpacity>
       </View>

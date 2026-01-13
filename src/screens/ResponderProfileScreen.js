@@ -11,6 +11,7 @@ import {
   Modal,
   Alert,
   Platform,
+  Image,
 } from 'react-native';
 import { StatusBar as ExpoStatusBar } from 'expo-status-bar';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -27,6 +28,11 @@ import {
   getProvincesByRegion,
   getCitiesByProvince,
 } from '../constants/addressData';
+import {
+  pickImageFromLibrary,
+  takePhoto,
+  updateProfileImage,
+} from '../services/storage';
 
 // Bottom navigation items - unified with user screens
 const NAV_ITEMS = [
@@ -75,9 +81,12 @@ export default function ResponderProfileScreen({ navigation }) {
     province: '',
     city: '',
     isAvailable: true,
+    profileImage: null,
   });
   const [editData, setEditData] = useState({});
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -115,6 +124,7 @@ export default function ResponderProfileScreen({ navigation }) {
           province: data.province || '',
           city: data.city || '',
           isAvailable: data.isAvailable !== undefined ? data.isAvailable : true,
+          profileImage: data.profileImage || null,
         };
         setProfileData(profile);
         setEditData(profile);
@@ -217,6 +227,54 @@ export default function ResponderProfileScreen({ navigation }) {
   const handleCancelEdit = () => {
     setEditData(profileData);
     setIsEditing(false);
+  };
+
+  const handlePickImage = async () => {
+    try {
+      setIsUploadingImage(true);
+      const image = await pickImageFromLibrary();
+      
+      if (image) {
+        // Create a local URI preview
+        setEditData(prev => ({
+          ...prev,
+          profileImage: image.uri,
+        }));
+        setShowImageModal(false);
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to pick image',
+      });
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleTakePhoto = async () => {
+    try {
+      setIsUploadingImage(true);
+      const image = await takePhoto();
+      
+      if (image) {
+        // Create a local URI preview
+        setEditData(prev => ({
+          ...prev,
+          profileImage: image.uri,
+        }));
+        setShowImageModal(false);
+      }
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: error.message || 'Failed to take photo',
+      });
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   // Handle password change
@@ -385,8 +443,30 @@ export default function ResponderProfileScreen({ navigation }) {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {/* Profile Header Card */}
         <View style={styles.profileCard}>
-          <View style={[styles.avatarContainer, { backgroundColor: `${responderTypeColor}20` }]}>
-            <Ionicons name={getResponderIcon()} size={48} color={responderTypeColor} />
+          <View style={styles.profileImageContainer}>
+            {(isEditing ? editData.profileImage : profileData.profileImage) ? (
+              <Image
+                source={{ uri: isEditing ? editData.profileImage : profileData.profileImage }}
+                style={styles.profileImage}
+              />
+            ) : (
+              <View style={[styles.avatarContainer, { backgroundColor: `${responderTypeColor}20` }]}>
+                <Ionicons name={getResponderIcon()} size={48} color={responderTypeColor} />
+              </View>
+            )}
+            {isEditing && (
+              <TouchableOpacity 
+                style={styles.editImageButton}
+                onPress={() => setShowImageModal(true)}
+                disabled={isUploadingImage}
+              >
+                {isUploadingImage ? (
+                  <ActivityIndicator size="small" color="#FFFFFF" />
+                ) : (
+                  <Ionicons name="camera" size={20} color="#FFFFFF" />
+                )}
+              </TouchableOpacity>
+            )}
           </View>
           <Text style={styles.profileName}>
             {profileData.firstName} {profileData.lastName}
@@ -810,6 +890,49 @@ export default function ResponderProfileScreen({ navigation }) {
         </View>
       </Modal>
 
+      {/* Image Selection Modal */}
+      <Modal
+        visible={showImageModal}
+        transparent={true}
+        animationType="fade"
+        statusBarTranslucent={true}
+        onRequestClose={() => setShowImageModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.imageModalContent}>
+            <View style={styles.modalHeader}>
+              <Ionicons name="image" size={32} color="#DC2626" />
+              <Text style={styles.modalTitle}>Select Profile Picture</Text>
+            </View>
+
+            <TouchableOpacity 
+              style={styles.imageOption}
+              onPress={handleTakePhoto}
+              disabled={isUploadingImage}
+            >
+              <Ionicons name="camera" size={28} color="#DC2626" />
+              <Text style={styles.imageOptionText}>Take Photo</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.imageOption}
+              onPress={handlePickImage}
+              disabled={isUploadingImage}
+            >
+              <Ionicons name="images" size={28} color="#DC2626" />
+              <Text style={styles.imageOptionText}>Choose from Library</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.modalCancelButton}
+              onPress={() => setShowImageModal(false)}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
         {NAV_ITEMS.map((item) => (
@@ -902,6 +1025,30 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+  },
+  profileImageContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  profileImage: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 4,
+    borderColor: '#DC2626',
+  },
+  editImageButton: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#DC2626',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#FFFFFF',
   },
   avatarContainer: {
     width: 100,
@@ -1082,6 +1229,34 @@ const styles = StyleSheet.create({
     padding: 24,
     width: '100%',
     maxWidth: 400,
+  },
+  imageModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 24,
+    width: '85%',
+    maxWidth: 350,
+  },
+  imageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    backgroundColor: '#F9FAFB',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  imageOptionText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1F2937',
+    marginLeft: 16,
+  },
+  modalHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
   },
   modalTitle: {
     fontSize: 20,
