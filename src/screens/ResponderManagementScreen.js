@@ -120,21 +120,23 @@ export default function ResponderManagementScreen({ navigation }) {
   const toggleAvailability = async (responderId, currentStatus) => {
     try {
       const responderRef = doc(db, 'responders', responderId);
+      const newStatus = !currentStatus;
       await updateDoc(responderRef, {
-        isAvailable: !currentStatus,
+        isAvailable: newStatus,
+        updatedAt: new Date().toISOString(),
       });
       
       // Update local state
       setResponders(prev => 
         prev.map(r => 
-          r.id === responderId ? { ...r, isAvailable: !currentStatus } : r
+          r.id === responderId ? { ...r, isAvailable: newStatus } : r
         )
       );
 
       Toast.show({
         type: 'success',
         text1: 'Status Updated',
-        text2: `Responder is now ${!currentStatus ? 'available' : 'unavailable'}`,
+        text2: `Responder is now ${newStatus ? 'Available' : 'Unavailable'}`,
       });
     } catch (error) {
       console.log('Error updating availability:', error);
@@ -177,8 +179,8 @@ export default function ResponderManagementScreen({ navigation }) {
     { id: 'flood', label: 'Flood' },
   ];
 
-  const availableCount = responders.filter(r => r.isAvailable).length;
-  const unavailableCount = responders.filter(r => !r.isAvailable).length;
+  const availableCount = responders.filter(r => r.isAvailable === true).length;
+  const unavailableCount = responders.filter(r => r.isAvailable !== true).length;
 
   return (
     <View style={styles.container}>
@@ -379,7 +381,7 @@ export default function ResponderManagementScreen({ navigation }) {
                       </Text>
                     </View>
                     <Switch
-                      value={responder.isAvailable}
+                      value={responder.isAvailable === true}
                       onValueChange={() => toggleAvailability(responder.id, responder.isAvailable)}
                       trackColor={{ false: '#E5E7EB', true: '#D1FAE5' }}
                       thumbColor={responder.isAvailable ? '#059669' : '#9CA3AF'}

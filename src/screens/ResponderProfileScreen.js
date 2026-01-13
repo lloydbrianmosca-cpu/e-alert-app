@@ -113,7 +113,7 @@ export default function ResponderProfileScreen({ navigation }) {
           region: data.region || '',
           province: data.province || '',
           city: data.city || '',
-          isAvailable: data.status !== undefined ? data.status === 'available' : true,
+          isAvailable: data.isAvailable !== undefined ? data.isAvailable : true,
         };
         setProfileData(profile);
         setEditData(profile);
@@ -417,10 +417,7 @@ export default function ResponderProfileScreen({ navigation }) {
                 try {
                   const newStatus = !profileData.isAvailable;
                   const docRef = doc(db, 'responders', user.uid);
-                  await updateDoc(docRef, { 
-                    status: newStatus ? 'available' : 'unavailable', 
-                    lastStatusUpdate: new Date().toISOString() 
-                  });
+                  await updateDoc(docRef, { isAvailable: newStatus, updatedAt: new Date().toISOString() });
                   setProfileData(prev => ({ ...prev, isAvailable: newStatus }));
                   setEditData(prev => ({ ...prev, isAvailable: newStatus }));
                   Toast.show({

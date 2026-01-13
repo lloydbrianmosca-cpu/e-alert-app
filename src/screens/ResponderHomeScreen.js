@@ -80,7 +80,7 @@ export default function ResponderHomeScreen({ navigation }) {
       if (docSnap.exists()) {
         const data = docSnap.data();
         setResponderData(data);
-        setIsAvailable(data.status === 'available');
+        setIsAvailable(data.isAvailable !== undefined ? data.isAvailable : false);
         
         // Check profile completeness
         const profileComplete = checkProfileComplete(data);
@@ -141,8 +141,8 @@ export default function ResponderHomeScreen({ navigation }) {
     try {
       const docRef = doc(db, 'responders', user.uid);
       await updateDoc(docRef, {
-        status: value ? 'available' : 'unavailable',
-        lastStatusUpdate: new Date().toISOString(),
+        isAvailable: value,
+        updatedAt: new Date().toISOString(),
       });
       setIsAvailable(value);
       Toast.show({
