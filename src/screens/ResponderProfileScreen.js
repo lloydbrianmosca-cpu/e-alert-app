@@ -32,7 +32,6 @@ import {
 const NAV_ITEMS = [
   { id: 'home', name: 'Home', icon: 'home', iconFamily: 'Ionicons' },
   { id: 'locations', name: 'Locations', icon: 'location', iconFamily: 'Ionicons' },
-  { id: 'hotline', name: 'Hotlines', icon: 'call', iconFamily: 'Ionicons' },
   { id: 'chat', name: 'Chat', icon: 'chatbubbles', iconFamily: 'Ionicons' },
   { id: 'profile', name: 'Profile', icon: 'person', iconFamily: 'Ionicons' },
 ];
@@ -321,9 +320,6 @@ export default function ResponderProfileScreen({ navigation }) {
         break;
       case 'locations':
         navigation.navigate('ResponderLocations');
-        break;
-      case 'hotline':
-        navigation.navigate('Hotlines');
         break;
       case 'chat':
         navigation.navigate('ResponderChats');

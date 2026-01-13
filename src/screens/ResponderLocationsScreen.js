@@ -24,7 +24,6 @@ const { width, height } = Dimensions.get('window');
 const NAV_ITEMS = [
   { id: 'home', name: 'Home', icon: 'home', iconFamily: 'Ionicons' },
   { id: 'locations', name: 'Locations', icon: 'location', iconFamily: 'Ionicons' },
-  { id: 'hotline', name: 'Hotlines', icon: 'call', iconFamily: 'Ionicons' },
   { id: 'chat', name: 'Chat', icon: 'chatbubbles', iconFamily: 'Ionicons' },
   { id: 'profile', name: 'Profile', icon: 'person', iconFamily: 'Ionicons' },
 ];
@@ -191,9 +190,6 @@ export default function ResponderLocationsScreen({ navigation, route }) {
         break;
       case 'locations':
         break;
-      case 'hotline':
-        navigation.navigate('Hotlines');
-        break;
       case 'chat':
         navigation.navigate('ResponderChats');
         break;
@@ -247,7 +243,7 @@ export default function ResponderLocationsScreen({ navigation, route }) {
           {userLocation && (
             <Marker coordinate={userLocation} title="Your Location" anchor={{ x: 0.5, y: 0.5 }}>
               <View style={styles.responderMarker}>
-                <View style={[styles.responderMarkerInner, { backgroundColor: responderColor }]}>
+                <View style={[styles.responderMarkerInner, { backgroundColor: PRIMARY_COLOR }]}>
                   <MaterialCommunityIcons name="account" size={20} color="#FFFFFF" />
                 </View>
               </View>
@@ -296,7 +292,7 @@ export default function ResponderLocationsScreen({ navigation, route }) {
         {/* Map Controls */}
         <View style={styles.mapControls}>
           <TouchableOpacity
-            style={[styles.controlButton, { backgroundColor: responderColor }]}
+            style={[styles.controlButton, { backgroundColor: PRIMARY_COLOR }]}
             onPress={centerOnMe}
           >
             <MaterialIcons name="my-location" size={24} color="#FFFFFF" />
@@ -334,7 +330,7 @@ export default function ResponderLocationsScreen({ navigation, route }) {
                     navigation.navigate('ResponderChats', { emergencyId: emergency.id })
                   }
                 >
-                  <Ionicons name="chatbubble" size={18} color={responderColor} />
+                  <Ionicons name="chatbubble" size={18} color={PRIMARY_COLOR} />
                 </TouchableOpacity>
               </TouchableOpacity>
             ))}
