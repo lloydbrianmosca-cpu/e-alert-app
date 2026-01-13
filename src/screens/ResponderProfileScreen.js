@@ -17,7 +17,7 @@ import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { auth } from '../services/firebase';
 import Toast from 'react-native-toast-message';
@@ -168,15 +168,15 @@ export default function ResponderProfileScreen({ navigation }) {
   const handleSave = async () => {
     if (!user?.uid) return;
 
-    // Validate required fields
-    const requiredFields = ['firstName', 'lastName', 'contactNumber'];
+    // Validate required fields (same as profile completeness check)
+    const requiredFields = ['firstName', 'lastName', 'contactNumber', 'stationName', 'hotlineNumber'];
     const emptyFields = requiredFields.filter((field) => !editData[field]?.trim());
 
     if (emptyFields.length > 0) {
       Toast.show({
         type: 'error',
         text1: 'Required Fields Missing',
-        text2: 'Please fill in all required fields',
+        text2: 'Please fill in: Name, Contact, Station Name, and Hotline',
       });
       return;
     }
@@ -185,10 +185,13 @@ export default function ResponderProfileScreen({ navigation }) {
 
     try {
       const docRef = doc(db, 'responders', user.uid);
-      await updateDoc(docRef, {
+      
+      // Use setDoc with merge to handle both create and update
+      await setDoc(docRef, {
         ...editData,
+        email: user.email,
         updatedAt: new Date().toISOString(),
-      });
+      }, { merge: true });
 
       setProfileData(editData);
       setIsEditing(false);

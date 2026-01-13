@@ -115,11 +115,11 @@ export default function ResponderChatsScreen({ navigation, route }) {
       const convos = await Promise.all(
         snapshot.docs.map(async (docSnap) => {
           const data = docSnap.data();
-          // Fetch user info
+          // Fetch user info - use participantId (the actual field name)
           let userData = null;
-          if (data.userId) {
+          if (data.participantId) {
             try {
-              const userDoc = await getDoc(doc(db, 'users', data.userId));
+              const userDoc = await getDoc(doc(db, 'users', data.participantId));
               if (userDoc.exists()) {
                 userData = userDoc.data();
               }
@@ -147,6 +147,9 @@ export default function ResponderChatsScreen({ navigation, route }) {
           setSelectedConversation(convo);
         }
       }
+    }, (error) => {
+      console.log('Error subscribing to conversations:', error);
+      setIsLoading(false);
     });
 
     return () => unsubscribe();
