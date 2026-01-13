@@ -306,9 +306,11 @@ export function EmergencyProvider({ children }) {
     setActiveEmergencyType(type);
 
     try {
-      // First, ensure user exists in users collection
+      // First, ensure user exists in users collection and get their profile data
       const userRef = doc(db, 'users', user.uid);
       const userDoc = await getDoc(userRef);
+      let userProfileData = {};
+      
       if (!userDoc.exists()) {
         // Create user document if it doesn't exist
         await setDoc(userRef, {
@@ -317,6 +319,9 @@ export function EmergencyProvider({ children }) {
           createdAt: new Date().toISOString(),
         }, { merge: true });
         console.log('Created user document');
+      } else {
+        // Get existing user profile data
+        userProfileData = userDoc.data();
       }
 
       // Get user's current location
@@ -347,13 +352,27 @@ export function EmergencyProvider({ children }) {
         console.log('No available responders found');
       }
 
+      // Build user's full name from profile or displayName
+      const userFullName = userProfileData.firstName && userProfileData.lastName
+        ? `${userProfileData.firstName} ${userProfileData.lastName}`
+        : user.displayName || 'Unknown User';
+
+      // Build address string from profile
+      const userAddress = userProfileData.address 
+        ? `${userProfileData.address}, ${userProfileData.city || ''}, ${userProfileData.province || ''}`
+        : '';
+
       // Save emergency to Firestore FIRST
       const emergencyRef = doc(db, 'activeEmergencies', user.uid);
       const dataToSave = {
         emergencyType: type,
         userId: user.uid,
-        userEmail: user.email || '',
-        userName: user.displayName || '',
+        userEmail: user.email || userProfileData.email || '',
+        userName: userFullName,
+        userContactNumber: userProfileData.contactNumber || '',
+        userAddress: userAddress,
+        emergencyContactName: userProfileData.emergencyContactName || '',
+        emergencyContactNumber: userProfileData.emergencyContactNumber || '',
         status: 'active',
         createdAt: serverTimestamp(),
         userLocation: coords,

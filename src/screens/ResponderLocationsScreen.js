@@ -88,18 +88,28 @@ export default function ResponderLocationsScreen({ navigation, route }) {
 
   // Listen for assigned emergencies
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!user?.uid) {
+      setAssignedEmergencies([]);
+      return;
+    }
 
     const q = query(
       collection(db, 'activeEmergencies'),
-      where('assignedResponder', '==', user.uid)
+      where('assignedResponderId', '==', user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-      const emergencies = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const emergencies = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          // Map userLocation to location for consistency
+          location: data.userLocation || null,
+          // Map emergencyType to type for consistency
+          type: data.emergencyType || 'emergency',
+        };
+      });
       setAssignedEmergencies(emergencies);
       
       // If we have an emergency from params, update it with latest data
@@ -109,10 +119,27 @@ export default function ResponderLocationsScreen({ navigation, route }) {
           setSelectedEmergency(updated);
         }
       }
+      
+      // If coming from params with emergencyId, select that emergency
+      if (route?.params?.emergencyId && !selectedEmergency) {
+        const emergency = emergencies.find((e) => e.id === route.params.emergencyId);
+        if (emergency) {
+          setSelectedEmergency(emergency);
+          navigateToEmergency(emergency);
+        }
+      }
+    }, (error) => {
+      // Ignore permission errors on sign out
+      if (error.code === 'permission-denied') {
+        return;
+      }
+      console.log('Error listening to emergencies:', error);
     });
 
-    return () => unsubscribe();
-  }, [user]);
+    return () => {
+      unsubscribe();
+    };
+  }, [user?.uid]);
 
   // Get user's current location
   useEffect(() => {
@@ -254,7 +281,12 @@ export default function ResponderLocationsScreen({ navigation, route }) {
         >
           {/* Responder's current location marker */}
           {userLocation && (
-            <Marker coordinate={userLocation} title="Your Location" anchor={{ x: 0.5, y: 0.5 }}>
+            <Marker 
+              coordinate={userLocation} 
+              title="Your Location" 
+              anchor={{ x: 0.5, y: 0.5 }}
+              tracksViewChanges={false}
+            >
               <View style={styles.responderMarker}>
                 <View style={[styles.responderMarkerInner, { backgroundColor: PRIMARY_COLOR }]}>
                   <MaterialCommunityIcons name="account" size={20} color="#FFFFFF" />
@@ -271,8 +303,10 @@ export default function ResponderLocationsScreen({ navigation, route }) {
                 <Marker
                   coordinate={emergency.location}
                   title={emergency.userName || 'User in Emergency'}
-                  description={emergency.address || 'Location'}
+                  description={emergency.userAddress || 'Location'}
                   onPress={() => navigateToEmergency(emergency)}
+                  anchor={{ x: 0.5, y: 0.5 }}
+                  tracksViewChanges={false}
                 >
                   <View
                     style={[
@@ -379,9 +413,28 @@ export default function ResponderLocationsScreen({ navigation, route }) {
             </TouchableOpacity>
           </View>
           <Text style={styles.detailsUser}>{selectedEmergency.userName || 'Unknown User'}</Text>
+          
+          {/* User Contact Info */}
+          {selectedEmergency.userContactNumber && (
+            <Text style={styles.detailsContact}>
+              📱 {selectedEmergency.userContactNumber}
+            </Text>
+          )}
+          
           <Text style={styles.detailsAddress} numberOfLines={2}>
-            📍 {selectedEmergency.address || 'Address not available'}
+            📍 {selectedEmergency.userAddress || 'Address not available'}
           </Text>
+          
+          {/* Emergency Contact */}
+          {selectedEmergency.emergencyContactName && (
+            <View style={styles.emergencyContactInfo}>
+              <Text style={styles.emergencyContactLabel}>Emergency Contact:</Text>
+              <Text style={styles.emergencyContactText}>
+                {selectedEmergency.emergencyContactName} - {selectedEmergency.emergencyContactNumber}
+              </Text>
+            </View>
+          )}
+          
           <View style={styles.detailsActions}>
             <TouchableOpacity
               style={[styles.detailsButton, { backgroundColor: PRIMARY_COLOR }]}
@@ -663,10 +716,32 @@ const styles = StyleSheet.create({
     color: '#111827',
     marginBottom: 4,
   },
+  detailsContact: {
+    fontSize: 14,
+    color: '#374151',
+    marginBottom: 4,
+  },
   detailsAddress: {
     fontSize: 14,
     color: '#6B7280',
-    marginBottom: 16,
+    marginBottom: 8,
+  },
+  emergencyContactInfo: {
+    backgroundColor: '#FEF2F2',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 12,
+  },
+  emergencyContactLabel: {
+    fontSize: 12,
+    color: '#991B1B',
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  emergencyContactText: {
+    fontSize: 14,
+    color: '#DC2626',
+    fontWeight: '500',
   },
   detailsActions: {
     flexDirection: 'row',
