@@ -173,16 +173,55 @@ export default function ResponderLocationsScreen({ navigation, route }) {
     fetchResponderData();
   }, [user]);
 
-  // Center on responder's current location
+  // Current zoom level state
+  const [currentZoom, setCurrentZoom] = useState(0.01);
+
+  // Center on responder's current location with maximum zoom
   const centerOnMe = () => {
     if (mapRef.current && userLocation) {
+      const maxZoom = 0.002; // Maximum zoom level (smaller = more zoomed in)
+      setCurrentZoom(maxZoom);
       mapRef.current.animateToRegion(
         {
           ...userLocation,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
+          latitudeDelta: maxZoom,
+          longitudeDelta: maxZoom,
         },
         1000
+      );
+    }
+  };
+
+  // Zoom in function
+  const zoomIn = () => {
+    if (mapRef.current) {
+      const newZoom = Math.max(currentZoom / 2, 0.001); // Minimum delta (max zoom)
+      setCurrentZoom(newZoom);
+      mapRef.current.animateToRegion(
+        {
+          latitude: userLocation?.latitude || defaultLocation.latitude,
+          longitude: userLocation?.longitude || defaultLocation.longitude,
+          latitudeDelta: newZoom,
+          longitudeDelta: newZoom,
+        },
+        300
+      );
+    }
+  };
+
+  // Zoom out function
+  const zoomOut = () => {
+    if (mapRef.current) {
+      const newZoom = Math.min(currentZoom * 2, 0.5); // Maximum delta (min zoom)
+      setCurrentZoom(newZoom);
+      mapRef.current.animateToRegion(
+        {
+          latitude: userLocation?.latitude || defaultLocation.latitude,
+          longitude: userLocation?.longitude || defaultLocation.longitude,
+          latitudeDelta: newZoom,
+          longitudeDelta: newZoom,
+        },
+        300
       );
     }
   };
@@ -285,7 +324,6 @@ export default function ResponderLocationsScreen({ navigation, route }) {
               coordinate={userLocation} 
               title="Your Location" 
               anchor={{ x: 0.5, y: 0.5 }}
-              tracksViewChanges={false}
             >
               <View style={styles.responderMarker}>
                 <View style={[styles.responderMarkerInner, { backgroundColor: PRIMARY_COLOR }]}>
@@ -306,7 +344,6 @@ export default function ResponderLocationsScreen({ navigation, route }) {
                   description={emergency.userAddress || 'Location'}
                   onPress={() => navigateToEmergency(emergency)}
                   anchor={{ x: 0.5, y: 0.5 }}
-                  tracksViewChanges={false}
                 >
                   <View
                     style={[
@@ -338,8 +375,25 @@ export default function ResponderLocationsScreen({ navigation, route }) {
 
         {/* Map Controls */}
         <View style={styles.mapControls}>
+          {/* Zoom In Button */}
           <TouchableOpacity
-            style={[styles.controlButton, { backgroundColor: PRIMARY_COLOR }]}
+            style={[styles.controlButton, styles.zoomButton]}
+            onPress={zoomIn}
+          >
+            <Ionicons name="add" size={24} color="#374151" />
+          </TouchableOpacity>
+          
+          {/* Zoom Out Button */}
+          <TouchableOpacity
+            style={[styles.controlButton, styles.zoomButton]}
+            onPress={zoomOut}
+          >
+            <Ionicons name="remove" size={24} color="#374151" />
+          </TouchableOpacity>
+          
+          {/* My Location Button */}
+          <TouchableOpacity
+            style={[styles.controlButton, { backgroundColor: PRIMARY_COLOR, marginTop: 8 }]}
             onPress={centerOnMe}
           >
             <MaterialIcons name="my-location" size={24} color="#FFFFFF" />
@@ -587,6 +641,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: 16,
     bottom: 200,
+    gap: 8,
   },
   controlButton: {
     width: 48,
@@ -599,6 +654,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
+  },
+  zoomButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
   },
   emergencyList: {
     position: 'absolute',
