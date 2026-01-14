@@ -20,7 +20,7 @@ import { db } from '../services/firestore';
 import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 
 const { width } = Dimensions.get('window');
-const BOX_SIZE = (width - 60) / 2;
+const BOX_SIZE = (width - 48) / 2;
 
 // Emergency categories
 const EMERGENCY_TYPES = [
@@ -306,27 +306,26 @@ export default function HomeScreen({ navigation }) {
                   style={[
                     styles.emergencyBox,
                     { backgroundColor: item.lightColor },
-                    idx % 2 === 0 ? { marginRight: 8 } : { marginLeft: 8 },
-                    { marginBottom: 16 },
                   ]}
                   onPress={() => handleEmergencyTypeSelect(item)}
-                  activeOpacity={0.8}
+                  activeOpacity={0.85}
                 >
                   <View style={[
                     styles.iconContainer,
-                    { backgroundColor: 'rgba(0,0,0,0.05)' }
+                    { backgroundColor: item.color + '20' }
                   ]}>
-                    {renderIcon(item, 48)}
+                    {renderIcon(item, 40)}
                   </View>
                   <Text style={[styles.boxTitle, { color: item.color }]}>
                     {item.name}
                   </Text>
-                  <Text style={[styles.boxSubtitle, { color: item.color }]}>
+                  <Text style={[styles.boxSubtitle, { color: item.color + 'CC' }]}>
                     {item.subtitle}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
+
           </>
         ) : (
           <>
@@ -679,13 +678,13 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
   },
   selectTitle: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
     color: '#1D1D1F',
     textAlign: 'center',
-    marginTop: 28,
-    marginBottom: 8,
-    letterSpacing: -0.4,
+    marginTop: 32,
+    marginBottom: 4,
+    letterSpacing: -0.5,
   },
   subtitleText: {
     fontSize: 15,
@@ -699,38 +698,43 @@ const styles = StyleSheet.create({
   gridContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    justifyContent: 'center',
+    paddingHorizontal: 20,
+    justifyContent: 'space-between',
+    marginTop: 16,
   },
   emergencyBox: {
-    width: BOX_SIZE,
-    height: BOX_SIZE,
-    borderRadius: 20,
+    width: '47%',
+    aspectRatio: 0.95,
+    borderRadius: 24,
     padding: 16,
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F5F5F7',
-    marginBottom: 12,
-    marginHorizontal: 6,
+    marginBottom: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   iconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 16,
+    width: 70,
+    height: 70,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   boxTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#1D1D1F',
     marginBottom: 2,
     letterSpacing: -0.3,
   },
   boxSubtitle: {
-    fontSize: 12,
-    fontWeight: '400',
+    fontSize: 11,
+    fontWeight: '500',
     color: '#86868B',
   },
   selectedTypeCard: {
@@ -1128,6 +1132,99 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     textAlign: 'center',
     marginTop: 6,
+    lineHeight: 18,
+  },
+  // Quick Access Menu Styles
+  quickAccessSection: {
+    marginTop: 24,
+    paddingHorizontal: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#1D1D1F',
+    marginBottom: 14,
+    letterSpacing: -0.3,
+  },
+  quickAccessList: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  quickAccessItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  quickAccessIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  quickAccessInfo: {
+    flex: 1,
+    marginLeft: 14,
+  },
+  quickAccessTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1D1D1F',
+    marginBottom: 2,
+  },
+  quickAccessSubtitle: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
+  // Safety Tips Styles
+  safetyTipsSection: {
+    marginTop: 24,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+  },
+  tipCard: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    alignItems: 'flex-start',
+  },
+  tipIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 10,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  tipContent: {
+    flex: 1,
+  },
+  tipTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1D1D1F',
+    marginBottom: 4,
+  },
+  tipText: {
+    fontSize: 12,
+    color: '#6B7280',
     lineHeight: 18,
   },
   modalOverlay: {

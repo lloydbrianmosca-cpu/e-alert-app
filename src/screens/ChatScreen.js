@@ -474,11 +474,11 @@ export default function ChatScreen({ navigation, route }) {
         <View style={styles.onlineBadge} />
         <View
           style={[
-            styles.emergencyBadge,
+            styles.verifiedBadge,
             { backgroundColor: getEmergencyColor(conversation.emergencyType) },
           ]}
         >
-          <Ionicons name="shield-checkmark" size={12} color="#FFFFFF" />
+          <Ionicons name="checkmark" size={10} color="#FFFFFF" />
         </View>
       </View>
 
@@ -487,10 +487,20 @@ export default function ChatScreen({ navigation, route }) {
           <Text style={styles.responderName}>{conversation.responderName}</Text>
           <RelativeTime date={conversation.lastMessageAt} style={styles.timestamp} />
         </View>
-        <Text style={styles.responderType}>{conversation.responderType}</Text>
-        <Text style={styles.lastMessage} numberOfLines={1}>
-          {conversation.lastMessage || 'No messages yet'}
-        </Text>
+        <View style={[
+          styles.typeBadge,
+          { backgroundColor: getEmergencyColor(conversation.emergencyType) + '15' }
+        ]}>
+          <Text style={[styles.typeBadgeText, { color: getEmergencyColor(conversation.emergencyType) }]}>
+            {conversation.responderType}
+          </Text>
+        </View>
+        <View style={styles.lastMessageRow}>
+          <View style={styles.onlineIndicator} />
+          <Text style={styles.lastMessage} numberOfLines={1}>
+            {conversation.lastMessage || 'No messages yet'}
+          </Text>
+        </View>
       </View>
 
       {(conversation.userUnread > 0) && (
@@ -509,14 +519,12 @@ export default function ChatScreen({ navigation, route }) {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
-          <Ionicons name="chatbubbles" size={26} color="#DC2626" />
+          <Ionicons name="chatbubbles" size={24} color="#DC2626" />
           <Text style={styles.headerTitle}>Emergency Chats</Text>
         </View>
-        {activeConversations.length > 0 && (
-          <TouchableOpacity style={styles.headerButton}>
-            <Ionicons name="search" size={22} color="#86868B" />
-          </TouchableOpacity>
-        )}
+        <TouchableOpacity style={styles.headerButton}>
+          <Ionicons name="search" size={22} color="#86868B" />
+        </TouchableOpacity>
       </View>
 
       {/* Content */}
@@ -653,47 +661,47 @@ const styles = StyleSheet.create({
   },
   conversationCard: {
     flexDirection: 'row',
-    backgroundColor: '#F5F5F7',
+    backgroundColor: '#F9FAFB',
     marginHorizontal: 24,
     marginBottom: 12,
     padding: 14,
     borderRadius: 16,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   avatarContainer: {
     position: 'relative',
     marginRight: 12,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     borderWidth: 2,
     borderColor: '#FFFFFF',
     backgroundColor: '#E5E7EB',
   },
   onlineBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
     backgroundColor: '#10B981',
     borderWidth: 2,
-    borderColor: '#F5F5F7',
+    borderColor: '#F9FAFB',
   },
-  emergencyBadge: {
+  verifiedBadge: {
     position: 'absolute',
-    top: -4,
-    right: -4,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    top: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#F5F5F7',
+    borderColor: '#F9FAFB',
   },
   conversationContent: {
     flex: 1,
@@ -702,28 +710,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   responderName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#1D1D1F',
   },
   timestamp: {
     fontSize: 12,
-    color: '#86868B',
+    color: '#9CA3AF',
     fontWeight: '500',
   },
-  responderType: {
-    fontSize: 13,
-    color: '#86868B',
-    fontWeight: '500',
-    marginBottom: 2,
+  typeBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  lastMessageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  onlineIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+    marginRight: 6,
   },
   lastMessage: {
-    fontSize: 14,
-    color: '#1D1D1F',
+    fontSize: 13,
+    color: '#6B7280',
     fontWeight: '400',
+    flex: 1,
   },
   unreadBadge: {
     backgroundColor: '#DC2626',
@@ -733,7 +758,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: 6,
-    alignSelf: 'center',
+    marginLeft: 8,
   },
   unreadCount: {
     fontSize: 11,

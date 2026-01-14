@@ -259,8 +259,8 @@ export default function SignUpScreen({ navigation }) {
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
-          scrollEnabled={false}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <AuthHeader />
 

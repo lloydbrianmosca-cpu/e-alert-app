@@ -306,69 +306,95 @@ export default function ResponderEmergencyHistoryScreen({ navigation }) {
           </View>
         ) : (
           <View style={styles.emergenciesContainer}>
-            {filteredEmergencies.map((emergency, index) => (
-              <View
-                key={`responder-history-${emergency.id}-${index}`}
-                style={[
-                  styles.emergencyCard,
-                  { borderLeftColor: getEmergencyColor(emergency.emergencyType || emergency.type) }
-                ]}
-              >
-                <View style={styles.emergencyHeader}>
-                  <View style={[
-                    styles.emergencyIconContainer,
-                    { backgroundColor: getEmergencyColor(emergency.emergencyType || emergency.type) }
-                  ]}>
-                    <MaterialIcons
-                      name={getEmergencyIcon(emergency.emergencyType || emergency.type)}
-                      size={24}
-                      color="#FFFFFF"
-                    />
+            {filteredEmergencies.map((emergency, index) => {
+              const emergencyType = emergency.emergencyType || emergency.type;
+              const emergencyColor = getEmergencyColor(emergencyType);
+              return (
+                <View
+                  key={`responder-history-${emergency.id}-${index}`}
+                  style={styles.emergencyCard}
+                >
+                  {/* Card Header with Type Badge */}
+                  <View style={styles.emergencyCardHeader}>
+                    <View style={[
+                      styles.emergencyIconContainer,
+                      { backgroundColor: emergencyColor + '15' }
+                    ]}>
+                      <MaterialIcons
+                        name={getEmergencyIcon(emergencyType)}
+                        size={28}
+                        color={emergencyColor}
+                      />
+                    </View>
+                    <View style={styles.emergencyHeaderContent}>
+                      <View style={styles.emergencyTitleRow}>
+                        <Text style={[styles.emergencyType, { color: emergencyColor }]}>
+                          {emergencyType?.toUpperCase()}
+                        </Text>
+                        <View style={styles.statusBadge}>
+                          <Ionicons name="checkmark-circle" size={12} color="#059669" />
+                          <Text style={styles.statusText}>Resolved</Text>
+                        </View>
+                      </View>
+                      <Text style={styles.emergencySubtitle}>Emergency Response</Text>
+                    </View>
                   </View>
-                  <View style={styles.emergencyInfo}>
-                    <Text style={styles.emergencyType}>
-                      {(emergency.emergencyType || emergency.type)?.toUpperCase()} EMERGENCY
-                    </Text>
-                    <Text style={styles.emergencyTime}>
-                      {formatDate(emergency.completedAt)}
-                    </Text>
-                  </View>
-                  <View style={styles.statusBadge}>
-                    <Ionicons name="checkmark-circle" size={14} color="#059669" />
-                    <Text style={styles.statusText}>RESOLVED</Text>
-                  </View>
-                </View>
 
-                <View style={styles.emergencyDetails}>
-                  <View style={styles.detailRow}>
-                    <Ionicons name="person" size={16} color="#6B7280" />
-                    <Text style={styles.detailLabel}>User:</Text>
-                    <Text style={styles.detailValue}>{emergency.userName || 'Unknown'}</Text>
+                  {/* Timeline Info */}
+                  <View style={styles.timelineSection}>
+                    <View style={styles.timelineItem}>
+                      <View style={[styles.timelineDot, { backgroundColor: '#DC2626' }]} />
+                      <View style={styles.timelineContent}>
+                        <Text style={styles.timelineLabel}>Started</Text>
+                        <Text style={styles.timelineValue}>{formatDate(emergency.createdAt)}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.timelineLine} />
+                    <View style={styles.timelineItem}>
+                      <View style={[styles.timelineDot, { backgroundColor: '#059669' }]} />
+                      <View style={styles.timelineContent}>
+                        <Text style={styles.timelineLabel}>Completed</Text>
+                        <Text style={styles.timelineValue}>{formatDate(emergency.completedAt)}</Text>
+                      </View>
+                    </View>
                   </View>
-                  <View style={styles.detailRow}>
-                    <Ionicons name="location" size={16} color="#6B7280" />
-                    <Text style={styles.detailLabel}>Location:</Text>
-                    <Text style={styles.detailValue} numberOfLines={1}>
-                      {emergency.userAddress || emergency.address || 'N/A'}
-                    </Text>
+
+                  {/* Details Section */}
+                  <View style={styles.emergencyDetails}>
+                    <View style={styles.detailCard}>
+                      <View style={styles.detailIconWrap}>
+                        <Ionicons name="person" size={16} color="#6B7280" />
+                      </View>
+                      <View style={styles.detailTextWrap}>
+                        <Text style={styles.detailLabel}>User</Text>
+                        <Text style={styles.detailValue}>{emergency.userName || 'Unknown'}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.detailCard}>
+                      <View style={styles.detailIconWrap}>
+                        <Ionicons name="location" size={16} color="#6B7280" />
+                      </View>
+                      <View style={styles.detailTextWrap}>
+                        <Text style={styles.detailLabel}>Location</Text>
+                        <Text style={styles.detailValue} numberOfLines={1}>
+                          {emergency.userAddress || emergency.address || 'N/A'}
+                        </Text>
+                      </View>
+                    </View>
                   </View>
-                  <View style={styles.detailRow}>
-                    <Ionicons name="timer" size={16} color="#6B7280" />
-                    <Text style={styles.detailLabel}>Duration:</Text>
-                    <Text style={styles.detailValue}>
-                      {calculateDuration(emergency.createdAt, emergency.completedAt)}
-                    </Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Ionicons name="calendar" size={16} color="#6B7280" />
-                    <Text style={styles.detailLabel}>Started:</Text>
-                    <Text style={styles.detailValue}>
-                      {formatDate(emergency.createdAt)}
-                    </Text>
+
+                  {/* Duration Badge */}
+                  <View style={styles.durationContainer}>
+                    <View style={[styles.durationBadge, { backgroundColor: emergencyColor + '10' }]}>
+                      <Ionicons name="timer-outline" size={16} color={emergencyColor} />
+                      <Text style={[styles.durationText, { color: emergencyColor }]}>
+                        Response Time: {calculateDuration(emergency.createdAt, emergency.completedAt)}
+                      </Text>
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
         <View style={{ height: 100 }} />
@@ -532,79 +558,156 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emergenciesContainer: {
-    gap: 10,
+    gap: 14,
+    paddingBottom: 20,
   },
   emergencyCard: {
-    backgroundColor: '#F5F5F7',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    borderLeftWidth: 4,
-    borderWidth: 0,
-    borderColor: 'transparent',
-    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  emergencyHeader: {
+  emergencyCardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 16,
   },
   emergencyIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  emergencyInfo: {
+  emergencyHeaderContent: {
     flex: 1,
-    marginLeft: 10,
+    marginLeft: 12,
+  },
+  emergencyTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 2,
   },
   emergencyType: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  emergencySubtitle: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontWeight: '500',
   },
   emergencyTime: {
     fontSize: 11,
-    color: '#6B7280',
-    marginTop: 1,
+    color: '#9CA3AF',
+    marginTop: 2,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ECFDF5',
+    backgroundColor: '#D1FAE5',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 16,
-    gap: 3,
+    borderRadius: 10,
+    gap: 4,
   },
   statusText: {
     fontSize: 10,
     fontWeight: '600',
     color: '#059669',
   },
-  emergencyDetails: {
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-    gap: 6,
+  timelineSection: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 14,
   },
-  detailRow: {
+  timelineItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+  },
+  timelineDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 12,
+  },
+  timelineLine: {
+    width: 2,
+    height: 16,
+    backgroundColor: '#E5E7EB',
+    marginLeft: 4,
+    marginVertical: 4,
+  },
+  timelineContent: {
+    flex: 1,
+  },
+  timelineLabel: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    fontWeight: '500',
+  },
+  timelineValue: {
+    fontSize: 12,
+    color: '#1F2937',
+    fontWeight: '600',
+  },
+  emergencyDetails: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 14,
+  },
+  detailCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
+    padding: 10,
+  },
+  detailIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  detailTextWrap: {
+    flex: 1,
   },
   detailLabel: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontSize: 10,
+    color: '#9CA3AF',
     fontWeight: '500',
-    width: 65,
   },
   detailValue: {
     fontSize: 12,
     color: '#1F2937',
     fontWeight: '600',
-    flex: 1,
+  },
+  durationContainer: {
+    alignItems: 'center',
+  },
+  durationBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  durationText: {
+    fontSize: 12,
+    fontWeight: '600',
   },
   paginationContainer: {
     flexDirection: 'row',

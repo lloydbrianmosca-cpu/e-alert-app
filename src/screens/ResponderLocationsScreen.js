@@ -660,18 +660,35 @@ export default function ResponderLocationsScreen({ navigation, route }) {
             ))}
           </View>
         )}
-
-        {/* No Emergencies State */}
-        {assignedEmergencies.length === 0 && (
-          <View style={styles.noEmergencies}>
-            <MaterialCommunityIcons name="map-marker-check" size={48} color="#9CA3AF" />
-            <Text style={styles.noEmergenciesText}>No active emergencies</Text>
-            <Text style={styles.noEmergenciesSubtext}>
-              Assigned emergencies will appear on the map
-            </Text>
-          </View>
-        )}
       </View>
+
+      {/* No Active Emergency Card - shown when no emergencies */}
+      {assignedEmergencies.length === 0 && !selectedEmergency && (
+        <View style={styles.bottomActionsContainer}>
+          <View style={styles.bottomActionsCard}>
+            <Text style={styles.bottomActionsTitle}>No Active Emergency</Text>
+            <Text style={styles.bottomActionsSubtitle}>
+              Your location is displayed on the map. Assigned emergencies will appear here.
+            </Text>
+            <View style={styles.defaultButtons}>
+              <TouchableOpacity 
+                style={[styles.defaultButton, styles.homeButton]}
+                onPress={() => navigation.navigate('ResponderHome')}
+              >
+                <Ionicons name="home" size={20} color="#FFFFFF" />
+                <Text style={styles.defaultButtonText}>Go Home</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.defaultButton, styles.chatButtonDefault]}
+                onPress={() => navigation.navigate('ResponderChats')}
+              >
+                <Ionicons name="chatbubbles" size={20} color="#FFFFFF" />
+                <Text style={styles.defaultButtonText}>Open Chat</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* Selected Emergency Details */}
       {selectedEmergency && (
@@ -906,7 +923,7 @@ const styles = StyleSheet.create({
   mapControls: {
     position: 'absolute',
     right: 10,
-    bottom: 10,
+    top: 10,
     gap: 6,
   },
   controlButton: {
@@ -1237,6 +1254,63 @@ const styles = StyleSheet.create({
   },
   overlayButtonText: {
     fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  // Bottom Actions Card Styles (No Active Emergency)
+  bottomActionsContainer: {
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+  },
+  bottomActionsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  bottomActionsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 6,
+  },
+  bottomActionsSubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+    marginBottom: 14,
+  },
+  defaultButtons: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  defaultButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 10,
+  },
+  homeButton: {
+    backgroundColor: '#DC2626',
+  },
+  chatButtonDefault: {
+    backgroundColor: '#3B82F6',
+  },
+  defaultButtonText: {
+    fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
   },

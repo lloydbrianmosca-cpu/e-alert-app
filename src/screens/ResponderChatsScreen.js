@@ -328,15 +328,20 @@ export default function ResponderChatsScreen({ navigation, route }) {
           <Image source={{ uri: item.userAvatar }} style={styles.avatar} />
         ) : (
           <View style={[styles.avatarPlaceholder, { backgroundColor: `${PRIMARY_COLOR}20` }]}>
-            <Ionicons name="person" size={24} color={PRIMARY_COLOR} />
+            <Text style={styles.avatarInitials}>
+              {item.userName?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'U'}
+            </Text>
           </View>
         )}
+        <View style={styles.onlineBadge} />
         <View
           style={[
-            styles.emergencyTypeDot,
+            styles.verifiedBadge,
             { backgroundColor: EMERGENCY_COLORS[item.emergencyType] || '#DC2626' },
           ]}
-        />
+        >
+          <Ionicons name="alert" size={10} color="#FFFFFF" />
+        </View>
       </View>
       <View style={styles.conversationInfo}>
         <View style={styles.conversationHeader}>
@@ -344,16 +349,6 @@ export default function ResponderChatsScreen({ navigation, route }) {
           <Text style={styles.conversationTime}>
             {item.lastMessageAt ? getRelativeTime(item.lastMessageAt) : ''}
           </Text>
-        </View>
-        <View style={styles.conversationPreview}>
-          <Text style={styles.conversationMessage} numberOfLines={1}>
-            {item.lastMessage || 'No messages yet'}
-          </Text>
-          {item.responderUnread > 0 && (
-            <View style={[styles.unreadBadge, { backgroundColor: PRIMARY_COLOR }]}>
-              <Text style={styles.unreadText}>{item.responderUnread}</Text>
-            </View>
-          )}
         </View>
         <View
           style={[
@@ -367,10 +362,21 @@ export default function ResponderChatsScreen({ navigation, route }) {
               { color: EMERGENCY_COLORS[item.emergencyType] || '#DC2626' },
             ]}
           >
-            {item.emergencyType?.toUpperCase() || 'EMERGENCY'}
+            {item.emergencyType?.charAt(0).toUpperCase() + item.emergencyType?.slice(1) || 'Emergency'}
+          </Text>
+        </View>
+        <View style={styles.lastMessageRow}>
+          <View style={styles.onlineIndicator} />
+          <Text style={styles.conversationMessage} numberOfLines={1}>
+            {item.lastMessage || 'No messages yet'}
           </Text>
         </View>
       </View>
+      {item.responderUnread > 0 && (
+        <View style={[styles.unreadBadge, { backgroundColor: PRIMARY_COLOR }]}>
+          <Text style={styles.unreadText}>{item.responderUnread}</Text>
+        </View>
+      )}
     </TouchableOpacity>
   );
 
@@ -456,8 +462,10 @@ export default function ResponderChatsScreen({ navigation, route }) {
           ) : (
             <>
               <Ionicons name="chatbubbles" size={24} color="#DC2626" />
-              <Text style={styles.headerTitle}>Messages</Text>
-              <View style={{ width: 24 }} />
+              <Text style={styles.headerTitle}>Emergency Chats</Text>
+              <TouchableOpacity style={styles.searchButton}>
+                <Ionicons name="search" size={22} color="#86868B" />
+              </TouchableOpacity>
             </>
           )}
         </View>
@@ -553,13 +561,16 @@ export default function ResponderChatsScreen({ navigation, route }) {
               </Text>
             </View>
           ) : (
-            <FlatList
-              data={conversations}
-              renderItem={renderConversationItem}
-              keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.listContent}
-              showsVerticalScrollIndicator={false}
-            />
+            <>
+              <Text style={styles.sectionTitle}>ACTIVE CONVERSATIONS ({conversations.length})</Text>
+              <FlatList
+                data={conversations}
+                renderItem={renderConversationItem}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.listContent}
+                showsVerticalScrollIndicator={false}
+              />
+            </>
           )}
         </View>
       )}
@@ -669,6 +680,14 @@ const styles = StyleSheet.create({
     color: '#86868B',
     marginTop: 2,
   },
+  searchButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F7',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   callButton: {
     width: 40,
     height: 40,
@@ -692,13 +711,23 @@ const styles = StyleSheet.create({
   listContent: {
     padding: 14,
   },
+  sectionTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#86868B',
+    marginHorizontal: 24,
+    marginTop: 16,
+    marginBottom: 12,
+    letterSpacing: 0.5,
+  },
   conversationItem: {
     flexDirection: 'row',
-    backgroundColor: '#F5F5F7',
+    backgroundColor: '#F9FAFB',
     borderRadius: 16,
     padding: 14,
     marginBottom: 12,
-    alignItems: 'center',
+    marginHorizontal: 10,
+    alignItems: 'flex-start',
   },
   conversationItemSelected: {
     borderWidth: 2,
@@ -709,31 +738,49 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   avatar: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     borderWidth: 2,
     borderColor: '#FFFFFF',
     backgroundColor: '#E5E7EB',
   },
   avatarPlaceholder: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
     borderColor: '#FFFFFF',
   },
-  emergencyTypeDot: {
+  avatarInitials: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: PRIMARY_COLOR,
+  },
+  onlineBadge: {
     position: 'absolute',
-    bottom: 0,
-    right: 0,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#10B981',
     borderWidth: 2,
-    borderColor: '#F5F5F7',
+    borderColor: '#F9FAFB',
+  },
+  verifiedBadge: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#F9FAFB',
   },
   conversationInfo: {
     flex: 1,
@@ -742,27 +789,44 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   conversationName: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     color: '#1D1D1F',
   },
   conversationTime: {
     fontSize: 12,
-    color: '#86868B',
+    color: '#9CA3AF',
     fontWeight: '500',
   },
-  conversationPreview: {
+  emergencyTag: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    marginBottom: 6,
+  },
+  emergencyTagText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  lastMessageRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+  },
+  onlineIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10B981',
+    marginRight: 6,
   },
   conversationMessage: {
     flex: 1,
-    fontSize: 14,
-    color: '#1D1D1F',
+    fontSize: 13,
+    color: '#6B7280',
     fontWeight: '400',
   },
   unreadBadge: {
@@ -778,16 +842,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#FFFFFF',
-  },
-  emergencyTag: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  emergencyTagText: {
-    fontSize: 10,
-    fontWeight: '600',
   },
   emptyState: {
     flex: 1,

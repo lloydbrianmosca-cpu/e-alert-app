@@ -571,9 +571,17 @@ export default function ProfileScreen({ navigation }) {
       {/* Header */}
       <View style={styles.header}>
         <View style={styles.headerContent}>
+          <Ionicons name="person" size={26} color="#DC2626" />
           <Text style={styles.headerTitle}>My Profile</Text>
         </View>
-        {!isEditing && (
+        {isEditing ? (
+          <TouchableOpacity
+            style={styles.cancelHeaderButton}
+            onPress={handleCancel}
+          >
+            <Text style={styles.cancelHeaderText}>Cancel</Text>
+          </TouchableOpacity>
+        ) : (
           <TouchableOpacity
             style={styles.editButton}
             onPress={() => {
@@ -621,142 +629,96 @@ export default function ProfileScreen({ navigation }) {
           <Text style={styles.profileName}>
             {user?.displayName || ''}
           </Text>
-          <View style={styles.profileRoleContainer}>
-            <Text style={styles.profileRole}>User</Text>
-            {profileData.verificationStatus === 'verified' && (
-              <View style={styles.verifiedBadge}>
-                <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                <Text style={styles.verifiedBadgeText}>Verified</Text>
-              </View>
-            )}
-            {(profileData.verificationStatus === 'pending' && profileData.validIDImage) || 
-             (isEditing && editData.validIDImage && !editData.validIDImage.startsWith('http')) ? (
-              <View style={styles.pendingBadge}>
-                <Ionicons name="time" size={16} color="#F59E0B" />
-                <Text style={styles.pendingBadgeText}>Pending Verification</Text>
-              </View>
-            ) : null}
-          </View>
         </View>
 
-        {/* Account Setup Alert */}
-        <View style={styles.accountSetupSection}>
-          <View style={styles.accountSetupHeader}>
-            <Ionicons name="alert-circle" size={24} color="#F59E0B" />
-            <View style={styles.accountSetupTextContainer}>
-              <Text style={styles.accountSetupTitle}>Set up your account first</Text>
-              <Text style={styles.accountSetupSubtitle}>Add a valid ID to use the app</Text>
+        {/* Show full form only when editing */}
+        {isEditing ? (
+          <>
+            {/* Personal Information */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Personal Information</Text>
+              <View style={styles.sectionContent}>
+                {renderInputField('First Name', 'firstName', 'Enter first name')}
+                {renderInputField('Last Name', 'lastName', 'Enter last name')}
+                {renderInputField('Email Address', 'email', 'Enter email')}
+                {renderInputField('Contact Number', 'contactNumber', 'Enter contact number')}
+              </View>
             </View>
-          </View>
-          <TouchableOpacity style={styles.uploadIdButton} onPress={handleUploadID}>
-            <Ionicons name="cloud-upload" size={20} color="#FFFFFF" />
-            <Text style={styles.uploadIdButtonText}>Upload Valid ID</Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Personal Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
+            {/* Address Information */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Address Information</Text>
+              <View style={styles.sectionContent}>
+                {renderInputField('Street Address', 'address', 'Enter street address')}
+                {renderDropdown('Region', 'region', REGIONS, false)}
+                {renderDropdown('Province', 'province', provinceOptions, !editData?.region)}
+                {renderDropdown('City/Municipality', 'city', cityOptions, !editData?.province)}
+              </View>
+            </View>
 
-          <View style={styles.sectionContent}>
-            {renderInputField('First Name', 'firstName', 'Enter first name')}
-            {renderInputField('Last Name', 'lastName', 'Enter last name')}
-            {renderInputField('Email Address', 'email', 'Enter email')}
-            {renderInputField('Contact Number', 'contactNumber', 'Enter contact number')}
-          </View>
-        </View>
-
-        {/* Address Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Address Information</Text>
-
-          <View style={styles.sectionContent}>
-            {renderInputField('Street Address', 'address', 'Enter street address')}
-            
-            {/* Region Dropdown */}
-            {renderDropdown('Region', 'region', REGIONS, false)}
-            
-            {/* Province Dropdown - disabled until region is selected */}
-            {renderDropdown(
-              'Province',
-              'province',
-              provinceOptions,
-              !editData?.region
-            )}
-            
-            {/* City Dropdown - disabled until province is selected */}
-            {renderDropdown(
-              'City/Municipality',
-              'city',
-              cityOptions,
-              !editData?.province
-            )}
-            
-
-          </View>
-        </View>
-
-        {/* Emergency Contact Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Emergency Contact</Text>
-
-          <View style={styles.sectionContent}>
-            {isEditing ? (
-              <>
+            {/* Emergency Contact Information */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Emergency Contact</Text>
+              <View style={styles.sectionContent}>
                 {renderInputField('Emergency Contact Person Name', 'emergencyContactName', 'Enter name')}
                 {renderInputField('Emergency Contact Number', 'emergencyContactNumber', 'Enter phone number')}
-              </>
-            ) : (
-              <>
-                <View style={styles.inputFieldContainer}>
-                  <Text style={styles.inputLabel}>Emergency Contact Person Name</Text>
-                  <Text style={styles.inputValue}>{profileData.emergencyContactName || 'Not set'}</Text>
-                </View>
-                <View style={styles.inputFieldContainer}>
-                  <Text style={styles.inputLabel}>Emergency Contact Number</Text>
-                  <Text style={styles.inputValue}>{profileData.emergencyContactNumber || 'Not set'}</Text>
-                </View>
-              </>
-            )}
-          </View>
-        </View>
-
-        {/* Action Buttons */}
-        <View style={styles.actionSection}>
-          <TouchableOpacity style={styles.actionButton} onPress={handleChangePassword}>
-            <Ionicons name="lock-closed" size={20} color="#10B981" />
-            <View style={styles.actionButtonText}>
-              <Text style={styles.actionButtonTitle}>Change Password</Text>
-              <Text style={styles.actionButtonSubtitle}>Update your password</Text>
+              </View>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
-          </TouchableOpacity>
-          {!isEditing && (
-            <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-              <Ionicons name="log-out" size={20} color="#FFFFFF" />
-              <Text style={styles.logoutButtonText}>Log Out</Text>
-            </TouchableOpacity>
-          )}
-        </View>
 
-        {/* Save/Cancel Buttons */}
-        {isEditing && (
-          <View style={styles.editActions}>
-            <TouchableOpacity
-              style={[styles.button, styles.saveButton]}
-              onPress={handleSave}
-            >
-              <Ionicons name="checkmark" size={20} color="#FFFFFF" />
-              <Text style={styles.buttonText}>Save Changes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.cancelButton]}
-              onPress={handleCancel}
-            >
-              <Ionicons name="close" size={20} color="#FFFFFF" />
-              <Text style={styles.buttonText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
+            {/* Save/Cancel Buttons */}
+            <View style={styles.editActions}>
+              <TouchableOpacity
+                style={[styles.button, styles.saveButton]}
+                onPress={handleSave}
+              >
+                <Ionicons name="checkmark" size={20} color="#FFFFFF" />
+                <Text style={styles.buttonText}>Save Changes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.button, styles.cancelButton]}
+                onPress={handleCancel}
+              >
+                <Ionicons name="close" size={20} color="#FFFFFF" />
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </>
+        ) : (
+          <>
+            {/* Account Section - Simplified View */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Account</Text>
+              
+              <TouchableOpacity 
+                style={styles.actionButton} 
+                onPress={() => {
+                  setEditData(profileData);
+                  setIsEditing(true);
+                }}
+              >
+                <Ionicons name="person-circle" size={22} color="#3B82F6" />
+                <View style={styles.actionButtonText}>
+                  <Text style={styles.actionButtonTitle}>Edit Profile</Text>
+                  <Text style={styles.actionButtonSubtitle}>Update your personal information</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.actionButton} onPress={handleChangePassword}>
+                <Ionicons name="lock-closed" size={22} color="#10B981" />
+                <View style={styles.actionButtonText}>
+                  <Text style={styles.actionButtonTitle}>Change Password</Text>
+                  <Text style={styles.actionButtonSubtitle}>Update your password</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+                <Ionicons name="log-out" size={20} color="#FFFFFF" />
+                <Text style={styles.logoutButtonText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          </>
         )}
       </ScrollView>
 
@@ -1065,6 +1027,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  cancelHeaderButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+  },
+  cancelHeaderText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#DC2626',
+  },
   content: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -1074,17 +1045,17 @@ const styles = StyleSheet.create({
   },
   profilePictureSection: {
     alignItems: 'center',
-    paddingVertical: 28,
+    paddingVertical: 20,
     backgroundColor: '#FFFFFF',
   },
   profileImageContainer: {
     position: 'relative',
-    marginBottom: 16,
+    marginBottom: 12,
   },
   profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     borderWidth: 3,
     borderColor: '#F5F5F7',
   },
@@ -1097,9 +1068,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#DC2626',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1107,11 +1078,10 @@ const styles = StyleSheet.create({
     borderColor: '#FFFFFF',
   },
   profileName: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: '#1D1D1F',
     letterSpacing: -0.4,
-    marginBottom: 3,
   },
   profileRoleContainer: {
     flexDirection: 'row',
@@ -1194,47 +1164,51 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   section: {
-    marginTop: 24,
-    paddingHorizontal: 24,
+    marginTop: 16,
+    paddingHorizontal: 20,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#1D1D1F',
-    marginBottom: 14,
-    letterSpacing: -0.3,
-  },
-  sectionContent: {
-    backgroundColor: '#F5F5F7',
-    borderRadius: 14,
-    padding: 16,
-  },
-  inputFieldContainer: {
-    marginBottom: 16,
-  },
-  inputLabel: {
-    fontSize: 13,
-    fontWeight: '500',
     color: '#86868B',
     marginBottom: 8,
+    letterSpacing: 0.5,
+    textTransform: 'uppercase',
+  },
+  sectionContent: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+  },
+  inputFieldContainer: {
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  inputLabel: {
+    fontSize: 11,
+    fontWeight: '500',
+    color: '#9CA3AF',
+    marginBottom: 4,
   },
   input: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
     fontSize: 15,
     color: '#1D1D1F',
   },
   inputValue: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#1D1D1F',
     fontWeight: '500',
-    paddingVertical: 10,
   },
   pickerContainer: {
-    borderRadius: 10,
-    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    backgroundColor: '#F9FAFB',
     overflow: 'hidden',
   },
   pickerContainerDisabled: {
@@ -1253,18 +1227,20 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   actionSection: {
-    marginTop: 24,
-    paddingHorizontal: 24,
+    marginTop: 20,
+    paddingHorizontal: 20,
   },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F5F5F7',
+    backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 14,
     borderRadius: 12,
-    marginBottom: 12,
+    marginBottom: 10,
     gap: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   actionButtonText: {
     flex: 1,
@@ -1277,8 +1253,8 @@ const styles = StyleSheet.create({
     letterSpacing: -0.3,
   },
   actionButtonSubtitle: {
-    fontSize: 13,
-    color: '#86868B',
+    fontSize: 12,
+    color: '#9CA3AF',
     fontWeight: '400',
   },
   logoutButton: {
@@ -1286,16 +1262,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#DC2626',
-    height: 50,
+    height: 48,
     borderRadius: 12,
-    marginTop: 8,
+    marginTop: 6,
     gap: 8,
   },
   logoutButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    letterSpacing: -0.4,
     fontSize: 15,
     fontWeight: '600',
     color: '#FFFFFF',

@@ -530,7 +530,7 @@ export default function ResponderProfileScreen({ navigation }) {
           <Text style={styles.profileSubtitle}>Responder</Text>
         </View>
 
-        {/* Status & Responder Type Section */}
+        {/* Status & Responder Type Section - Always visible */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Status & Type</Text>
 
@@ -601,108 +601,103 @@ export default function ResponderProfileScreen({ navigation }) {
           </View>
         </View>
 
-        {/* Personal Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
+        {/* Show full form only when editing */}
+        {isEditing ? (
+          <>
+            {/* Personal Information */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Personal Information</Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>First Name *</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={isEditing ? editData.firstName : profileData.firstName}
-              onChangeText={(text) => setEditData((prev) => ({ ...prev, firstName: text }))}
-              editable={isEditing}
-              placeholder="Enter first name"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>First Name *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editData.firstName}
+                  onChangeText={(text) => setEditData((prev) => ({ ...prev, firstName: text }))}
+                  placeholder="Enter first name"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Last Name *</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={isEditing ? editData.lastName : profileData.lastName}
-              onChangeText={(text) => setEditData((prev) => ({ ...prev, lastName: text }))}
-              editable={isEditing}
-              placeholder="Enter last name"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Last Name *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editData.lastName}
+                  onChangeText={(text) => setEditData((prev) => ({ ...prev, lastName: text }))}
+                  placeholder="Enter last name"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Email</Text>
-            <TextInput
-              style={[styles.input, styles.inputDisabled]}
-              value={profileData.email}
-              editable={false}
-              placeholder="Email address"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Email</Text>
+                <TextInput
+                  style={[styles.input, styles.inputDisabled]}
+                  value={profileData.email}
+                  editable={false}
+                  placeholder="Email address"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Contact Number *</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={isEditing ? editData.contactNumber : profileData.contactNumber}
-              onChangeText={(text) => setEditData((prev) => ({ ...prev, contactNumber: text }))}
-              editable={isEditing}
-              placeholder="Enter contact number"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="phone-pad"
-            />
-          </View>
-        </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Contact Number *</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editData.contactNumber}
+                  onChangeText={(text) => setEditData((prev) => ({ ...prev, contactNumber: text }))}
+                  placeholder="Enter contact number"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </View>
 
-        {/* Station/Unit Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Station/Unit Information</Text>
+            {/* Station/Unit Information */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Station/Unit Information</Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Station/Unit Name</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={isEditing ? editData.stationName : profileData.stationName}
-              onChangeText={(text) => setEditData((prev) => ({ ...prev, stationName: text }))}
-              editable={isEditing}
-              placeholder="e.g., Metro Fire Station 1, City General Hospital"
-              placeholderTextColor="#9CA3AF"
-            />
-          </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Station/Unit Name</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editData.stationName}
+                  onChangeText={(text) => setEditData((prev) => ({ ...prev, stationName: text }))}
+                  placeholder="e.g., Metro Fire Station 1"
+                  placeholderTextColor="#9CA3AF"
+                />
+              </View>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Station Hotline Number</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={isEditing ? editData.hotlineNumber : profileData.hotlineNumber}
-              onChangeText={(text) => setEditData((prev) => ({ ...prev, hotlineNumber: text }))}
-              editable={isEditing}
-              placeholder="Enter station hotline number"
-              placeholderTextColor="#9CA3AF"
-              keyboardType="phone-pad"
-            />
-          </View>
-        </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Station Hotline Number</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editData.hotlineNumber}
+                  onChangeText={(text) => setEditData((prev) => ({ ...prev, hotlineNumber: text }))}
+                  placeholder="Enter station hotline"
+                  placeholderTextColor="#9CA3AF"
+                  keyboardType="phone-pad"
+                />
+              </View>
+            </View>
 
-        {/* Station Location */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Station Location</Text>
+            {/* Station Location */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Station Location</Text>
 
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Station Address</Text>
-            <TextInput
-              style={[styles.input, !isEditing && styles.inputDisabled]}
-              value={isEditing ? editData.stationAddress : profileData.stationAddress}
-              onChangeText={(text) => setEditData((prev) => ({ ...prev, stationAddress: text }))}
-              editable={isEditing}
-              placeholder="Enter station/unit address"
-              placeholderTextColor="#9CA3AF"
-              multiline
-            />
-          </View>
+              <View style={styles.inputGroup}>
+                <Text style={styles.inputLabel}>Station Address</Text>
+                <TextInput
+                  style={styles.input}
+                  value={editData.stationAddress}
+                  onChangeText={(text) => setEditData((prev) => ({ ...prev, stationAddress: text }))}
+                  placeholder="Enter station address"
+                  placeholderTextColor="#9CA3AF"
+                  multiline
+                />
+              </View>
 
-          {isEditing ? (
-            <>
               <View style={styles.inputGroup}>
                 <Text style={styles.inputLabel}>Region</Text>
                 <View style={styles.pickerContainer}>
@@ -728,11 +723,7 @@ export default function ResponderProfileScreen({ navigation }) {
                     enabled={!!editData.region}
                   >
                     {provinceOptions.map((province) => (
-                      <Picker.Item
-                        key={province.value}
-                        label={province.label}
-                        value={province.value}
-                      />
+                      <Picker.Item key={province.value} label={province.label} value={province.value} />
                     ))}
                   </Picker>
                 </View>
@@ -753,80 +744,64 @@ export default function ResponderProfileScreen({ navigation }) {
                   </Picker>
                 </View>
               </View>
-            </>
-          ) : (
-            <>
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Region</Text>
-                <TextInput
-                  style={[styles.input, styles.inputDisabled]}
-                  value={profileData.region}
-                  editable={false}
-                  placeholder="Region"
-                  placeholderTextColor="#9CA3AF"
-                />
-              </View>
+            </View>
 
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>Province</Text>
-                <TextInput
-                  style={[styles.input, styles.inputDisabled]}
-                  value={profileData.province}
-                  editable={false}
-                  placeholder="Province"
-                  placeholderTextColor="#9CA3AF"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.inputLabel}>City/Municipality</Text>
-                <TextInput
-                  style={[styles.input, styles.inputDisabled]}
-                  value={profileData.city}
-                  editable={false}
-                  placeholder="City/Municipality"
-                  placeholderTextColor="#9CA3AF"
-                />
-              </View>
-            </>
-          )}
-        </View>
-
-        {/* Save Button */}
-        {isEditing && (
-          <TouchableOpacity
-            style={[styles.saveButton, { backgroundColor: PRIMARY_COLOR }]}
-            onPress={handleSave}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
-            ) : (
-              <Text style={styles.saveButtonText}>Save Changes</Text>
-            )}
-          </TouchableOpacity>
-        )}
-
-        {/* Account Actions */}
-        {!isEditing && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Account</Text>
+            {/* Save Button */}
+            <TouchableOpacity
+              style={[styles.saveButtonLarge, { backgroundColor: PRIMARY_COLOR }]}
+              onPress={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Text style={styles.saveButtonText}>Save Changes</Text>
+              )}
+            </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => setShowPasswordModal(true)}
+              style={styles.cancelButtonLarge}
+              onPress={handleCancelEdit}
             >
-              <Ionicons name="lock-closed-outline" size={22} color="#374151" />
-              <Text style={styles.actionButtonText}>Change Password</Text>
-              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+              <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            {/* Account Section - Simplified View */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Account</Text>
 
-            <TouchableOpacity style={styles.actionButton} onPress={handleSignOut}>
-              <Ionicons name="log-out-outline" size={22} color="#DC2626" />
-              <Text style={[styles.actionButtonText, { color: '#DC2626' }]}>Sign Out</Text>
-              <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={styles.actionButtonStyled}
+                onPress={() => setIsEditing(true)}
+              >
+                <Ionicons name="person-circle" size={22} color="#3B82F6" />
+                <View style={styles.actionButtonTextContainer}>
+                  <Text style={styles.actionButtonTitle}>Edit Profile</Text>
+                  <Text style={styles.actionButtonSubtitle}>Update your personal information</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.actionButtonStyled}
+                onPress={() => setShowPasswordModal(true)}
+              >
+                <Ionicons name="lock-closed" size={22} color="#10B981" />
+                <View style={styles.actionButtonTextContainer}>
+                  <Text style={styles.actionButtonTitle}>Change Password</Text>
+                  <Text style={styles.actionButtonSubtitle}>Update your password</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#D1D5DB" />
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.logoutButton} onPress={handleSignOut}>
+                <Ionicons name="log-out" size={20} color="#FFFFFF" />
+                <Text style={styles.logoutButtonText}>Log Out</Text>
+              </TouchableOpacity>
+            </View>
+          </>
         )}
 
         <View style={{ height: 20 }} />
@@ -1076,37 +1051,35 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   profileCard: {
-    backgroundColor: '#F5F5F7',
-    borderRadius: 20,
-    padding: 24,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
     alignItems: 'center',
-    marginTop: 16,
-    marginBottom: 16,
-    borderWidth: 0,
-    borderColor: 'transparent',
+    marginTop: 12,
+    marginBottom: 12,
   },
   profileImageContainer: {
     position: 'relative',
-    marginBottom: 14,
+    marginBottom: 12,
   },
   profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 90,
+    height: 90,
+    borderRadius: 45,
     borderWidth: 3,
-    borderColor: '#DC2626',
+    borderColor: '#F5F5F7',
   },
   editImageButton: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: '#DC2626',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 2,
+    borderWidth: 3,
     borderColor: '#FFFFFF',
   },
   avatarContainer: {
@@ -1115,18 +1088,16 @@ const styles = StyleSheet.create({
     borderRadius: 45,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
   },
   profileName: {
     fontSize: 20,
     fontWeight: '700',
     color: '#111827',
-    marginBottom: 3,
+    marginBottom: 2,
   },
   profileSubtitle: {
     fontSize: 13,
     color: '#6B7280',
-    marginBottom: 6,
   },
   badgeNumber: {
     fontSize: 12,
@@ -1201,36 +1172,40 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
   },
   section: {
-    backgroundColor: '#F5F5F7',
-    borderRadius: 16,
-    padding: 18,
-    marginBottom: 16,
-    borderWidth: 0,
-    borderColor: 'transparent',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
   },
   sectionTitle: {
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#1D1D1F',
-    marginBottom: 16,
+    color: '#9CA3AF',
+    marginBottom: 12,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   inputGroup: {
-    marginBottom: 14,
+    marginBottom: 12,
   },
   inputLabel: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
-    color: '#6B7280',
-    marginBottom: 5,
+    color: '#9CA3AF',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
   },
   input: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 0,
-    borderColor: 'transparent',
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
     color: '#1D1D1F',
   },
   inputDisabled: {
@@ -1254,23 +1229,78 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 14,
   },
+  saveButtonLarge: {
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   saveButtonText: {
     fontSize: 14,
     fontWeight: '600',
     color: '#FFFFFF',
   },
+  cancelButtonLarge: {
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginBottom: 20,
+    backgroundColor: '#F3F4F6',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#F9FAFB',
   },
+  actionButtonStyled: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
   actionButtonText: {
     flex: 1,
-    fontSize: 14,
+    fontSize: 15,
     color: '#374151',
-    marginLeft: 10,
+    marginLeft: 12,
+    fontWeight: '500',
+  },
+  actionButtonTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  actionButtonTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#1D1D1F',
+  },
+  actionButtonSubtitle: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#DC2626',
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginTop: 16,
+    gap: 8,
+  },
+  logoutButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   modalOverlay: {
     flex: 1,

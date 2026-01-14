@@ -308,49 +308,54 @@ export default function HotlinesScreen({ navigation }) {
   };
 
   const renderHotlineCard = ({ item }) => (
-    <TouchableOpacity
-      style={styles.hotlineCard}
-      onPress={() => {
-        // TODO: Open phone call or copy number
-      }}
-      activeOpacity={0.7}
-    >
-      <View
-        style={[
-          styles.hotlineIconContainer,
-          { backgroundColor: getAgencyColor(item.type) + '20' },
-        ]}
-      >
-        <MaterialIcons
-          name={getAgencyIcon(item.type)}
-          size={28}
-          color={getAgencyColor(item.type)}
-        />
+    <View style={styles.hotlineCard}>
+      <View style={styles.hotlineCardHeader}>
+        <View
+          style={[
+            styles.hotlineIconContainer,
+            { backgroundColor: getAgencyColor(item.type) + '15' },
+          ]}
+        >
+          <MaterialIcons
+            name={getAgencyIcon(item.type)}
+            size={26}
+            color={getAgencyColor(item.type)}
+          />
+        </View>
+        <View style={styles.hotlineContent}>
+          <Text style={styles.hotlineName}>{item.name}</Text>
+          <View style={[styles.agencyBadge, { backgroundColor: getAgencyColor(item.type) + '15' }]}>
+            <Text style={[styles.agencyBadgeText, { color: getAgencyColor(item.type) }]}>{item.agency}</Text>
+          </View>
+        </View>
       </View>
 
-      <View style={styles.hotlineContent}>
-        <Text style={styles.hotlineName}>{item.name}</Text>
-        <Text style={styles.hotlineAgency}>{item.agency}</Text>
-        <View style={styles.locationContainer}>
-          <Ionicons name="location" size={12} color="#6B7280" />
+      <View style={styles.hotlineDetails}>
+        <View style={styles.locationRow}>
+          <Ionicons name="location" size={14} color="#6B7280" />
           <Text style={styles.locationText}>
             {item.city}, {item.province}
           </Text>
         </View>
+        
+        <View style={styles.hotlineActions}>
+          <View style={styles.numberContainer}>
+            <Ionicons name="call" size={14} color={getAgencyColor(item.type)} />
+            <Text style={[styles.hotlineNumber, { color: getAgencyColor(item.type) }]}>
+              {item.number}
+            </Text>
+          </View>
+          <TouchableOpacity 
+            style={[styles.callButton, { backgroundColor: getAgencyColor(item.type) }]}
+            onPress={() => handleCallPress(item.number)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name="call" size={18} color="#FFFFFF" />
+            <Text style={styles.callButtonText}>Call Now</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-
-      <View style={styles.hotlineRight}>
-        <Text style={[styles.hotlineNumber, { color: getAgencyColor(item.type) }]}>
-          {item.number}
-        </Text>
-        <TouchableOpacity 
-          style={styles.callButton}
-          onPress={() => handleCallPress(item.number)}
-        >
-          <Ionicons name="call" size={20} color="#FFFFFF" />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -600,31 +605,50 @@ const styles = StyleSheet.create({
     paddingBottom: 20,
   },
   hotlineCard: {
-    flexDirection: 'row',
-    backgroundColor: '#F5F5F7',
+    backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
-    alignItems: 'center',
-    borderWidth: 0,
-    borderColor: 'transparent',
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  hotlineCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 14,
   },
   hotlineIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 14,
   },
   hotlineContent: {
     flex: 1,
   },
   hotlineName: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
     color: '#1F2937',
-    marginBottom: 3,
+    marginBottom: 6,
+    lineHeight: 20,
+  },
+  agencyBadge: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  agencyBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
   },
   hotlineAgency: {
     fontSize: 11,
@@ -632,31 +656,57 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: 4,
   },
+  hotlineDetails: {
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+    paddingTop: 12,
+  },
+  locationRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 12,
+  },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
   },
   locationText: {
-    fontSize: 11,
-    color: '#9CA3AF',
+    fontSize: 12,
+    color: '#6B7280',
     fontWeight: '500',
+  },
+  hotlineActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  numberContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   hotlineRight: {
     alignItems: 'flex-end',
     gap: 6,
   },
   hotlineNumber: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 15,
+    fontWeight: '700',
   },
   callButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#10B981',
-    justifyContent: 'center',
+    flexDirection: 'row',
     alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 10,
+    gap: 6,
+  },
+  callButtonText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
   emptyState: {
     flex: 1,

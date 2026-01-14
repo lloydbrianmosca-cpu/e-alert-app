@@ -597,29 +597,32 @@ export default function LocationsScreen({ navigation, route }) {
           <Text style={styles.cancelEmergencyText}>Cancel Emergency</Text>
         </TouchableOpacity>
       </View>
-      ) : (
-        /* Default View - No active emergency */
-        <View style={styles.defaultCard}>
-          <Text style={styles.defaultTitle}>No Active Emergency</Text>
-          <Text style={styles.defaultSubtitle}>
-            Your location is displayed on the map. Use the buttons below to access emergency services.
-          </Text>
-          
-          <View style={styles.defaultButtons}>
-            <TouchableOpacity 
-              style={[styles.defaultButton, styles.sosButton]}
-              onPress={() => navigation.navigate('Home')}
-            >
-              <Ionicons name="alert-circle" size={24} color="#FFFFFF" />
-              <Text style={styles.defaultButtonText}>SOS Emergency</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={[styles.defaultButton, styles.chatButtonDefault]}
-              onPress={() => navigation.navigate('Chat')}
-            >
-              <Ionicons name="chatbubbles" size={24} color="#FFFFFF" />
-              <Text style={styles.defaultButtonText}>Open Chat</Text>
-            </TouchableOpacity>
+      ) : null}
+
+      {/* Bottom Action Buttons - shown when no emergency */}
+      {!isEmergencyActive && (
+        <View style={styles.bottomActionsContainer}>
+          <View style={styles.bottomActionsCard}>
+            <Text style={styles.bottomActionsTitle}>No Active Emergency</Text>
+            <Text style={styles.bottomActionsSubtitle}>
+              Your location is displayed on the map. Use the buttons below to access emergency services.
+            </Text>
+            <View style={styles.defaultButtons}>
+              <TouchableOpacity 
+                style={[styles.defaultButton, styles.sosButton]}
+                onPress={() => navigation.navigate('Home')}
+              >
+                <Ionicons name="alert-circle" size={20} color="#FFFFFF" />
+                <Text style={styles.defaultButtonText}>SOS Emergency</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.defaultButton, styles.chatButtonDefault]}
+                onPress={() => navigation.navigate('Chat')}
+              >
+                <Ionicons name="chatbubbles" size={20} color="#FFFFFF" />
+                <Text style={styles.defaultButtonText}>Open Chat</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       )}
@@ -1090,8 +1093,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
+    gap: 6,
+    paddingVertical: 12,
     borderRadius: 10,
   },
   sosButton: {
@@ -1101,8 +1104,41 @@ const styles = StyleSheet.create({
     backgroundColor: '#3B82F6',
   },
   defaultButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
+  },
+  bottomActionsContainer: {
+    position: 'absolute',
+    bottom: 100,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+  },
+  bottomActionsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  bottomActionsTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1F2937',
+    marginBottom: 6,
+  },
+  bottomActionsSubtitle: {
+    fontSize: 12,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 14,
+    paddingHorizontal: 10,
   },
 });
