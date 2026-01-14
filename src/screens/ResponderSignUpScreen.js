@@ -301,6 +301,7 @@ export default function ResponderSignUpScreen({ navigation }) {
       >
         <ScrollView 
           style={styles.content}
+          scrollEnabled={false}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >

@@ -56,6 +56,7 @@ export default function LocationsScreen({ navigation, route }) {
   const [showProfileOverlay, setShowProfileOverlay] = useState(false);
   const [isCheckingProfile, setIsCheckingProfile] = useState(true);
   const { user } = useAuth();
+  const hasAutoFitted = useRef(false);
   
   // Real-time ETA and distance
   const [realtimeETA, setRealtimeETA] = useState(null);
@@ -344,8 +345,13 @@ export default function LocationsScreen({ navigation, route }) {
   };
 
   useEffect(() => {
-    if (!loading && isEmergencyActive && responderLocation) {
+    if (!loading && isEmergencyActive && responderLocation && !hasAutoFitted.current) {
       setTimeout(fitAllMarkers, 500);
+      hasAutoFitted.current = true;
+    }
+    // Reset the flag when emergency ends
+    if (!isEmergencyActive) {
+      hasAutoFitted.current = false;
     }
   }, [loading, isEmergencyActive, responderLocation]);
 
@@ -395,6 +401,10 @@ export default function LocationsScreen({ navigation, route }) {
             showsUserLocation={false}
             showsMyLocationButton={false}
             showsCompass={false}
+            scrollEnabled={true}
+            zoomEnabled={true}
+            pitchEnabled={true}
+            rotateEnabled={true}
           >
             {/* User Location Marker */}
             {userLocation && (
@@ -403,7 +413,7 @@ export default function LocationsScreen({ navigation, route }) {
                 title="Your Location"
                 description="You are here"
                 anchor={{ x: 0.5, y: 0.5 }}
-                tracksViewChanges={true}
+                tracksViewChanges={false}
               >
                 <View style={styles.userMarker}>
                   <View style={[styles.userMarkerOuter, { backgroundColor: '#DC262640' }]} />
@@ -422,7 +432,7 @@ export default function LocationsScreen({ navigation, route }) {
                   title={responder.name}
                   description={`${responder.tag} - ${routeDuration ? formatRouteDuration(routeDuration) : responder.eta} away`}
                   anchor={{ x: 0.5, y: 1 }}
-                  tracksViewChanges={true}
+                  tracksViewChanges={false}
                 >
                   <View style={styles.responderMarkerContainer}>
                     {/* Name Label */}
@@ -459,13 +469,13 @@ export default function LocationsScreen({ navigation, route }) {
           <TouchableOpacity 
             style={styles.controlButton}
             onPress={() => {
-              if (mapRef.current && userLocation) {
-                const currentRegion = userLocation;
-                mapRef.current.animateToRegion({
-                  ...currentRegion,
-                  latitudeDelta: currentRegion.latitudeDelta * 0.5,
-                  longitudeDelta: currentRegion.longitudeDelta * 0.5,
-                }, 300);
+              if (mapRef.current) {
+                mapRef.current.getCamera().then(camera => {
+                  mapRef.current.animateCamera({
+                    center: camera.center,
+                    zoom: camera.zoom + 1,
+                  }, { duration: 300 });
+                });
               }
             }}
           >
@@ -474,18 +484,26 @@ export default function LocationsScreen({ navigation, route }) {
           <TouchableOpacity 
             style={styles.controlButton}
             onPress={() => {
-              if (mapRef.current && userLocation) {
-                const currentRegion = userLocation;
-                mapRef.current.animateToRegion({
-                  ...currentRegion,
-                  latitudeDelta: currentRegion.latitudeDelta * 2,
-                  longitudeDelta: currentRegion.longitudeDelta * 2,
-                }, 300);
+              if (mapRef.current) {
+                mapRef.current.getCamera().then(camera => {
+                  mapRef.current.animateCamera({
+                    center: camera.center,
+                    zoom: Math.max(camera.zoom - 1, 0),
+                  }, { duration: 300 });
+                });
               }
             }}
           >
             <Ionicons name="remove" size={20} color="#1F2937" />
           </TouchableOpacity>
+          {isEmergencyActive && responderLocation && (
+            <TouchableOpacity 
+              style={[styles.controlButton, styles.fitButton]}
+              onPress={fitAllMarkers}
+            >
+              <Ionicons name="expand" size={20} color="#1F2937" />
+            </TouchableOpacity>
+          )}
           <TouchableOpacity 
             style={[styles.controlButton, styles.locateButton]}
             onPress={centerOnUser}
@@ -494,10 +512,10 @@ export default function LocationsScreen({ navigation, route }) {
           </TouchableOpacity>
         </View>
 
-        {isEmergencyActive && (
+        {isEmergencyActive && activeResponder && (
           /* Alert Banner */
           <View style={[styles.alertBanner, { backgroundColor: emergencyColor }]}>
-            <Ionicons name="warning" size={20} color="#FFFFFF" />
+            <Ionicons name="warning" size={16} color="#FFFFFF" />
             <Text style={styles.alertText}>Emergency responder is on the way!</Text>
           </View>
         )}
@@ -516,12 +534,12 @@ export default function LocationsScreen({ navigation, route }) {
               <Text style={styles.responderName}>{responder.name}</Text>
               <Text style={styles.responderBuilding}>{responder.building}</Text>
               <View style={styles.hotlineContainer}>
-                <Ionicons name="call" size={14} color="#6B7280" />
+                <Ionicons name="call" size={11} color="#6B7280" />
                 <Text style={styles.hotlineText}>{responder.hotline}</Text>
               </View>
             </View>
             <View style={[styles.responderTypeBadge, { backgroundColor: emergencyColor }]}>
-              <MaterialIcons name={responder.icon} size={24} color="#FFFFFF" />
+              <MaterialIcons name={responder.icon} size={20} color="#FFFFFF" />
             </View>
           </View>
         </View>
@@ -529,15 +547,15 @@ export default function LocationsScreen({ navigation, route }) {
         {/* ETA and Distance - Use road navigation data when available */}
         <View style={styles.statsContainer}>
           <View style={[styles.statBox, { backgroundColor: emergencyColor + '15' }]}>
-            <Ionicons name="time" size={28} color={emergencyColor} />
+            <Ionicons name="time" size={22} color={emergencyColor} />
             <Text style={[styles.statValue, { color: emergencyColor }]}>
               {routeDuration ? formatRouteDuration(routeDuration) : responder.eta}
             </Text>
             <Text style={styles.statLabel}>Estimated Time</Text>
-            {isLoadingRoute && <ActivityIndicator size="small" color={emergencyColor} style={{ marginTop: 4 }} />}
+            {isLoadingRoute && <ActivityIndicator size="small" color={emergencyColor} style={{ marginTop: 2 }} />}
           </View>
           <View style={[styles.statBox, { backgroundColor: emergencyColor + '15' }]}>
-            <Ionicons name="navigate" size={28} color={emergencyColor} />
+            <Ionicons name="navigate" size={22} color={emergencyColor} />
             <Text style={[styles.statValue, { color: emergencyColor }]}>
               {routeDistance ? formatRouteDistance(routeDistance) : responder.distance}
             </Text>
@@ -809,20 +827,29 @@ const styles = StyleSheet.create({
     backgroundColor: '#DC2626',
     borderColor: '#DC2626',
   },
+  fitButton: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#E5E7EB',
+  },
   alertBanner: {
     position: 'absolute',
-    top: 14,
+    top: 10,
     left: 14,
     right: 14,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   alertText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#FFFFFF',
     flex: 1,
@@ -832,112 +859,112 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#DC2626',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
     borderRadius: 10,
-    gap: 6,
-    marginTop: 10,
+    gap: 5,
+    marginTop: 6,
   },
   cancelEmergencyText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#FFFFFF',
   },
   responderCard: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 20,
-    paddingTop: 18,
-    paddingBottom: 10,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 8,
     borderWidth: 1,
     borderBottomWidth: 0,
     borderColor: '#F3F4F6',
   },
   responderHeader: {
-    marginBottom: 14,
+    marginBottom: 10,
   },
   responderMain: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   responderAvatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     borderWidth: 2,
     borderColor: '#E5E7EB',
   },
   responderInfo: {
     flex: 1,
-    marginLeft: 14,
+    marginLeft: 10,
   },
   responderName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     color: '#1F2937',
     marginBottom: 2,
   },
   responderBuilding: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '500',
     color: '#6B7280',
-    marginBottom: 4,
+    marginBottom: 2,
   },
   hotlineContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 3,
   },
   hotlineText: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '500',
     color: '#6B7280',
   },
   responderTypeBadge: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
   },
   statsContainer: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 14,
+    gap: 8,
+    marginBottom: 8,
   },
   statBox: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: 14,
-    borderRadius: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
     backgroundColor: '#F9FAFB',
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   statValue: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: '700',
-    marginTop: 6,
+    marginTop: 4,
     marginBottom: 2,
   },
   statLabel: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '500',
     color: '#6B7280',
   },
   actionButtons: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 10,
+    gap: 8,
+    marginBottom: 8,
   },
   actionButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 12,
+    gap: 5,
+    paddingVertical: 10,
     borderRadius: 10,
   },
   callButton: {

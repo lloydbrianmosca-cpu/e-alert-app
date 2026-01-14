@@ -259,6 +259,7 @@ export default function SignUpScreen({ navigation }) {
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
+          scrollEnabled={false}
           showsVerticalScrollIndicator={false}
         >
           <AuthHeader />
@@ -537,16 +538,16 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   welcomeText: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: '#1D1D1F',
-    marginBottom: 8,
+    marginBottom: 4,
     letterSpacing: -0.5,
   },
   subtitleText: {
-    fontSize: 15,
+    fontSize: 13,
     color: '#86868B',
-    marginBottom: 24,
+    marginBottom: 12,
     lineHeight: 22,
   },
   // Social login styles
@@ -554,11 +555,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 16,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   socialButton: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
     borderRadius: 12,
     backgroundColor: '#F5F5F7',
     justifyContent: 'center',
@@ -568,8 +569,8 @@ const styles = StyleSheet.create({
   dividerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20,
-    marginBottom: 20,
+    marginTop: 12,
+    marginBottom: 12,
   },
   dividerLine: {
     flex: 1,
@@ -622,14 +623,14 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   termsContainer: {
-    marginBottom: 20,
-    marginTop: 8,
+    marginBottom: 12,
+    marginTop: 4,
   },
   termsText: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#86868B',
     textAlign: 'center',
-    lineHeight: 20,
+    lineHeight: 16,
   },
   termsLink: {
     color: '#DC2626',
@@ -638,7 +639,7 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 32,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   footerText: {

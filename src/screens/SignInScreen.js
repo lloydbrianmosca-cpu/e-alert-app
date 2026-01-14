@@ -239,6 +239,7 @@ export default function SignInScreen({ navigation }) {
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
+          scrollEnabled={false}
           showsVerticalScrollIndicator={false}
         >
           <AuthHeader />
@@ -502,16 +503,16 @@ const styles = StyleSheet.create({
     paddingTop: 0,
   },
   welcomeText: {
-    fontSize: 28,
+    fontSize: 24,
     fontWeight: '700',
     color: '#1D1D1F',
-    marginBottom: 8,
+    marginBottom: 4,
     letterSpacing: -0.5,
   },
   subtitleText: {
-    fontSize: 15,
+    fontSize: 13,
     color: '#86868B',
-    marginBottom: 28,
+    marginBottom: 12,
     lineHeight: 22,
   },
   forgotButton: {
@@ -549,8 +550,8 @@ const styles = StyleSheet.create({
     gap: 16,
   },
   socialButton: {
-    width: 56,
-    height: 56,
+    width: 48,
+    height: 48,
     borderRadius: 12,
     backgroundColor: '#F5F5F7',
     justifyContent: 'center',
@@ -559,7 +560,7 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 32,
+    paddingVertical: 12,
     alignItems: 'center',
   },
   footerText: {

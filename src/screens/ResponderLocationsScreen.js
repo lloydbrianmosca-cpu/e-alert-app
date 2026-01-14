@@ -53,6 +53,7 @@ export default function ResponderLocationsScreen({ navigation, route }) {
   const [selectedEmergency, setSelectedEmergency] = useState(route?.params?.emergency || null);
   const [isProfileComplete, setIsProfileComplete] = useState(true);
   const mapRef = useRef(null);
+  const hasAutoFitted = useRef(false);
   
   // Route navigation state
   const [routeCoordinates, setRouteCoordinates] = useState([]);
@@ -309,14 +310,10 @@ export default function ResponderLocationsScreen({ navigation, route }) {
     fetchResponderData();
   }, [user]);
 
-  // Current zoom level state
-  const [currentZoom, setCurrentZoom] = useState(0.01);
-
   // Center on responder's current location with maximum zoom
   const centerOnMe = () => {
     if (mapRef.current && userLocation) {
       const maxZoom = 0.002; // Maximum zoom level (smaller = more zoomed in)
-      setCurrentZoom(maxZoom);
       mapRef.current.animateToRegion(
         {
           ...userLocation,
@@ -331,34 +328,24 @@ export default function ResponderLocationsScreen({ navigation, route }) {
   // Zoom in function
   const zoomIn = () => {
     if (mapRef.current) {
-      const newZoom = Math.max(currentZoom / 2, 0.001); // Minimum delta (max zoom)
-      setCurrentZoom(newZoom);
-      mapRef.current.animateToRegion(
-        {
-          latitude: userLocation?.latitude || defaultLocation.latitude,
-          longitude: userLocation?.longitude || defaultLocation.longitude,
-          latitudeDelta: newZoom,
-          longitudeDelta: newZoom,
-        },
-        300
-      );
+      mapRef.current.getCamera().then(camera => {
+        mapRef.current.animateCamera({
+          center: camera.center,
+          zoom: camera.zoom + 1,
+        }, { duration: 300 });
+      });
     }
   };
 
   // Zoom out function
   const zoomOut = () => {
     if (mapRef.current) {
-      const newZoom = Math.min(currentZoom * 2, 0.5); // Maximum delta (min zoom)
-      setCurrentZoom(newZoom);
-      mapRef.current.animateToRegion(
-        {
-          latitude: userLocation?.latitude || defaultLocation.latitude,
-          longitude: userLocation?.longitude || defaultLocation.longitude,
-          latitudeDelta: newZoom,
-          longitudeDelta: newZoom,
-        },
-        300
-      );
+      mapRef.current.getCamera().then(camera => {
+        mapRef.current.animateCamera({
+          center: camera.center,
+          zoom: Math.max(camera.zoom - 1, 0),
+        }, { duration: 300 });
+      });
     }
   };
 
@@ -542,6 +529,10 @@ export default function ResponderLocationsScreen({ navigation, route }) {
           initialRegion={userLocation || defaultLocation}
           showsUserLocation={false}
           showsMyLocationButton={false}
+          scrollEnabled={true}
+          zoomEnabled={true}
+          pitchEnabled={true}
+          rotateEnabled={true}
         >
           {/* Responder's current location marker */}
           {userLocation && (
@@ -895,6 +886,8 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   responderMarker: {
+    width: 40,
+    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -934,13 +927,13 @@ const styles = StyleSheet.create({
   },
   emergencyList: {
     position: 'absolute',
-    top: 10,
-    left: 10,
-    right: 10,
+    top: 8,
+    left: 8,
+    right: 8,
     backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 8,
-    maxHeight: 100,
+    borderRadius: 10,
+    padding: 6,
+    maxHeight: 90,
     borderWidth: 1,
     borderColor: '#E5E7EB',
     shadowColor: '#000',
@@ -950,49 +943,49 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   listTitle: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     color: '#374151',
-    marginBottom: 4,
+    marginBottom: 3,
   },
   emergencyItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderBottomWidth: 1,
     borderBottomColor: '#F9FAFB',
   },
   emergencyItemSelected: {
     backgroundColor: '#F9FAFB',
-    borderRadius: 6,
-    marginHorizontal: -6,
-    paddingHorizontal: 6,
+    borderRadius: 5,
+    marginHorizontal: -5,
+    paddingHorizontal: 5,
   },
   emergencyItemDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginRight: 10,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 8,
   },
   emergencyItemInfo: {
     flex: 1,
   },
   emergencyItemType: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '600',
     color: '#374151',
   },
   emergencyItemUser: {
-    fontSize: 10,
+    fontSize: 9,
     color: '#9CA3AF',
     marginTop: 1,
   },
   callButtonSmall: {
-    padding: 6,
-    marginRight: 4,
+    padding: 5,
+    marginRight: 3,
   },
   chatButton: {
-    padding: 6,
+    padding: 5,
   },
   noEmergencies: {
     position: 'absolute',
@@ -1020,35 +1013,35 @@ const styles = StyleSheet.create({
   },
   emergencyDetails: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 10,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingHorizontal: 14,
+    paddingTop: 10,
+    paddingBottom: 8,
     borderWidth: 1,
     borderBottomWidth: 0,
     borderColor: '#F3F4F6',
-    maxHeight: 320,
+    maxHeight: 280,
   },
   detailsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 5,
   },
   detailsTypeBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 3,
+    borderRadius: 8,
   },
   detailsTypeText: {
     color: '#FFFFFF',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     letterSpacing: 0.3,
   },
   detailsUser: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
     color: '#111827',
     flex: 1,
@@ -1058,15 +1051,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#F9FAFB',
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: 8,
-    marginBottom: 6,
-    gap: 6,
+    marginBottom: 5,
+    gap: 5,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
   distanceText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#374151',
     flex: 1,
@@ -1076,38 +1069,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#ECFDF5',
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 4,
     borderRadius: 8,
-    marginBottom: 6,
-    gap: 6,
+    marginBottom: 5,
+    gap: 5,
     borderWidth: 1,
     borderColor: '#A7F3D0',
   },
   etaText: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '600',
     color: '#059669',
     flex: 1,
   },
   nearbyBadge: {
     backgroundColor: '#059669',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 5,
   },
   nearbyText: {
     color: '#FFFFFF',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: '600',
   },
   detailsContact: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#374151',
-    marginBottom: 3,
+    marginBottom: 2,
     fontWeight: '500',
   },
   detailsAddress: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#6B7280',
     marginBottom: 6,
   },
@@ -1130,24 +1123,24 @@ const styles = StyleSheet.create({
   },
   detailsActions: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 8,
+    gap: 8,
+    marginBottom: 6,
   },
   detailsButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 10,
-    gap: 6,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 5,
   },
   detailsButtonOutline: {
     backgroundColor: 'transparent',
     borderWidth: 1,
   },
   detailsButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
   },
@@ -1156,15 +1149,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#059669',
-    paddingVertical: 12,
-    borderRadius: 10,
-    gap: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+    gap: 5,
   },
   emergencyDoneButtonDisabled: {
     backgroundColor: '#E5E7EB',
   },
   emergencyDoneButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#FFFFFF',
   },
