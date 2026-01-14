@@ -301,9 +301,10 @@ export default function ResponderSignUpScreen({ navigation }) {
       >
         <ScrollView 
           style={styles.content}
-          scrollEnabled={false}
-          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContentContainer}
+          showsVerticalScrollIndicator={true}
           keyboardShouldPersistTaps="handled"
+          bounces={true}
         >
           {/* Form Card */}
           <View style={styles.formCard}>
@@ -574,7 +575,10 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContentContainer: {
     padding: 16,
+    paddingBottom: 40,
   },
   formCard: {
     backgroundColor: '#FFFFFF',

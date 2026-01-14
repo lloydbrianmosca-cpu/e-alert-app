@@ -372,8 +372,9 @@ export default function SignInScreen({ navigation }) {
       >
         <ScrollView 
           contentContainerStyle={styles.scrollContent}
-          scrollEnabled={false}
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          bounces={true}
         >
           <AuthHeader />
 
@@ -646,6 +647,8 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
+    justifyContent: 'space-between',
+    paddingBottom: 20,
   },
   formCard: {
     backgroundColor: '#FFFFFF',
@@ -713,7 +716,8 @@ const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    paddingVertical: 12,
+    paddingVertical: 24,
+    paddingBottom: 30,
     alignItems: 'center',
   },
   footerText: {
