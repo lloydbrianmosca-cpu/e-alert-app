@@ -17,7 +17,9 @@
       "supportsTabletMode": true,
       "bundleIdentifier": "com.anonymous.e-alert-app",
       "icon": "./src/assets/logo/without-name.png",
-      "buildNumber": "1.0.0"
+      "buildNumber": "1.0.0",
+      "jsEngine": "hermes",
+      "deploymentTarget": "13.4"
     },
     "android": {
       "package": "com.anonymous.ealertapp",
