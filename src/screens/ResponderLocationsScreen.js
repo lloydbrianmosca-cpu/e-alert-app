@@ -326,26 +326,24 @@ export default function ResponderLocationsScreen({ navigation, route }) {
   };
 
   // Zoom in function
-  const zoomIn = () => {
+  const zoomIn = async () => {
     if (mapRef.current) {
-      mapRef.current.getCamera().then(camera => {
-        mapRef.current.animateCamera({
-          center: camera.center,
-          zoom: camera.zoom + 1,
-        }, { duration: 300 });
-      });
+      const camera = await mapRef.current.getCamera();
+      mapRef.current.animateCamera({
+        center: camera.center,
+        zoom: camera.zoom + 1,
+      }, { duration: 300 });
     }
   };
 
   // Zoom out function
-  const zoomOut = () => {
+  const zoomOut = async () => {
     if (mapRef.current) {
-      mapRef.current.getCamera().then(camera => {
-        mapRef.current.animateCamera({
-          center: camera.center,
-          zoom: Math.max(camera.zoom - 1, 0),
-        }, { duration: 300 });
-      });
+      const camera = await mapRef.current.getCamera();
+      mapRef.current.animateCamera({
+        center: camera.center,
+        zoom: Math.max(camera.zoom - 1, 0),
+      }, { duration: 300 });
     }
   };
 
@@ -886,8 +884,6 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
   },
   responderMarker: {
-    width: 40,
-    height: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },

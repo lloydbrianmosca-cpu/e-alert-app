@@ -413,7 +413,7 @@ export default function LocationsScreen({ navigation, route }) {
                 title="Your Location"
                 description="You are here"
                 anchor={{ x: 0.5, y: 0.5 }}
-                tracksViewChanges={false}
+                tracksViewChanges={true}
               >
                 <View style={styles.userMarker}>
                   <View style={[styles.userMarkerOuter, { backgroundColor: '#DC262640' }]} />
@@ -432,7 +432,7 @@ export default function LocationsScreen({ navigation, route }) {
                   title={responder.name}
                   description={`${responder.tag} - ${routeDuration ? formatRouteDuration(routeDuration) : responder.eta} away`}
                   anchor={{ x: 0.5, y: 1 }}
-                  tracksViewChanges={false}
+                  tracksViewChanges={true}
                 >
                   <View style={styles.responderMarkerContainer}>
                     {/* Name Label */}
@@ -468,14 +468,13 @@ export default function LocationsScreen({ navigation, route }) {
         <View style={styles.mapControls}>
           <TouchableOpacity 
             style={styles.controlButton}
-            onPress={() => {
+            onPress={async () => {
               if (mapRef.current) {
-                mapRef.current.getCamera().then(camera => {
-                  mapRef.current.animateCamera({
-                    center: camera.center,
-                    zoom: camera.zoom + 1,
-                  }, { duration: 300 });
-                });
+                const camera = await mapRef.current.getCamera();
+                mapRef.current.animateCamera({
+                  center: camera.center,
+                  zoom: camera.zoom + 1,
+                }, { duration: 300 });
               }
             }}
           >
@@ -483,14 +482,13 @@ export default function LocationsScreen({ navigation, route }) {
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.controlButton}
-            onPress={() => {
+            onPress={async () => {
               if (mapRef.current) {
-                mapRef.current.getCamera().then(camera => {
-                  mapRef.current.animateCamera({
-                    center: camera.center,
-                    zoom: Math.max(camera.zoom - 1, 0),
-                  }, { duration: 300 });
-                });
+                const camera = await mapRef.current.getCamera();
+                mapRef.current.animateCamera({
+                  center: camera.center,
+                  zoom: Math.max(camera.zoom - 1, 0),
+                }, { duration: 300 });
               }
             }}
           >
