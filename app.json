@@ -5,28 +5,16 @@
     "version": "1.0.0",
     "icon": "./src/assets/logo/without-name.png",
     "assetBundlePatterns": [
-      "src/assets/**/*"
+      "**/*"
     ],
-    "jsEngine": "hermes",
-    "splash": {
-      "image": "./src/assets/logo/without-name.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#DC2626"
-    },
     "ios": {
       "supportsTabletMode": true,
       "bundleIdentifier": "com.anonymous.e-alert-app",
-      "icon": "./src/assets/logo/without-name.png",
-      "buildNumber": "1.0.0",
-      "jsEngine": "hermes",
-      "deploymentTarget": "13.4"
+      "icon": "./src/assets/logo/without-name.png"
     },
     "android": {
       "package": "com.anonymous.ealertapp",
-      "icon": "./src/assets/logo/without-name.png",
-      "versionCode": 1,
-      "enableProguardInReleaseBuilds": true,
-      "enableShrinkResourcesInReleaseBuilds": true
+      "icon": "./src/assets/logo/without-name.png"
     },
     "extra": {
       "eas": {
