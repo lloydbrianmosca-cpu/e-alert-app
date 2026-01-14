@@ -67,7 +67,6 @@ export default function ResponderProfileScreen({ navigation }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [isTogglingStatus, setIsTogglingStatus] = useState(false);
   const [profileData, setProfileData] = useState({
     firstName: '',
     lastName: '',
@@ -534,7 +533,7 @@ export default function ResponderProfileScreen({ navigation }) {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Status & Type</Text>
 
-          {/* Availability Toggle */}
+          {/* Availability Status - Display Only (controlled from Home screen) */}
           <View style={styles.statusRow}>
             <View style={styles.statusInfo}>
               <Ionicons 
@@ -549,40 +548,14 @@ export default function ResponderProfileScreen({ navigation }) {
                 </Text>
               </View>
             </View>
-            <TouchableOpacity
-              style={[styles.statusToggle, { backgroundColor: profileData.isAvailable ? '#10B981' : '#EF4444' }]}
-              onPress={async () => {
-                if (!user?.uid) return;
-                setIsTogglingStatus(true);
-                try {
-                  const newStatus = !profileData.isAvailable;
-                  const docRef = doc(db, 'responders', user.uid);
-                  await updateDoc(docRef, { isAvailable: newStatus, updatedAt: new Date().toISOString() });
-                  setProfileData(prev => ({ ...prev, isAvailable: newStatus }));
-                  setEditData(prev => ({ ...prev, isAvailable: newStatus }));
-                  Toast.show({
-                    type: 'success',
-                    text1: 'Status Updated',
-                    text2: `You are now ${newStatus ? 'Available' : 'Unavailable'}`,
-                  });
-                } catch (error) {
-                  console.log('Error updating status:', error);
-                  Toast.show({ type: 'error', text1: 'Error', text2: 'Failed to update status' });
-                } finally {
-                  setIsTogglingStatus(false);
-                }
-              }}
-              disabled={isTogglingStatus}
-            >
-              {isTogglingStatus ? (
-                <ActivityIndicator size="small" color="#FFFFFF" />
-              ) : (
-                <Text style={styles.statusToggleText}>
-                  {profileData.isAvailable ? 'Go Unavailable' : 'Go Available'}
-                </Text>
-              )}
-            </TouchableOpacity>
+            <View style={[styles.statusBadge, { backgroundColor: profileData.isAvailable ? '#ECFDF5' : '#FEF2F2' }]}>
+              <View style={[styles.statusDot, { backgroundColor: profileData.isAvailable ? '#10B981' : '#EF4444' }]} />
+              <Text style={[styles.statusBadgeText, { color: profileData.isAvailable ? '#10B981' : '#EF4444' }]}>
+                {profileData.isAvailable ? 'Online' : 'Offline'}
+              </Text>
+            </View>
           </View>
+          <Text style={styles.statusNote}>Toggle availability from Home screen</Text>
 
           {/* Responder Type (Read-only) */}
           <View style={styles.responderTypeRow}>
@@ -1127,17 +1100,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  statusToggle: {
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 16,
-    minWidth: 100,
-    alignItems: 'center',
+    gap: 6,
   },
-  statusToggleText: {
-    color: '#FFFFFF',
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  statusBadgeText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  statusNote: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    textAlign: 'center',
+    marginTop: 8,
+    fontStyle: 'italic',
   },
   responderTypeRow: {
     flexDirection: 'row',
