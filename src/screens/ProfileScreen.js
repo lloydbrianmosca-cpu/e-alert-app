@@ -72,6 +72,14 @@ export default function ProfileScreen({ navigation }) {
   // Dropdown options based on selections
   const [provinceOptions, setProvinceOptions] = useState([{ label: 'Select Province', value: '' }]);
   const [cityOptions, setCityOptions] = useState([{ label: 'Select City/Municipality', value: '' }]);
+  
+  // Picker modal state for iOS
+  const [pickerModal, setPickerModal] = useState({
+    visible: false,
+    field: '',
+    options: [],
+    label: '',
+  });
 
   // Fetch contact number from Firestore on mount or user change
   useEffect(() => {
@@ -529,35 +537,67 @@ export default function ProfileScreen({ navigation }) {
 
   const renderDropdown = (label, field, options, isDisabled = false) => {
     const currentValue = isEditing ? editData[field] : profileData[field];
-    const displayLabel = options.find(opt => opt.value === currentValue)?.label || 'Not set';
+    const displayLabel = options.find(opt => opt.value === currentValue)?.label || 'Select';
+    const placeholderLabels = ['Select Region', 'Select Province', 'Select City/Municipality', 'Select'];
+    const isPlaceholder = placeholderLabels.includes(displayLabel);
     
     return (
       <View style={styles.inputFieldContainer}>
         <Text style={styles.inputLabel}>{label}</Text>
         {isEditing ? (
-          <View style={[
-            styles.pickerContainer,
-            isDisabled && styles.pickerContainerDisabled
-          ]}>
-            <Picker
-              selectedValue={editData[field] || ''}
-              onValueChange={(value) => handleDropdownChange(field, value)}
-              style={styles.picker}
-              enabled={!isDisabled}
-              dropdownIconColor={isDisabled ? '#D1D5DB' : '#6B7280'}
+          Platform.OS === 'ios' ? (
+            // iOS: Use touchable that opens modal
+            <TouchableOpacity
+              style={[
+                styles.pickerTouchable,
+                isDisabled && styles.pickerTouchableDisabled
+              ]}
+              onPress={() => {
+                if (!isDisabled) {
+                  setPickerModal({
+                    visible: true,
+                    field,
+                    options,
+                    label,
+                  });
+                }
+              }}
+              disabled={isDisabled}
             >
-              {options.map((option) => (
-                <Picker.Item
-                  key={option.value}
-                  label={option.label}
-                  value={option.value}
-                  color={option.value === '' ? '#9CA3AF' : '#1F2937'}
-                />
-              ))}
-            </Picker>
-          </View>
+              <Text style={[
+                styles.pickerTouchableText,
+                isPlaceholder && styles.pickerTouchablePlaceholder
+              ]}>
+                {displayLabel}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color={isDisabled ? '#D1D5DB' : '#6B7280'} />
+            </TouchableOpacity>
+          ) : (
+            // Android: Use native Picker
+            <View style={[
+              styles.pickerContainer,
+              isDisabled && styles.pickerContainerDisabled
+            ]}>
+              <Picker
+                selectedValue={editData[field] || ''}
+                onValueChange={(value) => handleDropdownChange(field, value)}
+                style={styles.picker}
+                enabled={!isDisabled}
+                dropdownIconColor={isDisabled ? '#D1D5DB' : '#6B7280'}
+              >
+                {options.map((option) => (
+                  <Picker.Item
+                    key={option.value}
+                    label={option.label}
+                    value={option.value}
+                    color={option.value === '' ? '#9CA3AF' : '#1F2937'}
+                  />
+                ))}
+              </Picker>
+            </View>
+          )
         ) : (
-          <Text style={styles.inputValue}>{displayLabel !== 'Select Region' && displayLabel !== 'Select Province' && displayLabel !== 'Select City/Municipality' ? displayLabel : 'Not set'}</Text>
+          <Text style={styles.inputValue}>{!isPlaceholder ? displayLabel : 'Not set'}</Text>
         )}
       </View>
     );
@@ -721,6 +761,51 @@ export default function ProfileScreen({ navigation }) {
           </>
         )}
       </ScrollView>
+
+      {/* iOS Picker Modal */}
+      {Platform.OS === 'ios' && (
+        <Modal
+          visible={pickerModal.visible}
+          transparent={true}
+          animationType="slide"
+          statusBarTranslucent={true}
+          onRequestClose={() => setPickerModal({ ...pickerModal, visible: false })}
+        >
+          <TouchableOpacity 
+            style={styles.pickerModalOverlay}
+            activeOpacity={1}
+            onPress={() => setPickerModal({ ...pickerModal, visible: false })}
+          >
+            <View style={styles.pickerModalContent}>
+              <View style={styles.pickerModalHeader}>
+                <TouchableOpacity onPress={() => setPickerModal({ ...pickerModal, visible: false })}>
+                  <Text style={styles.pickerModalCancel}>Cancel</Text>
+                </TouchableOpacity>
+                <Text style={styles.pickerModalTitle}>{pickerModal.label}</Text>
+                <TouchableOpacity onPress={() => setPickerModal({ ...pickerModal, visible: false })}>
+                  <Text style={styles.pickerModalDone}>Done</Text>
+                </TouchableOpacity>
+              </View>
+              <Picker
+                selectedValue={editData[pickerModal.field] || ''}
+                onValueChange={(value) => {
+                  handleDropdownChange(pickerModal.field, value);
+                }}
+                style={styles.iosPickerWheel}
+              >
+                {pickerModal.options.map((option) => (
+                  <Picker.Item
+                    key={option.value}
+                    label={option.label}
+                    value={option.value}
+                    color={option.value === '' ? '#9CA3AF' : '#1F2937'}
+                  />
+                ))}
+              </Picker>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
 
       {/* Change Password Modal */}
       <Modal
@@ -1210,14 +1295,75 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: '#F9FAFB',
     overflow: 'hidden',
+    paddingHorizontal: 8,
   },
   pickerContainerDisabled: {
     backgroundColor: '#F3F4F6',
     opacity: 0.6,
   },
   picker: {
-    height: 46,
+    height: 50,
     color: '#111827',
+  },
+  // iOS Picker Touchable (same as input)
+  pickerTouchable: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pickerTouchableDisabled: {
+    backgroundColor: '#F3F4F6',
+    opacity: 0.6,
+  },
+  pickerTouchableText: {
+    fontSize: 15,
+    color: '#1D1D1F',
+    flex: 1,
+  },
+  pickerTouchablePlaceholder: {
+    color: '#9CA3AF',
+  },
+  // iOS Picker Modal
+  pickerModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'flex-end',
+  },
+  pickerModalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: 34,
+  },
+  pickerModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F3F4F6',
+  },
+  pickerModalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1D1D1F',
+  },
+  pickerModalCancel: {
+    fontSize: 16,
+    color: '#6B7280',
+  },
+  pickerModalDone: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#DC2626',
+  },
+  iosPickerWheel: {
+    height: 200,
   },
   rowContainer: {
     flexDirection: 'row',

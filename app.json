@@ -3,6 +3,7 @@
     "name": "E-Alert",
     "slug": "e-alert-app",
     "version": "1.0.0",
+    "scheme": "ealertapp",
     "icon": "./src/assets/logo/without-name.png",
     "assetBundlePatterns": [
       "**/*"
@@ -10,7 +11,8 @@
     "ios": {
       "supportsTabletMode": true,
       "bundleIdentifier": "com.anonymous.e-alert-app",
-      "icon": "./src/assets/logo/without-name.png"
+      "icon": "./src/assets/logo/without-name.png",
+      "usesAppleSignIn": true
     },
     "android": {
       "package": "com.anonymous.ealertapp",
@@ -20,6 +22,10 @@
       "eas": {
         "projectId": "3a88bbe8-9b18-4489-ad3b-a1f516eba63f"
       }
-    }
+    },
+    "plugins": [
+      "expo-web-browser",
+      "expo-apple-authentication"
+    ]
   }
 }
