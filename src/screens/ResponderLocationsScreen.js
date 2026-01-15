@@ -55,6 +55,11 @@ export default function ResponderLocationsScreen({ navigation, route }) {
   const mapRef = useRef(null);
   const hasAutoFitted = useRef(false);
   
+  // Track if user is manually interacting with the map (prevents auto-centering)
+  const [userInteracting, setUserInteracting] = useState(false);
+  const userInteractingTimeout = useRef(null);
+  const lastNavigatedEmergencyId = useRef(null);
+  
   // Route navigation state
   const [routeCoordinates, setRouteCoordinates] = useState([]);
   const [routeDistance, setRouteDistance] = useState(null);
@@ -310,6 +315,15 @@ export default function ResponderLocationsScreen({ navigation, route }) {
     fetchResponderData();
   }, [user]);
 
+  // Cleanup user interaction timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (userInteractingTimeout.current) {
+        clearTimeout(userInteractingTimeout.current);
+      }
+    };
+  }, []);
+
   // Center on responder's current location with maximum zoom
   const centerOnMe = () => {
     if (mapRef.current && userLocation) {
@@ -366,10 +380,40 @@ export default function ResponderLocationsScreen({ navigation, route }) {
     }
   };
 
-  // Navigate to emergency location
-  const navigateToEmergency = (emergency) => {
+  // Handle map interaction start (user is panning/zooming)
+  const handleMapInteractionStart = () => {
+    setUserInteracting(true);
+    // Clear any existing timeout
+    if (userInteractingTimeout.current) {
+      clearTimeout(userInteractingTimeout.current);
+    }
+  };
+
+  // Handle map interaction end
+  const handleMapInteractionEnd = () => {
+    // Keep userInteracting true for 5 seconds after interaction ends
+    // This prevents the map from immediately snapping back
+    if (userInteractingTimeout.current) {
+      clearTimeout(userInteractingTimeout.current);
+    }
+    userInteractingTimeout.current = setTimeout(() => {
+      setUserInteracting(false);
+    }, 5000);
+  };
+
+  // Navigate to emergency location (only on explicit user action or first selection)
+  const navigateToEmergency = (emergency, forceNavigate = false) => {
     setSelectedEmergency(emergency);
-    if (mapRef.current && emergency.location) {
+    
+    // Only navigate if:
+    // 1. User explicitly tapped on the emergency (forceNavigate = true from marker press)
+    // 2. OR this is a NEW emergency (different ID than last navigated)
+    // 3. AND user is not currently interacting with the map
+    const isNewEmergency = lastNavigatedEmergencyId.current !== emergency.id;
+    const shouldNavigate = forceNavigate || (isNewEmergency && !userInteracting);
+    
+    if (mapRef.current && emergency.location && shouldNavigate) {
+      lastNavigatedEmergencyId.current = emergency.id;
       mapRef.current.animateToRegion(
         {
           ...emergency.location,
@@ -531,6 +575,9 @@ export default function ResponderLocationsScreen({ navigation, route }) {
           zoomEnabled={true}
           pitchEnabled={true}
           rotateEnabled={true}
+          onPanDrag={handleMapInteractionStart}
+          onRegionChangeComplete={handleMapInteractionEnd}
+          onTouchStart={handleMapInteractionStart}
         >
           {/* Responder's current location marker */}
           {userLocation && (
@@ -556,7 +603,7 @@ export default function ResponderLocationsScreen({ navigation, route }) {
                   coordinate={emergency.location}
                   title={emergency.userName || 'User in Emergency'}
                   description={emergency.userAddress || 'Location'}
-                  onPress={() => navigateToEmergency(emergency)}
+                  onPress={() => navigateToEmergency(emergency, true)}
                   anchor={{ x: 0.5, y: 0.5 }}
                 >
                   <View
@@ -624,7 +671,7 @@ export default function ResponderLocationsScreen({ navigation, route }) {
                   styles.emergencyItem,
                   selectedEmergency?.id === emergency.id && styles.emergencyItemSelected,
                 ]}
-                onPress={() => navigateToEmergency(emergency)}
+                onPress={() => navigateToEmergency(emergency, true)}
               >
                 <View
                   style={[

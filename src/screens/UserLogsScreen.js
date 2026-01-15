@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firestore';
 import { collection, getDocs, doc, updateDoc, deleteDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '../components';
 
@@ -416,7 +417,7 @@ export default function UserLogsScreen({ navigation }) {
   const handleDelete = (userData) => {
     Alert.alert(
       'Delete User',
-      `Are you sure you want to delete ${getFullName(userData)}?`,
+      `Are you sure you want to delete ${getFullName(userData)}? This will permanently delete both the account and all user data.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -425,7 +426,15 @@ export default function UserLogsScreen({ navigation }) {
           onPress: async () => {
             try {
               const collectionName = userData.source === 'responders' ? 'responders' : 'users';
-              await deleteDoc(doc(db, collectionName, userData.id));
+              
+              // Call Cloud Function to delete user from Firebase Auth and Firestore
+              const functions = getFunctions();
+              const deleteUserAuth = httpsCallable(functions, 'deleteUserAuth');
+              
+              await deleteUserAuth({
+                userId: userData.id,
+                collectionName: collectionName
+              });
               
               Toast.show({
                 type: 'success',
@@ -439,7 +448,7 @@ export default function UserLogsScreen({ navigation }) {
               Toast.show({
                 type: 'error',
                 text1: 'Error',
-                text2: 'Failed to delete user',
+                text2: error.message || 'Failed to delete user',
               });
             }
           },

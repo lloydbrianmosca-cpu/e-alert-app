@@ -117,3 +117,65 @@ exports.manualCleanup = functions.https.onRequest(async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+/**
+ * Callable function to delete a user from Firebase Auth
+ * Only admins can call this function
+ */
+exports.deleteUserAuth = functions.https.onCall(async (data, context) => {
+  // Check if the caller is authenticated
+  if (!context.auth) {
+    throw new functions.https.HttpsError(
+      'unauthenticated',
+      'User must be authenticated to delete users.'
+    );
+  }
+
+  const callerUid = context.auth.uid;
+  
+  // Check if caller is an admin
+  const callerDoc = await db.collection('users').doc(callerUid).get();
+  if (!callerDoc.exists || callerDoc.data().role !== 'admin') {
+    throw new functions.https.HttpsError(
+      'permission-denied',
+      'Only admins can delete users.'
+    );
+  }
+
+  const { userId, collectionName } = data;
+  
+  if (!userId) {
+    throw new functions.https.HttpsError(
+      'invalid-argument',
+      'User ID is required.'
+    );
+  }
+
+  try {
+    // Delete from Firebase Auth
+    await admin.auth().deleteUser(userId);
+    console.log(`Successfully deleted user ${userId} from Firebase Auth`);
+    
+    // Delete from Firestore
+    const collection = collectionName === 'responders' ? 'responders' : 'users';
+    await db.collection(collection).doc(userId).delete();
+    console.log(`Successfully deleted user ${userId} from Firestore ${collection}`);
+    
+    return { success: true, message: 'User deleted successfully' };
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    
+    // If auth deletion fails but it's because user doesn't exist in auth, still try to delete from Firestore
+    if (error.code === 'auth/user-not-found') {
+      try {
+        const collection = collectionName === 'responders' ? 'responders' : 'users';
+        await db.collection(collection).doc(userId).delete();
+        return { success: true, message: 'User document deleted (auth account not found)' };
+      } catch (firestoreError) {
+        throw new functions.https.HttpsError('internal', firestoreError.message);
+      }
+    }
+    
+    throw new functions.https.HttpsError('internal', error.message);
+  }
+});
