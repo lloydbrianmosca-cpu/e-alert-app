@@ -18,12 +18,6 @@ import { Feather, Ionicons } from '@expo/vector-icons';
 import { AuthHeader, FormInput, PrimaryButton, toastConfig } from '../components';
 import { useAuth } from '../context/AuthContext';
 import Toast from 'react-native-toast-message';
-import * as Google from 'expo-auth-session/providers/google';
-import * as Facebook from 'expo-auth-session/providers/facebook';
-import * as WebBrowser from 'expo-web-browser';
-
-// Required for web browser auth
-WebBrowser.maybeCompleteAuthSession();
 
 export default function SignInScreen({ navigation }) {
   const [email, setEmail] = React.useState('');
@@ -39,10 +33,6 @@ export default function SignInScreen({ navigation }) {
   const [verificationEmail, setVerificationEmail] = React.useState('');
   const [isVerifying, setIsVerifying] = React.useState(false);
   const [isResendingVerification, setIsResendingVerification] = React.useState(false);
-  // Social login loading states
-  const [isAppleLoading, setIsAppleLoading] = React.useState(false);
-  const [isGoogleLoading, setIsGoogleLoading] = React.useState(false);
-  const [isFacebookLoading, setIsFacebookLoading] = React.useState(false);
 
   const { 
     signIn, 
@@ -50,131 +40,7 @@ export default function SignInScreen({ navigation }) {
     sendVerificationEmail, 
     checkEmailVerified, 
     logout,
-    signInWithApple,
-    signInWithGoogle,
-    signInWithFacebook,
   } = useAuth();
-
-  // Google Auth Request
-  // Note: Replace with your actual Google OAuth Client IDs from Google Cloud Console
-  const [googleRequest, googleResponse, googlePromptAsync] = Google.useAuthRequest({
-    iosClientId: 'YOUR_IOS_CLIENT_ID.apps.googleusercontent.com',
-    androidClientId: 'YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com',
-    webClientId: 'YOUR_WEB_CLIENT_ID.apps.googleusercontent.com',
-  });
-
-  // Facebook Auth Request
-  // Note: Replace with your actual Facebook App ID
-  const [facebookRequest, facebookResponse, facebookPromptAsync] = Facebook.useAuthRequest({
-    clientId: 'YOUR_FACEBOOK_APP_ID',
-  });
-
-  // Handle Google response
-  React.useEffect(() => {
-    if (googleResponse) {
-      handleGoogleResponse(googleResponse);
-    }
-  }, [googleResponse]);
-
-  // Handle Facebook response
-  React.useEffect(() => {
-    if (facebookResponse) {
-      handleFacebookResponse(facebookResponse);
-    }
-  }, [facebookResponse]);
-
-  const handleGoogleResponse = async (response) => {
-    if (response?.type === 'success') {
-      setIsGoogleLoading(true);
-      const result = await signInWithGoogle(response);
-      setIsGoogleLoading(false);
-      
-      if (result.success) {
-        handleSuccessfulSocialLogin(result, 'Google');
-      } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Google Sign In Failed',
-          text2: result.error,
-        });
-      }
-    }
-  };
-
-  const handleFacebookResponse = async (response) => {
-    if (response?.type === 'success') {
-      setIsFacebookLoading(true);
-      const result = await signInWithFacebook(response);
-      setIsFacebookLoading(false);
-      
-      if (result.success) {
-        handleSuccessfulSocialLogin(result, 'Facebook');
-      } else {
-        Toast.show({
-          type: 'error',
-          text1: 'Facebook Sign In Failed',
-          text2: result.error,
-        });
-      }
-    }
-  };
-
-  const handleAppleLogin = async () => {
-    setIsAppleLoading(true);
-    const result = await signInWithApple();
-    setIsAppleLoading(false);
-
-    if (result.success) {
-      handleSuccessfulSocialLogin(result, 'Apple');
-    } else if (result.error !== 'Sign in was cancelled') {
-      Toast.show({
-        type: 'error',
-        text1: 'Apple Sign In Failed',
-        text2: result.error,
-      });
-    }
-  };
-
-  const handleGoogleLogin = async () => {
-    try {
-      await googlePromptAsync();
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Could not start Google Sign In',
-      });
-    }
-  };
-
-  const handleFacebookLogin = async () => {
-    try {
-      await facebookPromptAsync();
-    } catch (error) {
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Could not start Facebook Sign In',
-      });
-    }
-  };
-
-  const handleSuccessfulSocialLogin = (result, provider) => {
-    Toast.show({
-      type: 'success',
-      text1: 'Welcome!',
-      text2: `Signed in with ${provider} successfully`,
-    });
-    
-    // Navigate based on user role
-    if (result.role === 'admin') {
-      navigation.replace('AdminHome');
-    } else if (result.role === 'responder') {
-      navigation.replace('ResponderHome');
-    } else {
-      navigation.replace('Home');
-    }
-  };
 
   // Animation values
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -422,57 +288,6 @@ export default function SignInScreen({ navigation }) {
               onPress={handleSignIn}
               isLoading={isLoading}
             />
-
-            {/* Divider */}
-            <View style={styles.dividerContainer}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or continue with</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            {/* Social Login Buttons */}
-            <View style={styles.socialContainer}>
-              {Platform.OS === 'ios' && (
-                <TouchableOpacity 
-                  style={[styles.socialButton, isAppleLoading && styles.socialButtonDisabled]}
-                  onPress={handleAppleLogin}
-                  activeOpacity={0.7}
-                  disabled={isAppleLoading}
-                >
-                  {isAppleLoading ? (
-                    <ActivityIndicator size="small" color="#000000" />
-                  ) : (
-                    <Ionicons name="logo-apple" size={22} color="#000000" />
-                  )}
-                </TouchableOpacity>
-              )}
-
-              <TouchableOpacity 
-                style={[styles.socialButton, isGoogleLoading && styles.socialButtonDisabled]}
-                onPress={handleGoogleLogin}
-                activeOpacity={0.7}
-                disabled={isGoogleLoading || !googleRequest}
-              >
-                {isGoogleLoading ? (
-                  <ActivityIndicator size="small" color="#EA4335" />
-                ) : (
-                  <Ionicons name="logo-google" size={20} color="#EA4335" />
-                )}
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.socialButton, isFacebookLoading && styles.socialButtonDisabled]}
-                onPress={handleFacebookLogin}
-                activeOpacity={0.7}
-                disabled={isFacebookLoading || !facebookRequest}
-              >
-                {isFacebookLoading ? (
-                  <ActivityIndicator size="small" color="#1877F2" />
-                ) : (
-                  <Ionicons name="logo-facebook" size={22} color="#1877F2" />
-                )}
-              </TouchableOpacity>
-            </View>
           </Animated.View>
 
           {/* Footer */}
@@ -677,41 +492,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#DC2626',
     fontWeight: '400',
-  },
-  // Divider styles
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 28,
-    marginBottom: 24,
-  },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E5E5EA',
-  },
-  dividerText: {
-    fontSize: 13,
-    color: '#86868B',
-    marginHorizontal: 16,
-    fontWeight: '400',
-  },
-  // Social login styles
-  socialContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 16,
-  },
-  socialButton: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#F5F5F7',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  socialButtonDisabled: {
-    opacity: 0.6,
   },
   footer: {
     flexDirection: 'row',
